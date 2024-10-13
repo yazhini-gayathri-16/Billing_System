@@ -98,6 +98,17 @@ app.post("/delete-service", async (req, res) => {
     }
 });
 
+// Add this endpoint in your app.js or server.js
+app.get("/api/services", async (req, res) => {
+    try {
+        const services = await Menu.find({}, 'serviceName price -_id'); // Fetch only serviceName and price, exclude _id
+        res.json(services);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+
 
 app.listen(port, () => {
     console.log(`Server is running on ${port}`);
