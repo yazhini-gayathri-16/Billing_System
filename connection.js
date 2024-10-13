@@ -22,6 +22,16 @@ const customer_id_schema = new mongoose.Schema({
     customer_number:{
         type: Number,
         required: true
+    },
+
+    date: {
+        type: Date,
+        required: true
+    },
+    
+    time: {
+        type: String,
+        required: true
     }
 })
 

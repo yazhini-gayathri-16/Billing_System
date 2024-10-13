@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noble Evergreen</title>
+</head>
+<body>
+    <h1>Generate new receipt</h1>
+    <form action="/bill" method="post">
+        <label for="name">Customer Name<span style="color: red;">*</span></label>
+        <input type="text" name="customer_name" required="true" placeholder="Enter the customer name">
+        <label for="number">Contact Number<span style="color: red;">*</span></label>
+        <input type="number" name="customer_number" required="true" placeholder="Enter the customer contact number">
+        <label for="date">Date:</label>
+        <input type="date" id="date" name="date" readonly><br><br>
+
+        <label for="time">Time:</label>
+        <input type="time" id="time" name="time" readonly><br><br>
+
+        <div id="service-container">
+            <!-- Placeholder for dynamically added service and price inputs -->
+            <div class="service-item">
+                <label for="service1">Service:</label>
+                <input type="text" name="services1" required="true" placeholder="Enter the service">
+                
+                <label for="price1">Price:</label>
+                <input type="number" name="prices1" required="true" placeholder="Enter the price"><br><br>
+            </div>
+        </div>
+        <button type="button" onclick="addMore()">Add More</button><br><br>
+        <button type="submit">Find</button>
+        
+    </form>
+    <script>
+         function updateDateTime() {
+            var today = new Date();
+            var date = today.getFullYear() + '-' + (today.getMonth()+1).toString().padStart(2, '0') + '-' + today.getDate().toString().padStart(2, '0');
+            var time = today.getHours().toString().padStart(2, '0') + ':' + today.getMinutes().toString().padStart(2, '0');
+
+            document.getElementById('date').value = date;
+            document.getElementById('time').value = time;
+        }
+
+        window.onload = function() {
+            updateDateTime(); // Set initial date and time
+            setInterval(updateDateTime, 1000); // Update time every second
+        };
+
+            // Initialize counter for unique input names
+            let serviceCount = 1;
+
+            // Function to add more service and price input fields
+            function addMore() {
+                var container = document.getElementById('service-container');
+                var newService = document.createElement('div');
+                newService.classList.add('service-item');
+
+                // Increment the counter for unique input names
+                serviceCount++;
+
+                newService.innerHTML = `
+                    <label for="service${serviceCount}">Service:</label>
+                    <input type="text" name="service${serviceCount}" id="service${serviceCount}" required="true" placeholder="Enter the service">
+                    
+                    <label for="price${serviceCount}">Price:</label>
+                    <input type="number" name="price${serviceCount}" id="price${serviceCount}" required="true" placeholder="Enter the price"><br><br>
+                `;
+                container.appendChild(newService);
+
+            }
+    </script>
+</body>
+</html>
