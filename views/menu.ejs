@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Menu Management</title>
+    <link rel="stylesheet" href="/stylesheets/style.css">
+</head>
+<body>
+    <h1>Menu Management</h1>
+    <form action="/add-service" method="post">
+        <input type="text" name="serviceName" placeholder="Enter service name" required>
+        <input type="number" name="price" placeholder="Enter price" required>
+        <button type="submit">Add Service</button>
+    </form>
+    <ul>
+        <% services.forEach(function(service) { %>
+            <li>
+                <form action="/edit-service" method="post">
+                    <input type="hidden" name="id" value="<%= service._id %>">
+                    <input type="text" name="serviceName" value="<%= service.serviceName %>" required>
+                    <input type="number" name="price" value="<%= service.price %>" required>
+                    <button type="submit">Update</button>
+                </form>
+                <form action="/delete-service" method="post">
+                    <input type="hidden" name="id" value="<%= service._id %>">
+                    <button type="submit">Delete</button>
+                </form>
+            </li>
+        <% }); %>
+    </ul>
+</body>
+</html>

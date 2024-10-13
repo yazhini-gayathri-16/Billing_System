@@ -1,6 +1,8 @@
 const express = require("express");
 const mongoose = require("mongoose");
-const Fetch = require("./connection"); // Ensure this points to the file where Fetch is defined
+const Fetch = require("./models/fetch"); // Ensure this points to the file where Fetch is defined
+const Menu = require("./models/menu");
+
 require("./connection");
 
 const app = express();
@@ -49,6 +51,50 @@ app.post("/bill", async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).send(err.message);
+    }
+});
+
+
+
+// Route to render the menu management page
+app.get("/menu-management", async (req, res) => {
+    try {
+        const services = await Menu.find();
+        res.render("menu", { services });
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+
+// Route to add a new service
+app.post("/add-service", async (req, res) => {
+    try {
+        const newService = new Menu(req.body);
+        await newService.save();
+        res.redirect("/menu-management");
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+
+// Route to update an existing service
+app.post("/edit-service", async (req, res) => {
+    const { id, serviceName, price } = req.body;
+    try {
+        await Menu.findByIdAndUpdate(id, { serviceName, price });
+        res.redirect("/menu-management");
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+
+// Route to delete a service
+app.post("/delete-service", async (req, res) => {
+    try {
+        await Menu.findByIdAndDelete(req.body.id);
+        res.redirect("/menu-management");
+    } catch (error) {
+        res.status(500).send(error.message);
     }
 });
 
