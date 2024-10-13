@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Noble Evergreen</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+    <style>
+        .delete-btn {
+            color: red;
+            cursor: pointer;
+            font-size: 16px;
+        }
+    </style>
 </head>
 <body>
     <h1>Generate new receipt</h1>
@@ -21,10 +29,10 @@
         <div id="service-container">
             <!-- Placeholder for dynamically added service and price inputs -->
             <div class="service-item">
-                <label for="service1">Service:</label>
+                <label for="services1">Service:</label>
                 <input type="text" name="services1" required="true" placeholder="Enter the service">
                 
-                <label for="price1">Price:</label>
+                <label for="prices1">Price:</label>
                 <input type="number" name="prices1" required="true" placeholder="Enter the price"><br><br>
             </div>
         </div>
@@ -60,15 +68,23 @@
                 serviceCount++;
 
                 newService.innerHTML = `
-                    <label for="service${serviceCount}">Service:</label>
-                    <input type="text" name="service${serviceCount}" id="service${serviceCount}" required="true" placeholder="Enter the service">
+                    <label for="services${serviceCount}">Service:</label>
+                    <input type="text" name="services${serviceCount}" id="services${serviceCount}" required="true" placeholder="Enter the service">
                     
-                    <label for="price${serviceCount}">Price:</label>
-                    <input type="number" name="price${serviceCount}" id="price${serviceCount}" required="true" placeholder="Enter the price"><br><br>
-                `;
+                    <label for="prices${serviceCount}">Price:</label>
+                    <input type="number" name="prices${serviceCount}" id="prices${serviceCount}" required="true" placeholder="Enter the price"><br><br>
+                    <span class="delete-btn" onclick="removeService(this)">🗑️</span><br><br>                
+                    `;
                 container.appendChild(newService);
 
+                
+
             }
+
+            function removeService(element) {
+            // Remove the parent div of the delete button
+            element.parentNode.remove();
+        }
     </script>
 </body>
 </html>
