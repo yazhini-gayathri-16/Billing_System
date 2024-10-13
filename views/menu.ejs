@@ -13,13 +13,13 @@
         <button type="submit">Add Service</button>
     </form>
     <ul>
-        <% services.forEach(function(service) { %>
+        <% services.forEach(function(service, index) { %>
             <li>
-                <form action="/edit-service" method="post">
+                <form id="service-form-<%= index %>" class="service-form" action="/edit-service" method="post">
                     <input type="hidden" name="id" value="<%= service._id %>">
-                    <input type="text" name="serviceName" value="<%= service.serviceName %>" required>
-                    <input type="number" name="price" value="<%= service.price %>" required>
-                    <button type="submit">Update</button>
+                    <span class="service-name"><%= service.serviceName %></span>
+                    <span class="service-price"><%= service.price %></span>
+                    <button type="button" onclick="enableEditing('service-form-<%= index %>')">Edit</button>
                 </form>
                 <form action="/delete-service" method="post">
                     <input type="hidden" name="id" value="<%= service._id %>">
@@ -28,5 +28,36 @@
             </li>
         <% }); %>
     </ul>
+    <script>
+        function enableEditing(formId) {
+            const form = document.getElementById(formId);
+            const serviceName = form.querySelector('.service-name');
+            const servicePrice = form.querySelector('.service-price');
+            
+            // Replace text with editable inputs
+            serviceName.innerHTML = `<input type="text" name="serviceName" value="${serviceName.textContent.trim()}" required>`;
+            servicePrice.innerHTML = `<input type="number" name="price" value="${servicePrice.textContent.trim()}" required>`;
+            
+            // Replace edit button with update and cancel buttons
+            const editButton = form.querySelector('button');
+            editButton.outerHTML = `<button type='submit'>Update</button>
+                                    <button type='button' onclick='cancelEdit("${formId}")'>Cancel</button>`;
+        }
+    
+        function cancelEdit(formId) {
+            const form = document.getElementById(formId);
+            const serviceNameInput = form.querySelector('.service-name input');
+            const servicePriceInput = form.querySelector('.service-price input');
+    
+            // Revert inputs back to text
+            form.querySelector('.service-name').innerHTML = serviceNameInput.value;
+            form.querySelector('.service-price').innerHTML = servicePriceInput.value;
+    
+            // Replace buttons back to just the edit button
+            form.querySelector('[type="submit"]').remove(); // Remove the update button
+            form.querySelector('button').outerHTML = `<button type='button' onclick='enableEditing("${formId}")'>Edit</button>`;
+        }
+    </script>
+    
 </body>
 </html>
