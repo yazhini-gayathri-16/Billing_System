@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Client Information</title>
+    <link rel="stylesheet" href="/stylesheets/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+</head>
+<body>
+    <h1>Search for Client</h1>
+    <form id="searchForm">
+        <input type="text" name="customerName" placeholder="Customer Name" required>
+        <input type="text" name="customerNumber" placeholder="Customer Phone Number" required>
+        <button type="button" onclick="searchCustomer()">Find</button>
+    </form>
+
+    <div id="result" style="margin-top: 20px;">
+        <!-- Results will be displayed here -->
+    </div>
+
+    <script>
+        function searchCustomer() {
+            const form = document.getElementById('searchForm');
+            const formData = new FormData(form);
+            const searchData = {};
+            formData.forEach((value, key) => {
+                searchData[key] = value;
+            });
+
+            fetch('/search-customer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(searchData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                const resultDiv = document.getElementById('result');
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <p>Number of Visits: ${data.visits}</p>
+                        <p>Total Spent: Rs:${data.totalSpent}</p>
+                        <p>Services Utilized: ${data.services.join(', ')}</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p>No customer found with that information.</p>`;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `<p>Error searching for customer.</p>`;
+            });
+        }
+    </script>
+</body>
+</html>

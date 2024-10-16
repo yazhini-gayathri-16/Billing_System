@@ -30,72 +30,131 @@
                 <th>Customer Name</th>
                 <th>Timings</th>
                 <th>Customer Number</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             <% appointments.forEach(function(appointment, index) { %>
-            <tr>
+            <tr id="appointment-<%= index %>">
                 <td><%= index + 1 %></td>
-                <td><%= appointment.customerName %></td>
-                <td><%= appointment.dateTime.toISOString().slice(0,16).replace('T', ' ') %></td>
-                <td><%= appointment.contactNumber %></td>
+                <td class="editable customerName"><%= appointment.customerName %></td>
+                <td class="editable dateTime"><%= appointment.dateTime.toISOString().slice(0,16).replace('T', ' ') %></td>
+                <td class="editable contactNumber"><%= appointment.contactNumber %></td>
+                <td>
+                    <button type="button" onclick="enableEditing('appointment-<%= index %>')">Edit</button>
+                    <form action="/delete-appointment" method="post" style="display: inline;">
+                        <input type="hidden" name="id" value="<%= appointment._id %>">
+                        <button type="submit">Delete</button>
+                    </form>
+                </td>
             </tr>
             <% }); %>
         </tbody>
     </table>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const form = document.querySelector('form');
-            form.addEventListener('submit', function(event) {
-                event.preventDefault(); // Prevent the normal submission action
-        
-                const formData = new FormData(form);
-                const jsonData = {};
-                formData.forEach((value, key) => {
-                    if (key === 'dateTime') {
-                        // Convert local date-time to UTC
-                        const localDateTime = new Date(value);
-                        jsonData[key] = new Date(localDateTime.getTime() - (localDateTime.getTimezoneOffset() * 60000)).toISOString();
-                    } else {
-                        jsonData[key] = value;
-                    }
-                });
-        
-                fetch('/appointments', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(jsonData)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Clear the form
-                        form.reset();
-                        // Append the new appointment to the table
-                        const table = document.querySelector('table tbody');
-                        const newRow = document.createElement('tr');
-                        newRow.innerHTML = `
-                            <td>${data.appointmentIndex}</td>
-                            <td>${jsonData.customerName}</td>
-                            <td>${new Date(jsonData.dateTime).toISOString().slice(0,16).replace('T', ' ')}</td>
-                            <td>${jsonData.contactNumber}</td>
-                        `;
-                        table.appendChild(newRow);
-                        alert('Appointment booked successfully!');
-                    } else {
-                        alert('Failed to book appointment');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error booking appointment');
-                });
-            });
+
+document.addEventListener("DOMContentLoaded", function() {
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent the normal submission action
+
+        const formData = new FormData(form);
+        const jsonData = {};
+        formData.forEach((value, key) => {
+            if (key === 'dateTime') {
+                // Convert local date-time to UTC
+                const localDateTime = new Date(value);
+                jsonData[key] = new Date(localDateTime.getTime() - (localDateTime.getTimezoneOffset() * 60000)).toISOString();
+            } else {
+                jsonData[key] = value;
+            }
         });
-        </script>
-        
+
+        fetch('/appointments', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(jsonData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Clear the form
+                form.reset();
+                // Append the new appointment to the table
+                const table = document.querySelector('table tbody');
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td>${data.appointmentIndex}</td>
+                    <td>${jsonData.customerName}</td>
+                    <td>${new Date(jsonData.dateTime).toISOString().slice(0,16).replace('T', ' ')}</td>
+                    <td>${jsonData.contactNumber}</td>
+                    <td>
+                        <button type="button" onclick="enableEditing('appointment-${data.appointmentIndex - 1}')">Edit</button>
+                        <form action="/delete-appointment" method="post" style="display: inline;">
+                            <input type="hidden" name="id" value="${data.id}">
+                            <button type="submit">Delete</button>
+                        </form>
+                    </td>
+                `;
+                table.appendChild(newRow);
+                alert('Appointment booked successfully!');
+            } else {
+                alert('Failed to book appointment');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error booking appointment');
+        });
+    });
+});
+
+        function enableEditing(rowId) {
+            const row = document.getElementById(rowId);
+            row.querySelectorAll('.editable').forEach(cell => {
+                const key = cell.classList[1];
+                if (key === 'dateTime') {
+                    cell.innerHTML = `<input type="datetime-local" name="${key}" value="${cell.textContent.trim().replace(' ', 'T')}">`;
+                } else {
+                    cell.innerHTML = `<input type="text" name="${key}" value="${cell.textContent.trim()}">`;
+                }
+            });
+
+            const editButton = row.querySelector('button');
+            editButton.textContent = 'Save';
+            editButton.setAttribute('onclick', `saveChanges('${rowId}')`);
+        }
+
+        function saveChanges(rowId) {
+            const row = document.getElementById(rowId);
+            const formData = {};
+            row.querySelectorAll('input').forEach(input => {
+                formData[input.name] = input.value;
+            });
+
+            fetch(`/update-appointment`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: rowId.split('-')[1], ...formData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();  // Reload page to update the view
+                } else {
+                    alert('Failed to update appointment');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating appointment');
+            });
+        }
+    </script>
 </body>
 </html>

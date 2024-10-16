@@ -132,14 +132,14 @@ app.post('/appointments', async (req, res) => {
             specialNeeds
         });
         await newAppointment.save();
-        // Respond with JSON including the success status and any other relevant data
         const appointments = await Appointment.find(); // Fetch all to find the index
         res.json({
             success: true,
             appointmentIndex: appointments.length, // Assuming you want the new appointment's index to be the total count
             customerName: newAppointment.customerName,
             dateTime: newAppointment.dateTime,
-            contactNumber: newAppointment.contactNumber
+            contactNumber: newAppointment.contactNumber,
+            id: newAppointment._id // Make sure to send the new appointment ID for further actions
         });
     } catch (error) {
         console.error('Error booking appointment:', error);
@@ -148,20 +148,67 @@ app.post('/appointments', async (req, res) => {
 });
 
 
-
 // In your app.js or routes file
 app.post("/update-appointment", async (req, res) => {
-    const { id, dateTime } = req.body;
+    const { id, customerName, contactNumber, dateTime } = req.body;
     try {
         await Appointment.findByIdAndUpdate(id, {
-            dateTime: new Date(dateTime) // Update the dateTime with the new value
+            customerName,
+            contactNumber,
+            dateTime: new Date(dateTime)
         });
-        res.redirect("/appointments"); // Redirect back to the appointments list, or wherever appropriate
+        res.json({ success: true });
     } catch (error) {
         console.error("Failed to update appointment:", error);
-        res.status(500).send("Unable to update appointment.");
+        res.status(500).json({ success: false });
     }
 });
+
+app.post("/delete-appointment", async (req, res) => {
+    try {
+        await Appointment.findByIdAndDelete(req.body.id);
+        res.redirect("/appointment");
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+
+app.get("/client", (req, res) => {
+    res.render("client");
+});
+
+
+app.post('/search-customer', async (req, res) => {
+    try {
+        const { customerName, customerNumber } = req.body;
+        // Create a case-insensitive regular expression for customer name
+        const customerNameRegex = new RegExp('^' + customerName + '$', 'i');
+
+        const customerData = await Fetch.find({
+            customer_name: customerNameRegex,  // Use regex for case-insensitive search
+            customer_number: customerNumber
+        });
+
+        if (customerData.length > 0) {
+            const totalSpent = customerData.reduce((sum, record) => sum + record.services.reduce((serviceSum, service) => serviceSum + service.price, 0), 0);
+            const services = customerData.flatMap(record => record.services.map(service => service.name));
+            const uniqueServices = [...new Set(services)];
+
+            res.json({
+                success: true,
+                visits: customerData.length,
+                totalSpent,
+                services: uniqueServices
+            });
+        } else {
+            res.json({ success: false });
+        }
+    } catch (error) {
+        console.error('Error retrieving customer data:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
 
 
 app.listen(port, () => {
