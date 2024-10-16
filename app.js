@@ -109,8 +109,15 @@ app.get("/api/services", async (req, res) => {
     }
 });
 
-app.get("/appointment", (req, res) => {
-    res.render("appointment");
+
+// In your app.js or a specific routes file
+app.get("/appointment", async (req, res) => {
+    try {
+        const appointments = await Appointment.find();
+        res.render("appointment", { appointments });
+    } catch (error) {
+        res.status(500).send("Error loading appointments");
+    }
 });
 
 
@@ -125,10 +132,34 @@ app.post('/appointments', async (req, res) => {
             specialNeeds
         });
         await newAppointment.save();
-        res.send('Appointment booked successfully!');
+        // Respond with JSON including the success status and any other relevant data
+        const appointments = await Appointment.find(); // Fetch all to find the index
+        res.json({
+            success: true,
+            appointmentIndex: appointments.length, // Assuming you want the new appointment's index to be the total count
+            customerName: newAppointment.customerName,
+            dateTime: newAppointment.dateTime,
+            contactNumber: newAppointment.contactNumber
+        });
     } catch (error) {
         console.error('Error booking appointment:', error);
-        res.status(500).send('Failed to book appointment');
+        res.status(500).json({ success: false });
+    }
+});
+
+
+
+// In your app.js or routes file
+app.post("/update-appointment", async (req, res) => {
+    const { id, dateTime } = req.body;
+    try {
+        await Appointment.findByIdAndUpdate(id, {
+            dateTime: new Date(dateTime) // Update the dateTime with the new value
+        });
+        res.redirect("/appointments"); // Redirect back to the appointments list, or wherever appropriate
+    } catch (error) {
+        console.error("Failed to update appointment:", error);
+        res.status(500).send("Unable to update appointment.");
     }
 });
 

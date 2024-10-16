@@ -5,27 +5,97 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Appointment</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
-
 </head>
 <body>
     <h1>Add new Appointment</h1>
     <form action="/appointments" method="post">
         <label for="customerName">Customer Name:</label>
         <input type="text" id="customerName" name="customerName" required><br>
-
         <label for="dateTime">Preferred Date and Time:</label>
         <input type="datetime-local" id="dateTime" name="dateTime" required><br>
-
         <label for="contactNumber">Contact Number:</label>
         <input type="text" id="contactNumber" name="contactNumber" required><br>
-
         <label for="serviceType">Type of Service:</label>
         <input type="text" id="serviceType" name="serviceType" required><br>
-
         <label for="specialNeeds">Special Needs (optional):</label>
         <input type="text" id="specialNeeds" name="specialNeeds"><br>
-
         <button type="submit">Book Appointment</button>
     </form>
+
+    <h2>List of Appointments</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Sl.no</th>
+                <th>Customer Name</th>
+                <th>Timings</th>
+                <th>Customer Number</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% appointments.forEach(function(appointment, index) { %>
+            <tr>
+                <td><%= index + 1 %></td>
+                <td><%= appointment.customerName %></td>
+                <td><%= appointment.dateTime.toISOString().slice(0,16).replace('T', ' ') %></td>
+                <td><%= appointment.contactNumber %></td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const form = document.querySelector('form');
+            form.addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent the normal submission action
+        
+                const formData = new FormData(form);
+                const jsonData = {};
+                formData.forEach((value, key) => {
+                    if (key === 'dateTime') {
+                        // Convert local date-time to UTC
+                        const localDateTime = new Date(value);
+                        jsonData[key] = new Date(localDateTime.getTime() - (localDateTime.getTimezoneOffset() * 60000)).toISOString();
+                    } else {
+                        jsonData[key] = value;
+                    }
+                });
+        
+                fetch('/appointments', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(jsonData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Clear the form
+                        form.reset();
+                        // Append the new appointment to the table
+                        const table = document.querySelector('table tbody');
+                        const newRow = document.createElement('tr');
+                        newRow.innerHTML = `
+                            <td>${data.appointmentIndex}</td>
+                            <td>${jsonData.customerName}</td>
+                            <td>${new Date(jsonData.dateTime).toISOString().slice(0,16).replace('T', ' ')}</td>
+                            <td>${jsonData.contactNumber}</td>
+                        `;
+                        table.appendChild(newRow);
+                        alert('Appointment booked successfully!');
+                    } else {
+                        alert('Failed to book appointment');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error booking appointment');
+                });
+            });
+        });
+        </script>
+        
 </body>
 </html>
