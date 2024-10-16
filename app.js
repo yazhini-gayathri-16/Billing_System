@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const Fetch = require("./models/fetch"); // Ensure this points to the file where Fetch is defined
 const Menu = require("./models/menu");
+const Appointment = require('./models/appointment');
 
 require("./connection");
 
@@ -108,6 +109,28 @@ app.get("/api/services", async (req, res) => {
     }
 });
 
+app.get("/appointment", (req, res) => {
+    res.render("appointment");
+});
+
+
+app.post('/appointments', async (req, res) => {
+    try {
+        const { customerName, dateTime, contactNumber, serviceType, specialNeeds } = req.body;
+        const newAppointment = new Appointment({
+            customerName,
+            dateTime: new Date(dateTime),
+            contactNumber,
+            serviceType,
+            specialNeeds
+        });
+        await newAppointment.save();
+        res.send('Appointment booked successfully!');
+    } catch (error) {
+        console.error('Error booking appointment:', error);
+        res.status(500).send('Failed to book appointment');
+    }
+});
 
 
 app.listen(port, () => {
