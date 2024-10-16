@@ -18,6 +18,30 @@
         <!-- Results will be displayed here -->
     </div>
 
+    <div id="searchMembershipForm" style="margin-top:20px;">
+        <h2>Search Membership</h2>
+        <form id="findMembershipForm">
+            <input type="text" name="searchCardNumber" placeholder="Membership Card Number" required>
+            <input type="text" name="searchPhoneNumber" placeholder="Phone Number" required>
+            <button type="button" onclick="findMembership()">Find Membership</button>
+        </form>
+    </div>
+    
+    <div id="membershipDetails" style="margin-top: 20px;">
+        <!-- Membership details will be displayed here -->
+    </div>
+
+    <button type="button" onclick="toggleMembershipForm()">Add New Membership</button>
+<div id="membershipForm" style="display:none; margin-top:20px;">
+    <form id="newMembershipForm">
+        <input type="text" name="cardNumber" placeholder="Card Number" required>
+        <input type="text" name="phoneNumber" placeholder="Phone Number" required>
+        <input type="date" name="birthDate" placeholder="Birth Date" required>
+        <input type="date" name="anniversaryDate" placeholder="Anniversary Date">
+        <button type="button" onclick="addMembership()">Add</button>
+    </form>
+</div>
+
     <script>
         function searchCustomer() {
             const form = document.getElementById('searchForm');
@@ -52,6 +76,78 @@
                 resultDiv.innerHTML = `<p>Error searching for customer.</p>`;
             });
         }
+
+        function toggleMembershipForm() {
+        const form = document.getElementById('membershipForm');
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    }
+
+
+    function findMembership() {
+        const form = document.getElementById('findMembershipForm');
+        const formData = new FormData(form);
+        const searchData = {};
+        formData.forEach((value, key) => {
+            searchData[key] = value;
+        });
+
+        fetch('/find-membership', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(searchData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            const detailsDiv = document.getElementById('membershipDetails');
+            if (data.success) {
+                detailsDiv.innerHTML = `
+                    <p>Card Number: ${data.cardNumber}</p>
+                    <p>Phone Number: ${data.phoneNumber}</p>
+                    <p>Birth Date: ${new Date(data.birthDate).toISOString().slice(0, 10)}</p>
+                    <p>Anniversary Date: ${data.anniversaryDate ? new Date(data.anniversaryDate).toISOString().slice(0, 10) : 'N/A'}</p>
+                    <p>Yearly Usage: ${JSON.stringify(data.yearlyUsage)}</p>
+                `;
+            } else {
+                detailsDiv.innerHTML = `<p>No membership found with that information.</p>`;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            detailsDiv.innerHTML = `<p>Error searching for membership.</p>`;
+        });
+    }
+
+    function addMembership() {
+        const form = document.getElementById('newMembershipForm');
+        const formData = new FormData(form);
+        const membershipData = {};
+        formData.forEach((value, key) => {
+            membershipData[key] = value;
+        });
+
+        fetch('/add-membership', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(membershipData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            if (data.success) {
+                form.reset(); // Reset form after successful submission
+                toggleMembershipForm(); // Optionally hide the form
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error adding membership');
+        });
+    }
+
     </script>
 </body>
 </html>

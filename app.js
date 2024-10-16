@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const Fetch = require("./models/fetch"); // Ensure this points to the file where Fetch is defined
 const Menu = require("./models/menu");
 const Appointment = require('./models/appointment');
+const Membership = require('./models/membership');
 
 require("./connection");
 
@@ -209,7 +210,48 @@ app.post('/search-customer', async (req, res) => {
     }
 });
 
+app.post('/add-membership', async (req, res) => {
+    try {
+        const { cardNumber, phoneNumber, birthDate, anniversaryDate } = req.body;
+        const newMembership = new Membership({
+            cardNumber,
+            phoneNumber,
+            birthDate,
+            anniversaryDate
+        });
+        await newMembership.save();
+        res.json({ success: true, message: 'Membership added successfully!' });
+    } catch (error) {
+        console.error('Error adding membership:', error);
+        res.status(500).json({ success: false, message: 'Failed to add membership' });
+    }
+});
 
+app.post('/find-membership', async (req, res) => {
+    try {
+        const { searchCardNumber, searchPhoneNumber } = req.body;
+        const membership = await Membership.findOne({
+            cardNumber: searchCardNumber,
+            phoneNumber: searchPhoneNumber
+        });
+
+        if (membership) {
+            res.json({
+                success: true,
+                cardNumber: membership.cardNumber,
+                phoneNumber: membership.phoneNumber,
+                birthDate: membership.birthDate,
+                anniversaryDate: membership.anniversaryDate || null,
+                yearlyUsage: membership.yearlyUsage
+            });
+        } else {
+            res.json({ success: false, message: "Membership not found" });
+        }
+    } catch (error) {
+        console.error('Error finding membership:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
 
 app.listen(port, () => {
     console.log(`Server is running on ${port}`);
