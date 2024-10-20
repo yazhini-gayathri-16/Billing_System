@@ -18,9 +18,19 @@ const port = process.env.PORT || 3000;
 app.set('view engine', 'ejs');
 app.use(express.static("public"));
 
-app.get("/", (req, res) => {
-    res.render("index");
+// In your app.js or server.js file
+app.get("/", async (req, res) => {
+    try {
+        // Fetch all staff members from the database
+        const staffMembers = await Staff.find({});
+        // Pass staff members to the template
+        res.render("index", { staffMembers });
+    } catch (error) {
+        console.error("Failed to fetch staff members:", error);
+        res.status(500).send("Error loading the page.");
+    }
 });
+
 
 app.post("/bill", async (req, res) => {
     try {
@@ -58,7 +68,18 @@ app.post("/bill", async (req, res) => {
     }
 });
 
-
+app.post("/bill", async (req, res) => {
+    try {
+        const { customer_name, customer_number, specialist } = req.body;
+        console.log("Selected Specialist ID:", specialist);
+        // Process the form submission, including the selected specialist
+        // Redirect or send a response back to the client
+        res.status(200).redirect('/');
+    } catch (error) {
+        console.error("Error processing the bill:", error);
+        res.status(500).send("Failed to process the bill.");
+    }
+});
 
 // Route to render the menu management page
 app.get("/menu-management", async (req, res) => {

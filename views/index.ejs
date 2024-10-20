@@ -26,6 +26,13 @@
         <label for="time">Time:</label>
         <input type="time" id="time" name="time" readonly><br><br>
 
+        <label for="specialist">Specialist:</label>
+        <select name="specialist" id="specialist">
+            <% staffMembers.forEach(function(staff) { %>
+                <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
+            <% }); %>
+        </select>
+
         <div id="service-container">
             <!-- Placeholder for dynamically added service and price inputs -->
             <div class="service-item">
@@ -34,6 +41,7 @@
                 
                 <label for="prices1">Price:</label>
                 <input type="number" name="prices1" required="true" placeholder="Enter the price"><br><br>
+                
             </div>
         </div>
         <button type="button" onclick="addMore()">Add More</button><br><br>
@@ -55,6 +63,7 @@
         window.onload = function() {
             updateDateTime(); // Set initial date and time
             setInterval(updateDateTime, 1000); // Update time every second
+            
         };
 
         // Initialize counter for unique input names
@@ -67,12 +76,15 @@
             newService.classList.add('service-item');
             serviceCount++;
             newService.innerHTML = `
-                <label for="services${serviceCount}">Service:</label>
-                <input type="text" name="services${serviceCount}" id="services${serviceCount}" required="true" placeholder="Enter the service">
-                    
-                <label for="prices${serviceCount}">Price:</label>
-                <input type="number" name="prices${serviceCount}" id="prices${serviceCount}" required="true" placeholder="Enter the price"><br><br>
-            `;
+                <div class="service-item">
+                    <label for="services${serviceCount}">Service:</label>
+                    <input type="text" name="services${serviceCount}" id="services${serviceCount}" required="true" placeholder="Enter the service">
+                        
+                    <label for="prices${serviceCount}">Price:</label>
+                    <input type="number" name="prices${serviceCount}" id="prices${serviceCount}" required="true" placeholder="Enter the price">
+                    <span class="delete-btn" onclick="removeService(this)">&#128465;</span><br><br>
+                </div>
+                `;
             container.appendChild(newService);
 
             // Add event listener to the new service input
@@ -89,9 +101,11 @@
 
 
         function removeService(element) {
-        // Remove the parent div of the delete button
             element.parentNode.remove();
+            
         }
+
+        
 
         document.addEventListener("DOMContentLoaded", function() {
             const container = document.getElementById('service-container');
