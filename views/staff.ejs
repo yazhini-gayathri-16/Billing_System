@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Staff</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+</head>
+<body>
+    <h1>Add New Staff</h1>
+    <form id="staffForm">
+        <label for="name">Name:</label>
+        <input type="text" name="name" id="name" required>
+
+        <label for="birthdate">Birthdate:</label>
+        <input type="date" name="birthdate" id="birthdate" required>
+
+        <label for="contactNumber">Contact Number:</label>
+        <input type="text" name="contactNumber" id="contactNumber" required>
+
+        <label for="gender">Gender:</label>
+        <select name="gender" id="gender" required>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+        </select>
+
+        <label for="address">Address:</label>
+        <textarea name="address" id="address" required></textarea>
+
+        <label for="jobTitle">Job Title:</label>
+        <input type="text" name="jobTitle" id="jobTitle" required>
+
+        <label for="employmentStartDate">Employment Start Date:</label>
+        <input type="date" name="employmentStartDate" id="employmentStartDate" required>
+
+        <button type="submit">Add Staff</button>
+    </form>
+
+    <script>
+        // Handle the form submission using AJAX
+        document.getElementById('staffForm').addEventListener('submit', function (event) {
+            event.preventDefault();  // Prevent default form submission behavior
+
+            const formData = new FormData(this);
+            const staffData = {};
+            formData.forEach((value, key) => {
+                staffData[key] = value;
+            });
+
+            fetch('/add-staff', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(staffData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Staff details added successfully!');
+                    this.reset();  // Optionally reset the form after submission
+                } else {
+                    alert('Failed to add staff details.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error adding staff details.');
+            });
+        });
+    </script>
+</body>
+</html>

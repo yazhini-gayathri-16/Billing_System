@@ -9,7 +9,9 @@
 <body>
     <h1>Search for Client</h1>
     <form id="searchForm">
+        <label for="name">Customer Name <span style="color: red;">*</span></label>
         <input type="text" name="customerName" placeholder="Customer Name" required>
+        <label for="number">Customer Number <span style="color: red;">*</span></label>
         <input type="text" name="customerNumber" placeholder="Customer Phone Number" required>
         <button type="button" onclick="searchCustomer()">Find</button>
     </form>
@@ -21,7 +23,9 @@
     <div id="searchMembershipForm" style="margin-top:20px;">
         <h2>Search Membership</h2>
         <form id="findMembershipForm">
+            <label for="cardnumber">Membership card number <span style="color: red;">*</span></label>
             <input type="text" name="searchCardNumber" placeholder="Membership Card Number" required>
+            <label for="number">Customer Number <span style="color: red;">*</span></label>
             <input type="text" name="searchPhoneNumber" placeholder="Phone Number" required>
             <button type="button" onclick="findMembership()">Find Membership</button>
         </form>
@@ -32,15 +36,33 @@
     </div>
 
     <button type="button" onclick="toggleMembershipForm()">Add New Membership</button>
-<div id="membershipForm" style="display:none; margin-top:20px;">
-    <form id="newMembershipForm">
-        <input type="text" name="cardNumber" placeholder="Card Number" required>
-        <input type="text" name="phoneNumber" placeholder="Phone Number" required>
-        <input type="date" name="birthDate" placeholder="Birth Date" required>
-        <input type="date" name="anniversaryDate" placeholder="Anniversary Date">
-        <button type="button" onclick="addMembership()">Add</button>
-    </form>
-</div>
+    <div id="membershipForm" style="display:none; margin-top:20px;">
+        <form id="newMembershipForm">
+            <label for="customername">Add Customer Number <span style="color: red;">*</span></label>
+            <input type="text" name="customername" placeholder="Customer Name" required>
+            
+            <label for="newcardnumber">Add new card number <span style="color: red;">*</span></label>
+            <input type="text" name="cardNumber" placeholder="Card Number" required>
+    
+            <label for="number">Add Mobile Number <span style="color: red;">*</span></label>
+            <input type="number" name="phoneNumber" placeholder="Phone Number" required>
+    
+            <label for="birthday">Birth date <span style="color: red;">*</span></label>
+            <input type="date" name="birthDate" placeholder="Birth Date" required>
+    
+            <label for="anniversary">Anniversary date</label>
+            <input type="date" name="anniversaryDate" placeholder="Anniversary Date">
+    
+            <!-- New fields -->
+            <label for="registeredDate">Registered Date <span style="color: red;">*</span></label>
+            <input type="date" id="registeredDate" name="registeredDate" placeholder="Registered Date" required onchange="setValidTillDate()">
+
+            <label for="validTillDate">Valid Till Date <span style="color: red;">*</span></label>
+            <input type="date" id="validTillDate" name="validTillDate" placeholder="Valid Till Date" readonly>
+    
+            <button type="button" onclick="addMembership()">Add</button>
+        </form>
+    </div>
 
     <script>
         function searchCustomer() {
@@ -146,6 +168,20 @@
             console.error('Error:', error);
             alert('Error adding membership');
         });
+    }
+     
+    // Set Valid Till Date (2 years from Registered Date)
+    function setValidTillDate() {
+        const registeredDate = document.getElementById('registeredDate').value;
+        if (registeredDate) {
+            const date = new Date(registeredDate);
+            date.setFullYear(date.getFullYear() + 2);  // Add 2 years to the registered date
+            date.setDate(date.getDate() - 1);  // Subtract 1 day to make the valid till date 1 day earlier
+
+            // Format the date as YYYY-MM-DD
+            const validTillDate = date.toISOString().split('T')[0];
+            document.getElementById('validTillDate').value = validTillDate;
+        }
     }
 
     </script>

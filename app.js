@@ -1,9 +1,11 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const Signup = require("./models/signup");
 const Fetch = require("./models/fetch"); // Ensure this points to the file where Fetch is defined
 const Menu = require("./models/menu");
 const Appointment = require('./models/appointment');
 const Membership = require('./models/membership');
+const Staff = require('./models/staff');
 
 require("./connection");
 
@@ -212,12 +214,15 @@ app.post('/search-customer', async (req, res) => {
 
 app.post('/add-membership', async (req, res) => {
     try {
-        const { cardNumber, phoneNumber, birthDate, anniversaryDate } = req.body;
+        const { customername, cardNumber, phoneNumber, birthDate, anniversaryDate, registeredDate, validTillDate } = req.body;
         const newMembership = new Membership({
+            customername,
             cardNumber,
             phoneNumber,
             birthDate,
-            anniversaryDate
+            anniversaryDate,
+            registeredDate,
+            validTillDate
         });
         await newMembership.save();
         res.json({ success: true, message: 'Membership added successfully!' });
@@ -250,6 +255,83 @@ app.post('/find-membership', async (req, res) => {
     } catch (error) {
         console.error('Error finding membership:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+
+app.post("/add-signup", async (req, res) => {
+    try {
+        const mail = req.body.mail;
+        const password = req.body.password;
+
+        const user = await Signup.create({mail, password});
+        if(user){
+            res.status(200).redirect('/');
+        }
+        else{
+            res.status(400);
+        }
+        
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+
+app.get("/signin", (req, res) => {
+    res.render("signin");
+});
+
+app.post("/do-signin",async (req,res)=>{
+
+    try {
+       const {mail, password}= req.body;
+       console.log(mail,password);
+       
+       const Username = await Signup.findOne({mail});
+       console.log(Username);
+       
+        if(Username){
+            console.log(password,Username.password);
+            if(password === Username.password){
+                res.redirect('/');
+            }
+            else{
+                res.status(400).send('Username/ password does not match');
+            }
+        }
+        else{
+            res.status(400).send('User not found');
+        }
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+
+})
+
+app.get('/staff', (req, res) => {
+    res.render('staff');
+});
+
+// Route to handle form submission
+app.post('/add-staff', async (req, res) => {
+    const { name, birthdate, contactNumber, gender, address, jobTitle, employmentStartDate } = req.body;
+    try {
+        // Create a new staff document
+        const newStaff = new Staff({
+            name,
+            birthdate,
+            contactNumber,
+            gender,
+            address,
+            jobTitle,
+            employmentStartDate
+        });
+        // Save the staff to the database
+        await newStaff.save();
+        // Send JSON response
+        res.json({ success: true });
+    } catch (err) {
+        res.json({ success: false });
     }
 });
 
