@@ -96,7 +96,8 @@ app.get("/menu-management", async (req, res) => {
 // Route to add a new service
 app.post("/add-service", async (req, res) => {
     try {
-        const newService = new Menu(req.body);
+        const { serviceName, regularPrice, membershipPrice } = req.body;
+        const newService = new Menu({ serviceName, regularPrice, membershipPrice });
         await newService.save();
         res.redirect("/menu-management");
     } catch (error) {
@@ -106,14 +107,15 @@ app.post("/add-service", async (req, res) => {
 
 // Route to update an existing service
 app.post("/edit-service", async (req, res) => {
-    const { id, serviceName, price } = req.body;
+    const { id, serviceName, regularPrice, membershipPrice } = req.body;
     try {
-        await Menu.findByIdAndUpdate(id, { serviceName, price });
+        await Menu.findByIdAndUpdate(id, { serviceName, regularPrice, membershipPrice });
         res.redirect("/menu-management");
     } catch (error) {
         res.status(500).send(error.message);
     }
 });
+
 
 // Route to delete a service
 app.post("/delete-service", async (req, res) => {

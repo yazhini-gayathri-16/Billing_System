@@ -10,16 +10,19 @@
     <h1>Menu Management</h1>
     <form action="/add-service" method="post">
         <input type="text" name="serviceName" placeholder="Enter service name" required>
-        <input type="number" name="price" placeholder="Enter price" required>
+        <input type="number" name="regularPrice" placeholder="Enter regular price" required>
+        <input type="number" name="membershipPrice" placeholder="Enter membership price" required>
         <button type="submit">Add Service</button>
     </form>
+    
     <ul>
         <% services.forEach(function(service, index) { %>
             <li>
                 <form id="service-form-<%= index %>" class="service-form" action="/edit-service" method="post">
                     <input type="hidden" name="id" value="<%= service._id %>">
                     <span class="service-name"><%= service.serviceName %></span>
-                    <span class="service-price"><%= service.price %></span>
+                    <span class="regular-price"><%= service.regularPrice %></span>
+                    <span class="membership-price"><%= service.membershipPrice %></span>
                     <button type="button" onclick="enableEditing('service-form-<%= index %>')">Edit</button>
                 </form>
                 <form action="/delete-service" method="post">
@@ -29,35 +32,42 @@
             </li>
         <% }); %>
     </ul>
+    
     <script>
         function enableEditing(formId) {
             const form = document.getElementById(formId);
             const serviceName = form.querySelector('.service-name');
-            const servicePrice = form.querySelector('.service-price');
-            
+            const regularPrice = form.querySelector('.regular-price');
+            const membershipPrice = form.querySelector('.membership-price');
+    
             // Replace text with editable inputs
             serviceName.innerHTML = `<input type="text" name="serviceName" value="${serviceName.textContent.trim()}" required>`;
-            servicePrice.innerHTML = `<input type="number" name="price" value="${servicePrice.textContent.trim()}" required>`;
+            regularPrice.innerHTML = `<input type="number" name="regularPrice" value="${regularPrice.textContent.trim()}" required>`;
+            membershipPrice.innerHTML = `<input type="number" name="membershipPrice" value="${membershipPrice.textContent.trim()}" required>`;
             
             // Replace edit button with update and cancel buttons
             const editButton = form.querySelector('button');
-            editButton.outerHTML = `<button type='submit'>Update</button>
-                                    <button type='button' onclick='cancelEdit("${formId}")'>Cancel</button>`;
+            editButton.outerHTML = `
+            <button type='submit'>Update</button>
+            <button type='button' onclick='cancelEdit("${formId}")'>Cancel</button>`;
         }
-    
+
         function cancelEdit(formId) {
             const form = document.getElementById(formId);
             const serviceNameInput = form.querySelector('.service-name input');
-            const servicePriceInput = form.querySelector('.service-price input');
-    
+            const regularPriceInput = form.querySelector('.regular-price input');
+            const membershipPriceInput = form.querySelector('.membership-price input');
+            
             // Revert inputs back to text
             form.querySelector('.service-name').innerHTML = serviceNameInput.value;
-            form.querySelector('.service-price').innerHTML = servicePriceInput.value;
-    
+            form.querySelector('.regular-price').innerHTML = regularPriceInput.value;
+            form.querySelector('.membership-price').innerHTML = membershipPriceInput.value;
+            
             // Replace buttons back to just the edit button
             form.querySelector('[type="submit"]').remove(); // Remove the update button
             form.querySelector('button').outerHTML = `<button type='button' onclick='enableEditing("${formId}")'>Edit</button>`;
         }
+
     </script>
     
 </body>

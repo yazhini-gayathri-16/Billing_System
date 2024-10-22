@@ -7,11 +7,15 @@ const serviceSchema = new mongoose.Schema({
         unique: true 
     },
 
-    price: { 
+    regularPrice: { 
+        type: Number, 
+        required: true 
+    },
+
+    membershipPrice: { 
         type: Number, 
         required: true 
     }
-    
 });
 
 const Menu = mongoose.model("Menu", serviceSchema);
