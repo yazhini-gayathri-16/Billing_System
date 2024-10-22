@@ -26,6 +26,16 @@ const customer_id_schema = new mongoose.Schema({
         type: String,
         required: true
     },
+
+    specialist:{
+        type: String,
+        required: true
+    },
+
+    subtotal: {
+        type: Number,
+        required: true
+    },
     services: [serviceSchema]
 
 

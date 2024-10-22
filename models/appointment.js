@@ -19,6 +19,11 @@ const appointmentSchema = new mongoose.Schema({
         required: true 
     },
 
+    specialist:{
+        type: String,
+        required: true
+    },
+
     serviceType: 
     { 
         type: String, 

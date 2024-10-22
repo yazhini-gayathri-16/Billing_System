@@ -18,15 +18,17 @@
     <form action="/bill" method="post">
         <label for="name">Customer Name<span style="color: red;">*</span></label>
         <input type="text" name="customer_name" required="true" placeholder="Enter the customer name">
+
         <label for="number">Contact Number<span style="color: red;">*</span></label>
         <input type="number" name="customer_number" required="true" placeholder="Enter the customer contact number">
+        
         <label for="date">Date:</label>
         <input type="date" id="date" name="date" readonly><br><br>
 
         <label for="time">Time:</label>
         <input type="time" id="time" name="time" readonly><br><br>
 
-        <label for="specialist">Specialist:</label>
+        <label for="specialist">Stylist under service:</label>
         <select name="specialist" id="specialist">
             <% staffMembers.forEach(function(staff) { %>
                 <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
@@ -40,7 +42,7 @@
                 <input type="text" name="services1" required="true" placeholder="Enter the service">
                 
                 <label for="prices1">Price:</label>
-                <input type="number" name="prices1" required="true" placeholder="Enter the price"><br><br>
+                <input type="number" name="prices1" required="true" placeholder="Enter the price" readonly><br><br>
                 
             </div>
         </div>
@@ -71,41 +73,38 @@
 
         // Function to add more service and price input fields
         function addMore() {
-            var container = document.getElementById('service-container');
-            var newService = document.createElement('div');
-            newService.classList.add('service-item');
-            serviceCount++;
-            newService.innerHTML = `
-                <div class="service-item">
-                    <label for="services${serviceCount}">Service:</label>
-                    <input type="text" name="services${serviceCount}" id="services${serviceCount}" required="true" placeholder="Enter the service">
-                        
-                    <label for="prices${serviceCount}">Price:</label>
-                    <input type="number" name="prices${serviceCount}" id="prices${serviceCount}" required="true" placeholder="Enter the price">
-                    <span class="delete-btn" onclick="removeService(this)">&#128465;</span><br><br>
-                </div>
-                `;
-            container.appendChild(newService);
+        var container = document.getElementById('service-container');
+        serviceCount++;
+        var newService = document.createElement('div');
+        newService.classList.add('service-item');
+        newService.innerHTML = `
+            <label for="services${serviceCount}">Service:</label>
+            <input type="text" name="services${serviceCount}" id="services${serviceCount}" required="true" placeholder="Enter the service">
+                
+            <label for="prices${serviceCount}">Price:</label>
+            <input type="number" name="prices${serviceCount}" id="prices${serviceCount}" required="true" placeholder="Enter the price" readonly>
+            <span class="delete-btn" onclick="removeService(this)">&#128465;</span><br><br>
+        `;
+        container.appendChild(newService);
 
-            // Add event listener to the new service input
-            newService.querySelector(`[name='services${serviceCount}']`).addEventListener('input', function() {
-                const priceInput = newService.querySelector(`[name='prices${serviceCount}']`);
-                const foundService = services.find(s => s.serviceName.toLowerCase() === this.value.toLowerCase());
-                if (foundService) {
-                    priceInput.value = foundService.price;
-                } else {
-                    priceInput.value = ''; // Clear the price field if no match is found
-                }
-        });
-}
+        newService.querySelector(`[name='prices${serviceCount}']`).addEventListener('input', updateSubtotal);
+    }
+
+
 
 
         function removeService(element) {
             element.parentNode.remove();
-            
+            updateSubtotal();            
         }
 
-        
+        function updateSubtotal() {
+        const priceInputs = document.querySelectorAll('[name^="prices"]');
+        const subtotal = Array.from(priceInputs).reduce((total, input) => {
+            return total + (parseFloat(input.value) || 0);
+        }, 0);
+        document.getElementById('subtotal').value = subtotal.toFixed(2);
+    }
 
         document.addEventListener("DOMContentLoaded", function() {
             const container = document.getElementById('service-container');
@@ -123,6 +122,7 @@
                     const foundService = services.find(s => s.serviceName.toLowerCase() === e.target.value.toLowerCase());
                     if (foundService) {
                         priceInput.value = foundService.price;
+                        updateSubtotal();
                     } else {
                         priceInput.value = ''; // Clear if no match found
                     }

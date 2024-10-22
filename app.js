@@ -34,7 +34,7 @@ app.get("/", async (req, res) => {
 
 app.post("/bill", async (req, res) => {
     try {
-        const { customer_name, customer_number, date, time } = req.body;
+        const { customer_name, customer_number, date, time, specialist, subtotal } = req.body;
         let services = [];
         let index = 1;
         console.log(req.body);
@@ -54,6 +54,8 @@ app.post("/bill", async (req, res) => {
             customer_number,
             date,
             time,
+            specialist,
+            subtotal,
             services // Assuming the schema expects an array of service objects
         });
 
@@ -137,9 +139,11 @@ app.get("/api/services", async (req, res) => {
 // In your app.js or a specific routes file
 app.get("/appointment", async (req, res) => {
     try {
+        const staffMembers = await Staff.find({});
         const appointments = await Appointment.find();
-        res.render("appointment", { appointments });
+        res.render("appointment", { appointments, staffMembers });
     } catch (error) {
+        console.error("Failed to fetch staff members:", error);
         res.status(500).send("Error loading appointments");
     }
 });
@@ -147,29 +151,33 @@ app.get("/appointment", async (req, res) => {
 
 app.post('/appointments', async (req, res) => {
     try {
-        const { customerName, dateTime, contactNumber, serviceType, specialNeeds } = req.body;
+        const { customerName, dateTime, contactNumber, specialist, serviceType, specialNeeds } = req.body;
+
         const newAppointment = new Appointment({
             customerName,
             dateTime: new Date(dateTime),
             contactNumber,
+            specialist,
             serviceType,
             specialNeeds
         });
+
         await newAppointment.save();
-        const appointments = await Appointment.find(); // Fetch all to find the index
+        const appointments = await Appointment.find();
         res.json({
             success: true,
-            appointmentIndex: appointments.length, // Assuming you want the new appointment's index to be the total count
+            appointmentIndex: appointments.length,
             customerName: newAppointment.customerName,
             dateTime: newAppointment.dateTime,
             contactNumber: newAppointment.contactNumber,
-            id: newAppointment._id // Make sure to send the new appointment ID for further actions
+            id: newAppointment._id
         });
     } catch (error) {
         console.error('Error booking appointment:', error);
         res.status(500).json({ success: false });
     }
 });
+
 
 
 // In your app.js or routes file
