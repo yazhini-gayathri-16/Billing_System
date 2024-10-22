@@ -32,6 +32,11 @@ const customer_id_schema = new mongoose.Schema({
         required: true
     },
 
+    membershipID:{
+        type: Number,
+        required: true
+    },
+
     subtotal: {
         type: Number,
         required: true

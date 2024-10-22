@@ -23,7 +23,7 @@
     <div id="searchMembershipForm" style="margin-top:20px;">
         <h2>Search Membership</h2>
         <form id="findMembershipForm">
-            <label for="cardnumber">Membership card number <span style="color: red;">*</span></label>
+            <label for="membershipID">Membership card number <span style="color: red;">*</span></label>
             <input type="text" name="searchCardNumber" placeholder="Membership Card Number" required>
             <label for="number">Customer Number <span style="color: red;">*</span></label>
             <input type="text" name="searchPhoneNumber" placeholder="Phone Number" required>
@@ -42,7 +42,7 @@
             <input type="text" name="customername" placeholder="Customer Name" required>
             
             <label for="newcardnumber">Add new card number <span style="color: red;">*</span></label>
-            <input type="text" name="cardNumber" placeholder="Card Number" required>
+            <input type="text" name="membershipID" placeholder="Card Number" required>
     
             <label for="number">Add Mobile Number <span style="color: red;">*</span></label>
             <input type="number" name="phoneNumber" placeholder="Phone Number" required>
@@ -125,7 +125,7 @@
             const detailsDiv = document.getElementById('membershipDetails');
             if (data.success) {
                 detailsDiv.innerHTML = `
-                    <p>Card Number: ${data.cardNumber}</p>
+                    <p>Card Number: ${data.membershipID}</p>
                     <p>Phone Number: ${data.phoneNumber}</p>
                     <p>Birth Date: ${new Date(data.birthDate).toISOString().slice(0, 10)}</p>
                     <p>Anniversary Date: ${data.anniversaryDate ? new Date(data.anniversaryDate).toISOString().slice(0, 10) : 'N/A'}</p>

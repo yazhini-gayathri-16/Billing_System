@@ -34,7 +34,7 @@ app.get("/", async (req, res) => {
 
 app.post("/bill", async (req, res) => {
     try {
-        const { customer_name, customer_number, date, time, specialist, subtotal } = req.body;
+        const { customer_name, customer_number, date, time, membershipID, specialist, subtotal } = req.body;
         let services = [];
         let index = 1;
         console.log(req.body);
@@ -54,6 +54,7 @@ app.post("/bill", async (req, res) => {
             customer_number,
             date,
             time,
+            membershipID, 
             specialist,
             subtotal,
             services // Assuming the schema expects an array of service objects
@@ -130,12 +131,13 @@ app.post("/delete-service", async (req, res) => {
 // Add this endpoint in your app.js or server.js
 app.get("/api/services", async (req, res) => {
     try {
-        const services = await Menu.find({}, 'serviceName price -_id'); // Fetch only serviceName and price, exclude _id
+        const services = await Menu.find({}, 'serviceName regularPrice membershipPrice -_id');
         res.json(services);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 });
+
 
 
 // In your app.js or a specific routes file
@@ -245,10 +247,10 @@ app.post('/search-customer', async (req, res) => {
 
 app.post('/add-membership', async (req, res) => {
     try {
-        const { customername, cardNumber, phoneNumber, birthDate, anniversaryDate, registeredDate, validTillDate } = req.body;
+        const { customername, membershipID, phoneNumber, birthDate, anniversaryDate, registeredDate, validTillDate } = req.body;
         const newMembership = new Membership({
             customername,
-            cardNumber,
+            membershipID,
             phoneNumber,
             birthDate,
             anniversaryDate,
@@ -267,14 +269,14 @@ app.post('/find-membership', async (req, res) => {
     try {
         const { searchCardNumber, searchPhoneNumber } = req.body;
         const membership = await Membership.findOne({
-            cardNumber: searchCardNumber,
+            membershipID: searchCardNumber,
             phoneNumber: searchPhoneNumber
         });
 
         if (membership) {
             res.json({
                 success: true,
-                cardNumber: membership.cardNumber,
+                membershipID: membership.membershipID,
                 phoneNumber: membership.phoneNumber,
                 birthDate: membership.birthDate,
                 anniversaryDate: membership.anniversaryDate || null,

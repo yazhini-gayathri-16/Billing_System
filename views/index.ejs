@@ -35,6 +35,14 @@
             <% }); %>
         </select>
 
+        <label for="hasMembership">Do you have a membership?</label>
+        <input type="checkbox" id="hasMembership" name="hasMembership" onchange="toggleMembershipIDField()">
+
+        <div id="membershipIDField" style="display: none;">
+            <label for="membershipID">Membership ID:</label>
+            <input type="text" id="membershipID" name="membershipID" placeholder="Enter your membership ID">
+        </div>
+
         <div id="service-container">
             <!-- Placeholder for dynamically added service and price inputs -->
             <div class="service-item">
@@ -53,87 +61,90 @@
         
     </form>
     <script>
-         function updateDateTime() {
-            var today = new Date();
-            var date = today.getFullYear() + '-' + (today.getMonth()+1).toString().padStart(2, '0') + '-' + today.getDate().toString().padStart(2, '0');
-            var time = today.getHours().toString().padStart(2, '0') + ':' + today.getMinutes().toString().padStart(2, '0');
-
-            document.getElementById('date').value = date;
-            document.getElementById('time').value = time;
-        }
-
+        let services = [];  // Define services globally to ensure it's accessible
+    
         window.onload = function() {
             updateDateTime(); // Set initial date and time
             setInterval(updateDateTime, 1000); // Update time every second
-            
-        };
-
-        // Initialize counter for unique input names
-        let serviceCount = 1;
-
-        // Function to add more service and price input fields
-        function addMore() {
-        var container = document.getElementById('service-container');
-        serviceCount++;
-        var newService = document.createElement('div');
-        newService.classList.add('service-item');
-        newService.innerHTML = `
-            <label for="services${serviceCount}">Service:</label>
-            <input type="text" name="services${serviceCount}" id="services${serviceCount}" required="true" placeholder="Enter the service">
-                
-            <label for="prices${serviceCount}">Price:</label>
-            <input type="number" name="prices${serviceCount}" id="prices${serviceCount}" required="true" placeholder="Enter the price" readonly>
-            <span class="delete-btn" onclick="removeService(this)">&#128465;</span><br><br>
-        `;
-        container.appendChild(newService);
-
-        newService.querySelector(`[name='prices${serviceCount}']`).addEventListener('input', updateSubtotal);
-    }
-
-
-
-
-        function removeService(element) {
-            element.parentNode.remove();
-            updateSubtotal();            
-        }
-
-        function updateSubtotal() {
-        const priceInputs = document.querySelectorAll('[name^="prices"]');
-        const subtotal = Array.from(priceInputs).reduce((total, input) => {
-            return total + (parseFloat(input.value) || 0);
-        }, 0);
-        document.getElementById('subtotal').value = subtotal.toFixed(2);
-    }
-
-        document.addEventListener("DOMContentLoaded", function() {
-            const container = document.getElementById('service-container');
-            
+            setupEventListeners(); // Setup event listeners after the page has fully loaded
+    
+            // Fetch service data from the server
             fetch("/api/services")
-            .then(response => response.json())
-            .then(data => {
-                services = data;
-
-            // Delegate the input event to the container
+                .then(response => response.json())
+                .then(data => {
+                    services = data;  // Store the fetched services globally
+                })
+                .catch(error => console.error('Error fetching services:', error));
+        };
+    
+        function setupEventListeners() {
+            const container = document.getElementById('service-container');
             container.addEventListener('input', function(e) {
                 if (e.target.name.startsWith('services')) {
-                    const index = e.target.name.match(/\d+/)[0]; // Extract the index from the name
+                    const index = e.target.name.match(/\d+/)[0];  // Extract the index from the name
                     const priceInput = document.querySelector(`[name='prices${index}']`);
+                    const isMember = document.getElementById('hasMembership').checked;
                     const foundService = services.find(s => s.serviceName.toLowerCase() === e.target.value.toLowerCase());
+    
                     if (foundService) {
-                        priceInput.value = foundService.price;
+                        priceInput.value = isMember ? foundService.membershipPrice : foundService.regularPrice;
                         updateSubtotal();
                     } else {
-                        priceInput.value = ''; // Clear if no match found
+                        priceInput.value = '';  // Clear if no match found
                     }
                 }
             });
-        })
-
-
-        .catch(error => console.error('Error fetching services:', error));
-    });
-
+        }
+    
+        function updateDateTime() {
+            var today = new Date();
+            var date = today.getFullYear() + '-' + (today.getMonth() + 1).toString().padStart(2, '0') + '-' + today.getDate().toString().padStart(2, '0');
+            var time = today.getHours().toString().padStart(2, '0') + ':' + today.getMinutes().toString().padStart(2, '0');
+    
+            document.getElementById('date').value = date;
+            document.getElementById('time').value = time;
+        }
+    
+        function toggleMembershipIDField() {
+            var checkbox = document.getElementById('hasMembership');
+            var membershipField = document.getElementById('membershipIDField');
+            membershipField.style.display = checkbox.checked ? 'block' : 'none';
+        }
+    
+        // Initialize counter for unique input names
+        let serviceCount = 1;
+    
+        // Function to add more service and price input fields
+        function addMore() {
+            var container = document.getElementById('service-container');
+            serviceCount++;
+            var newService = document.createElement('div');
+            newService.classList.add('service-item');
+            newService.innerHTML = `
+                <label for="services${serviceCount}">Service:</label>
+                <input type="text" name="services${serviceCount}" required="true" placeholder="Enter the service">
+                    
+                <label for="prices${serviceCount}">Price:</label>
+                <input type="number" name="prices${serviceCount}" required="true" readonly><br><br>
+                <span class="delete-btn" onclick="removeService(this)">&#128465;</span><br><br>
+            `;
+            container.appendChild(newService);
+        }
+    
+        function removeService(element) {
+            element.parentNode.remove();
+            updateSubtotal();
+        }
+    
+        function updateSubtotal() {
+            const priceInputs = document.querySelectorAll('[name^="prices"]');
+            const subtotal = Array.from(priceInputs).reduce((total, input) => {
+                return total + (parseFloat(input.value) || 0);
+            }, 0);
+            document.getElementById('subtotal').value = subtotal.toFixed(2);
+        }
     </script>
+    
+    
 </body>
 </html>
