@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require('cors');
 const mongoose = require("mongoose");
 const Signup = require("./models/signup");
 const Fetch = require("./models/fetch"); // Ensure this points to the file where Fetch is defined
@@ -11,6 +12,7 @@ require("./connection");
 
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
@@ -83,6 +85,27 @@ app.post("/bill", async (req, res) => {
         res.status(500).send("Failed to process the bill.");
     }
 });
+
+app.post('/validate-membership', async (req, res) => {
+    try {
+        const { membershipID } = req.body;
+        const membership = await Membership.findOne({ membershipID });
+
+        if (!membership) {
+            return res.status(404).json({ message: 'Wrong membership ID' });
+        }
+
+        if (new Date(membership.validTillDate) < new Date()) {
+            return res.status(200).json({ message: 'Membership ID expired' });
+        }
+
+        res.status(200).json({ message: 'Valid membership ID' });
+    } catch (error) {
+        console.error('Error validating membership:', error);
+        res.status(500).json({ message: 'Error validating membership ID' });
+    }
+});
+
 
 // Route to render the menu management page
 app.get("/menu-management", async (req, res) => {

@@ -40,8 +40,10 @@
 
         <div id="membershipIDField" style="display: none;">
             <label for="membershipID">Membership ID:</label>
-            <input type="text" id="membershipID" name="membershipID" placeholder="Enter your membership ID">
+            <input type="text" id="membershipID" name="membershipID" placeholder="Enter your membership ID" onblur="validateMembershipID()">
+            <small id="membershipMessage" style="color: red;"></small>
         </div>
+        
 
         <div id="service-container">
             <!-- Placeholder for dynamically added service and price inputs -->
@@ -143,6 +145,33 @@
             }, 0);
             document.getElementById('subtotal').value = subtotal.toFixed(2);
         }
+
+        function validateMembershipID() {
+        const membershipID = document.getElementById('membershipID').value;
+        const messageDisplay = document.getElementById('membershipMessage');
+
+        fetch('/validate-membership', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ membershipID })
+        })
+        .then(response => response.json())
+        .then(data => {
+            messageDisplay.textContent = data.message;
+            messageDisplay.style.color = data.message === 'Valid membership ID' ? 'green' : 'red';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            messageDisplay.textContent = 'Error checking membership ID';
+            messageDisplay.style.color = 'red';
+        });
+    }
+
+    document.getElementById('membershipID').addEventListener('blur', validateMembershipID);
+
+
     </script>
     
     
