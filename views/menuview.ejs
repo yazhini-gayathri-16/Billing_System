@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Service Menu</title>
+    <link rel="stylesheet" href="/stylesheets/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+</head>
+<body>
+    <h1>Service Menu</h1>
+
+    <ul>
+        <% services.forEach(function(service) { %>
+            <li>
+                <span><strong>Service:</strong> <%= service.serviceName %></span><br>
+                <span><strong>Regular Price:</strong> $<%= service.regularPrice.toFixed(2) %></span><br>
+                <span><strong>Membership Price:</strong> $<%= service.membershipPrice.toFixed(2) %></span>
+            </li>
+        <% }); %>
+    </ul>
+
+</body>
+</html>

@@ -128,6 +128,17 @@ app.post("/delete-service", async (req, res) => {
     }
 });
 
+app.get("/menu-display", async (req, res) => {
+    try {
+        const services = await Menu.find();
+        res.render("menuview", { services });  // Ensure this points to the correct ejs file for display
+    } catch (error) {
+        console.error("Error fetching services:", error);
+        res.status(500).send("Error loading the service menu.");
+    }
+});
+
+
 // Add this endpoint in your app.js or server.js
 app.get("/api/services", async (req, res) => {
     try {
