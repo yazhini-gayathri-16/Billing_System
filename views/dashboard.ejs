@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h2>Monthly Client Target Achievement</h2>
+    
+    <!-- Pie Chart -->
+    <canvas id="targetChart" data-targets='<%= targets %>' data-monthly-clients='<%= monthlyClients %>' data-current-month='<%= currentMonth %>'></canvas>
+
+    <!-- Form to Set Target -->
+    <form action="/dashboard" method="POST">
+        <label for="month">Select Month:</label>
+        <select name="month" id="month">
+            <% JSON.parse(targets).forEach(target => { %>
+                <option value="<%= target.month %>"><%= target.month %></option>
+            <% }) %>
+        </select>
+
+        <label for="target">Target Clients:</label>
+        <input type="number" name="target" required>
+
+        <button type="submit">Set Target</button>
+    </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Retrieve data attributes from canvas element
+            const chartElement = document.getElementById('targetChart');
+            const targets = JSON.parse(chartElement.dataset.targets);
+            const monthlyClients = parseInt(chartElement.dataset.monthlyClients, 10);
+            const currentMonth = chartElement.dataset.currentMonth;
+
+            // Find target data for the current month
+            const targetData = targets.find(t => t.month === currentMonth);
+            const target = targetData ? targetData.target : 0;
+            const achieved = monthlyClients;
+            const pending = target - achieved > 0 ? target - achieved : 0;
+
+            // Render chart
+            new Chart(chartElement, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Achieved', 'Pending'],
+                    datasets: [{
+                        data: [achieved, pending],
+                        backgroundColor: ['#4caf50', '#f44336']
+                    }]
+                },
+                options: {
+                    rotation: Math.PI,
+                    circumference: Math.PI,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

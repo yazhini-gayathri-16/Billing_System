@@ -7,6 +7,7 @@ const Menu = require("./models/menu");
 const Appointment = require('./models/appointment');
 const Membership = require('./models/membership');
 const Staff = require('./models/staff');
+const Target = require('./models/target');
 
 require("./connection");
 
@@ -85,6 +86,39 @@ app.post("/bill", async (req, res) => {
         res.status(500).send("Failed to process the bill.");
     }
 });
+
+app.get('/dashboard', async (req, res) => {
+    const targets = await Target.find();
+
+    // Get the first and last dates of the current month
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+    // Count documents within the current month range
+    const monthlyClients = await Fetch.countDocuments({
+        date: { $gte: startOfMonth, $lte: endOfMonth }
+    });
+
+    res.render('dashboard', {
+        targets: JSON.stringify(targets),
+        monthlyClients: JSON.stringify(monthlyClients),
+        currentMonth: now.toLocaleString('default', { month: 'long' })
+    });
+});
+
+
+
+app.post('/dashboard', async (req, res) => {
+    const { month, target } = req.body;
+    await Target.findOneAndUpdate(
+        { month },
+        { target },
+        { upsert: true } // If the target for the month doesn't exist, create it
+    );
+    res.redirect('/dashboard');
+});
+
 
 app.post('/validate-membership', async (req, res) => {
     try {
