@@ -8,6 +8,7 @@ const Appointment = require('./models/appointment');
 const Membership = require('./models/membership');
 const Staff = require('./models/staff');
 const Target = require('./models/target');
+const Product = require('./models/inventory');
 
 require("./connection");
 
@@ -433,6 +434,39 @@ app.post('/add-staff', async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         res.json({ success: false });
+    }
+});
+
+app.get("/inventory", async (req, res) => {
+    const products = await Product.find();
+    res.render("inventory", { products });
+});
+
+// Route to add a new product
+app.post("/inventory", async (req, res) => {
+    const { productName, productPrice, stocksPurchased, stocksInInventory } = req.body;
+    await Product.create({ productName, productPrice, stocksPurchased, stocksInInventory });
+    res.redirect("/inventory");
+});
+
+// Route to edit an item in the inventory
+app.post("/edit-item", async (req, res) => {
+    const { id, productName, productPrice, stocksPurchased, stocksInInventory } = req.body;
+    try {
+        await Product.findByIdAndUpdate(id, { productName, productPrice, stocksPurchased, stocksInInventory });
+        res.redirect("/inventory");
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+
+// Route to delete an item from the inventory
+app.post("/delete-item", async (req, res) => {
+    try {
+        await Product.findByIdAndDelete(req.body.id);
+        res.redirect("/inventory");
+    } catch (error) {
+        res.status(500).send(error.message);
     }
 });
 
