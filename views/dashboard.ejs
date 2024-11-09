@@ -3,66 +3,785 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <title>Salon Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+      /* Styling for the cards */
+      .metrics {
+            display: flex;
+            justify-content: space-around;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .metric-card {
+            width: 150px;
+            padding: 15px;
+            border-radius: 10px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+        }
+        .metric-card img {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 10px;
+        }
+        .metric-card h3 {
+            margin: 0;
+            font-size: 14px;
+            color: #666;
+        }
+        .metric-card p {
+            margin: 0;
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .target-form {
+            margin-bottom: 20px;
+        }
+        /* Adjust the size of the half-donut chart */
+        #clientDonutChart, #genderPieChart {
+        max-width: 300px;
+        max-height: 300px;
+        margin: 20px auto;
+        }
+        /* Make the monthly line chart larger */
+        #monthlyChart {
+            max-width: 800px;
+            max-height: 500px;
+            margin: 20px auto;
+        }
+         /* Styling for the trending services table */
+         .trending-services {
+            margin-top: 30px;
+            text-align: left;
+        }
+        .trending-services h2 {
+            margin-bottom: 10px;
+            font-size: 20px;
+            text-decoration: underline;
+        }
+        .trending-services table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 auto;
+        }
+        .trending-services th, .trending-services td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        .trending-services th {
+            background-color: #f1f1f1;
+            font-weight: bold;
+        }
+
+        .appointments-container {
+        width: 100%;
+        max-width: 400px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f7f7f7;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .appointments-container h2 {
+        font-size: 20px;
+        margin-bottom: 15px;
+        text-align: left;
+    }
+
+    .appointments {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .appointment-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        border-radius: 8px;
+        background-color: #ffffff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .appointment-details {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .appointment-image {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .appointment-details h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .appointment-details p {
+        margin: 3px 0;
+        font-size: 14px;
+        color: #777;
+    }
+
+    .appointment-time {
+        color: #555;
+    }
+
+    .appointment-price {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .calendar-header {
+        display: flex;
+        align-items: center;
+        justify-content: start;
+        gap: 8px;
+        font-size: 18px;
+        margin: 10px 0;
+    }
+
+    .calendar-icon {
+        width: 24px;
+        height: 24px;
+    }
+
+    .date-selector {
+        display: flex;
+        justify-content: space-around;
+        margin: 10px 0 20px;
+        gap: 10px;
+    }
+
+    .date-card {
+        padding: 10px;
+        background-color: #f0f0f0;
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        width: 50px;
+    }
+
+    .date-card.active {
+        background-color: #0066ff;
+        color: white;
+    }
+
+    .date-card p {
+        margin: 0;
+        font-size: 12px;
+    }
+
+    .date-card .day {
+        font-weight: bold;
+        font-size: 14px;
+    }
+
+    .stylists-container {
+        width: 300px;
+        padding: 15px;
+        border-radius: 8px;
+        background-color: #f7f7f7;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        text-align: left;
+    }
+    .stylists-container h2 {
+        font-size: 20px;
+        margin-bottom: 15px;
+    }
+    .stylist-card {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        border-radius: 8px;
+        background-color: #ffffff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 10px;
+    }
+    .stylist-image {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin-right: 15px;
+    }
+    .stylist-details h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: bold;
+        color: #333;
+    }
+    .stylist-details p {
+        margin: 5px 0;
+        font-size: 14px;
+        color: #777;
+    }
+
+    
+    </style>
 </head>
 <body>
-    <h2>Monthly Client Target Achievement</h2>
-    
-    <!-- Pie Chart -->
-    <canvas id="targetChart" data-targets='<%= targets %>' data-monthly-clients='<%= monthlyClients %>' data-current-month='<%= currentMonth %>'></canvas>
+    <div class="container">
+        <h1>Salon Dashboard</h1>
 
-    <!-- Form to Set Target -->
-    <form action="/dashboard" method="POST">
-        <label for="month">Select Month:</label>
-        <select name="month" id="month">
-            <% JSON.parse(targets).forEach(target => { %>
-                <option value="<%= target.month %>"><%= target.month %></option>
-            <% }) %>
-        </select>
+         <!-- Metrics Section with Cute Cards -->
+        <div class="metrics">
+            <div class="metric-card">
+                <img src="/images/barbershop.png" alt="Clients Icon"> <!-- Placeholder image -->
+                <h3>Clients</h3>
+                <p id="clientCount">0</p>
+            </div>
+            <div class="metric-card">
+                <img src="/images/appointment-book.png" alt="Appointments Icon"> <!-- Placeholder image -->
+                <h3>Appointments</h3>
+                <p id="appointmentCount">0</p>
+            </div>
+            <div class="metric-card">
+                <img src="/images/service.png" alt="Services Icon"> <!-- Placeholder image -->
+                <h3>Services</h3>
+                <p id="serviceCount">0</p>
+            </div>
+            <div class="metric-card">
+                <img src="/images/member-card.png" alt="Membership Icon"> <!-- Placeholder image -->
+                <h3>Valid Memberships</h3>
+                <p id="validMembershipCount">0</p>
+            </div>
+            
+        </div>
 
-        <label for="target">Target Clients:</label>
-        <input type="number" name="target" required>
+        <!-- Monthly Target Setting Form -->
+        <div class="target-form">
+            <label for="monthlyTarget">Set Monthly Target:</label>
+            <input type="number" id="monthlyTarget" placeholder="Enter target for the current month">
+            <button onclick="setMonthlyTarget()">Set Monthly Target</button>
+        </div>
 
-        <button type="submit">Set Target</button>
-    </form>
+        <div style="display: flex; justify-content: space-around; align-items: center;">
+            <div>
+                <h2>Client Achievement</h2>
+                <canvas id="clientDonutChart"></canvas>
+            </div>
+            <div>
+                <h2>Gender Diversity</h2>
+                <canvas id="genderPieChart"></canvas>
+            </div>
+        </div>
+        
+
+        <!-- Monthly Sales Target Chart -->
+        <h2>Monthly Sales Target Achievement Chart</h2>
+        <canvas id="monthlyChart" width="800" height="500"></canvas>
+
+         <!-- Top Trending Services Table -->
+         <div class="trending-services">
+            <h2>Top Trending Services</h2>
+            <table id="trendingServicesTable">
+                <thead>
+                    <tr>
+                        <th>Sl.no</th>
+                        <th>Service</th>
+                        <th>No. of Utilization</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data will be populated here -->
+                </tbody>
+            </table>
+        </div>
+
+        <div style="display: flex; justify-content: space-between;">
+            <!-- Existing Appointments Section -->
+            <div class="appointments-container">
+                <h2>Upcoming Appointments</h2>
+                <div class="calendar-header">
+                    <img src="/images/appointment.png" alt="Calendar Icon" class="calendar-icon">
+                    <span id="currentMonth"></span>
+                </div>
+                <div id="dateSelector" class="date-selector">
+                    <!-- Date cards will be dynamically generated here -->
+                </div>
+                <div class="appointments" id="appointmentsList">
+                    <!-- Appointment cards will be populated here -->
+                </div>
+            </div>
+        
+            <!-- New Stylists Section -->
+            <div class="stylists-container">
+                <h2>Stylists</h2>
+                <div class="stylists">
+                    <% staffMembers.forEach((staff) => { %>
+                        <div class="stylist-card">
+                            <img src="/images/barber.png" alt="Stylist Image" class="stylist-image">
+                            <div class="stylist-details">
+                                <h3><%= staff.name %></h3>
+                                <p><%= staff.jobTitle %></p>
+                                <p><%= staff.employmentStartDate.toDateString() %></p>
+                            </div>
+                        </div>
+                    <% }) %>
+                </div>
+            </div>
+        </div>
+        
+        
+
+    </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Retrieve data attributes from canvas element
-            const chartElement = document.getElementById('targetChart');
-            const targets = JSON.parse(chartElement.dataset.targets);
-            const monthlyClients = parseInt(chartElement.dataset.monthlyClients, 10);
-            const currentMonth = chartElement.dataset.currentMonth;
 
-            // Find target data for the current month
-            const targetData = targets.find(t => t.month === currentMonth);
-            const target = targetData ? targetData.target : 0;
-            const achieved = monthlyClients;
-            const pending = target - achieved > 0 ? target - achieved : 0;
 
-            // Render chart
-            new Chart(chartElement, {
+        let targetClients = 0;  // Initial target value
+        let monthlyChart;       // Reference for the monthly line chart
+
+        document.addEventListener("DOMContentLoaded", () => {
+            generateDateCards();
+            fetchAppointmentsForDate(getTodayDateString()); // Fetch appointments for today on load
+            fetchMetrics();                                // Load metrics on page load
+            fetchCurrentMonthData();                       // Load donut chart data on page load
+            fetchMonthlyData();   
+            
+            // Refresh the metrics every 30 seconds
+            setInterval(fetchMetrics, 30000);// Load line chart data on page load
+        });
+
+        // Fetch counts for metrics
+        async function fetchMetrics() {
+            try {
+                const clientResponse = await fetch('/client-count');
+                const clientData = await clientResponse.json();
+                document.getElementById('clientCount').innerText = clientData.clientCount;
+
+                const serviceResponse = await fetch('/menu-count');
+                const serviceData = await serviceResponse.json();
+                document.getElementById('serviceCount').innerText = serviceData.serviceCount;
+
+                const appointmentResponse = await fetch('/appointment-count');
+                const appointmentData = await appointmentResponse.json();
+                document.getElementById('appointmentCount').innerText = appointmentData.appointmentCount;
+
+                // Fetch the valid membership count
+                const membershipResponse = await fetch('/valid-membership-count');
+                const membershipData = await membershipResponse.json();
+                document.getElementById('validMembershipCount').innerText = membershipData.validMembershipCount;
+
+            } catch (error) {
+                console.error('Error fetching metrics:', error);
+            }
+        }
+
+        // Fetch metrics on load
+        fetchMetrics();
+        
+        async function fetchCurrentMonthData() {
+            try {
+                const response = await fetch('/current-month-data');
+                const data = await response.json();
+
+                if (data.success) {
+                    const achieved = data.achieved || 0;
+                    const target = data.target || 0;
+                    const remaining = Math.max(target - achieved, 0);
+
+                    updateDonutChart(achieved, remaining);
+                } else {
+                    console.error(data.message || "No data for the current month.");
+                    updateDonutChart(0, 0); // Reset the chart if no data
+                }
+            } catch (error) {
+                console.error("Error fetching current month data:", error);
+                updateDonutChart(0, 0); // Reset the chart in case of an error
+            }
+        }
+
+
+        function createDonutChart() {
+            const ctx = document.getElementById('clientDonutChart').getContext('2d');
+            return new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Achieved', 'Pending'],
+                    labels: ['Achieved', 'Remaining'],
                     datasets: [{
-                        data: [achieved, pending],
-                        backgroundColor: ['#4caf50', '#f44336']
+                        label: 'Client Target Progress',
+                        data: [0, 0],  // Initial placeholder data
+                        backgroundColor: ['#4CAF50', '#f44336'],
+                        cutout: '70%'  // Makes it a thinner ring
                     }]
                 },
                 options: {
-                    rotation: Math.PI,
-                    circumference: Math.PI,
+                    circumference: 180,  // Half-donut
+                    rotation: -90,       // Rotate to the bottom
+                    responsive: true,
+                    maintainAspectRatio: false,
                     plugins: {
-                        legend: {
+                        datalabels: {
                             display: true,
-                            position: 'top'
+                            color: '#ffffff',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            },
+                            formatter: (value, context) => {
+                                const dataset = context.chart.data.datasets[0].data;
+                                const total = dataset.reduce((acc, val) => acc + val, 0);
+                                const percentage = ((value / total) * 100).toFixed(0) + '%';
+                                return percentage;
+                            }
+                        }
+                    },
+                    legend: {
+                        display: true,
+                        position: 'right',
+                        labels: {
+                            boxWidth: 20,
+                            padding: 15,
+                            font: {
+                                size: 14
+                            }
                         }
                     }
-                }
+                },
+                plugins: [ChartDataLabels] // Ensure ChartDataLabels is loaded as a plugin here
             });
-        });
+        }
+
+        function updateDonutChart(achieved, remaining) {
+            donutChart.data.datasets[0].data = [achieved, remaining];
+            donutChart.update();
+        }
+
+        // Initialize the chart
+        const donutChart = createDonutChart();
+        fetchCurrentMonthData();
+
+
+       
+        function createGenderPieChart(maleCount, femaleCount, othersCount) {
+            const ctx = document.getElementById('genderPieChart').getContext('2d');
+            return new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Female', 'Male', 'Others'],
+                    datasets: [{
+                        data: [femaleCount, maleCount, othersCount],
+                        backgroundColor: ['#36A2EB', '#FF6384', '#FFCE56'],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        tooltip: {
+                            enabled: false // Disable default tooltips
+                        },
+                        datalabels: {
+                            color: '#ffffff',
+                            formatter: (value, context) => {
+                                let total = context.chart.data.datasets[0].data.reduce((acc, val) => acc + val, 0);
+                                let percentage = ((value / total) * 100).toFixed(0) + '%';
+                                return percentage;
+                            },
+                            font: {
+                                weight: 'bold',
+                                size: 14
+                            }
+                        },
+                        legend: {
+                            display: true,
+                            position: 'right',
+                            labels: {
+                                boxWidth: 20,
+                                padding: 15,
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels] // Add the ChartDataLabels plugin for displaying percentages
+            });
+        }
+
+        // Fetch gender data and create the pie chart
+        async function fetchGenderData() {
+            try {
+                const response = await fetch('/gender-data');
+                const data = await response.json();
+                const { maleCount, femaleCount, othersCount } = data;
+
+                createGenderPieChart(maleCount, femaleCount, othersCount);
+            } catch (error) {
+                console.error("Error fetching gender data:", error);
+            }
+        }
+
+        fetchGenderData();
+
+
+
+
+
+        // Set Monthly Target Function
+        async function setMonthlyTarget() {
+            const targetValue = document.getElementById('monthlyTarget').value;
+
+            if (!targetValue) {
+                alert("Please enter a target value.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/set-monthly-target', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target: targetValue })
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    alert(result.message);
+
+                    // Refresh the donut chart and line chart immediately after setting the target
+                    fetchCurrentMonthData(); // Refresh the half-donut chart with updated target and achieved values
+                    fetchMonthlyData();      // Refresh the monthly achievement line chart with updated data
+                } else {
+                    alert(result.message || "Failed to set target.");
+                }
+            } catch (error) {
+                console.error("Error setting monthly target:", error);
+                alert("Error setting target. Please try again.");
+            }
+        }
+
+
+        // Monthly Sales Target Achievement Chart
+        async function fetchMonthlyData() {
+            try {
+                const response = await fetch('/monthly-data');
+                const data = await response.json();
+                const months = data.map(entry => entry.month);
+                const targets = data.map(entry => entry.target);
+                const achievements = data.map(entry => entry.achieved);
+
+                createOrUpdateMonthlyChart(months, targets, achievements);
+            } catch (error) {
+                console.error("Error fetching monthly data:", error);
+            }
+        }
+
+        function createOrUpdateMonthlyChart(months, targets, achievements) {
+            const ctx = document.getElementById('monthlyChart').getContext('2d');
+
+            if (monthlyChart) {
+                // Update the existing chart data
+                monthlyChart.data.labels = months;
+                monthlyChart.data.datasets[0].data = achievements;
+                monthlyChart.data.datasets[1].data = targets;
+                monthlyChart.update();
+            } else {
+                // Create a new chart if it doesn't exist
+                monthlyChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: months,
+                        datasets: [
+                            {
+                                label: 'Achieved sales target',
+                                data: achievements,
+                                borderColor: 'cyan',
+                                fill: false,
+                            },
+                            {
+                                label: 'Actual sales target',
+                                data: targets,
+                                borderColor: 'pink',
+                                fill: false,
+                            }
+                        ]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                            }
+                        },
+                        responsive: true,
+                        maintainAspectRatio: false // Disable aspect ratio to allow custom sizing
+                    }
+                });
+            }
+        }
+
+        fetchMonthlyData(); // Fetch data and render the monthly chart
+
+         // Fetch trending services data and populate table
+         async function fetchTrendingServices() {
+            try {
+                const response = await fetch('/trending-services');
+                const data = await response.json();
+                const tbody = document.getElementById('trendingServicesTable').querySelector('tbody');
+                
+                tbody.innerHTML = ""; // Clear previous data
+                data.forEach((service, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${service.name}</td>
+                        <td>${service.utilization}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error("Error fetching trending services:", error);
+            }
+        }
+
+        fetchTrendingServices(); // Fetch trending services on load
+
+
+        function getTodayDateString() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+
+        function generateDateCards() {
+            const dateSelector = document.getElementById('dateSelector');
+            const currentMonth = document.getElementById('currentMonth');
+            const today = new Date();
+
+            // Display current month
+            const monthOptions = { month: 'long', year: 'numeric' };
+            currentMonth.innerText = today.toLocaleDateString('en-US', monthOptions);
+
+            // Generate date cards for the next 7 days
+            dateSelector.innerHTML = '';
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(today);
+                date.setDate(today.getDate() + i);
+
+                const dateCard = document.createElement('div');
+                dateCard.className = 'date-card';
+                
+                const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'short' });
+                const dateOfMonth = date.getDate();
+
+                dateCard.innerHTML = `<p class="day">${dayOfWeek}</p><p>${dateOfMonth}</p>`;
+
+                // Format date as YYYY-MM-DD for backend query
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const localDateString = `${year}-${month}-${day}`;
+                
+                dateCard.dataset.date = localDateString;
+
+                // Handle click to fetch appointments for selected date
+                dateCard.addEventListener('click', () => {
+                    document.querySelectorAll('.date-card').forEach(card => card.classList.remove('active'));
+                    dateCard.classList.add('active');
+                    fetchAppointmentsForDate(localDateString);
+                });
+
+                dateSelector.appendChild(dateCard);
+
+                // Set today as active initially
+                if (i === 0) {
+                    dateCard.classList.add('active');
+                }
+            }
+        }
+
+
+
+        // Function to fetch and display appointments for a specific date
+        async function fetchAppointmentsForDate(date) {
+            try {
+                const response = await fetch(`/appointments/${date}`);
+                const appointments = await response.json();
+                const appointmentsList = document.getElementById('appointmentsList');
+                appointmentsList.innerHTML = ''; // Clear previous appointments
+
+                if (appointments.length === 0) {
+                    // Show a message if there are no appointments for the selected date
+                    const noAppointmentsMessage = document.createElement('p');
+                    noAppointmentsMessage.textContent = 'No appointments for today';
+                    noAppointmentsMessage.style.color = '#777'; // Optional styling
+                    noAppointmentsMessage.style.textAlign = 'center';
+                    appointmentsList.appendChild(noAppointmentsMessage);
+                } else {
+                    // Render appointment cards if appointments exist
+                    appointments.forEach(appointment => {
+                        const appointmentCard = document.createElement('div');
+                        appointmentCard.className = 'appointment-card';
+
+                        const appointmentDate = new Date(appointment.dateTime);
+                        
+                        // Format time in UTC
+                        let hours = appointmentDate.getUTCHours();
+                        const minutes = appointmentDate.getUTCMinutes().toString().padStart(2, '0');
+                        const period = hours >= 12 ? 'p.m.' : 'a.m.';
+                        hours = hours % 12 || 12; // Convert to 12-hour format
+
+                        const formattedTime = `${hours}:${minutes} ${period}`;
+                       
+                        appointmentCard.innerHTML = `
+                            <div class="appointment-details">
+                                <img src="/images/shampoo.png" alt="Client" class="appointment-image">
+                                <div>
+                                    <h3>${appointment.customerName}</h3>
+                                    <p>${appointment.serviceType}</p>
+                                    <p class="appointment-time">${formattedTime}</p>
+                                </div>
+                            </div>
+                        `;
+                        appointmentsList.appendChild(appointmentCard);
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching appointments:", error);
+            }
+        }
+
+
+        // Generate date cards and fetch appointments for the first date on load
+        generateDateCards();
+        fetchAppointmentsForDate(new Date().toISOString().split('T')[0]); // Fetch for today by default
+
+
+
     </script>
 </body>
 </html>

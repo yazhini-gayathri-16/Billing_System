@@ -16,25 +16,38 @@
 <body>
     <h1>Generate new receipt</h1>
     <form action="/bill" method="post">
+        <!-- Customer Name and Contact Number -->
         <label for="name">Customer Name<span style="color: red;">*</span></label>
-        <input type="text" name="customer_name" required="true" placeholder="Enter the customer name">
+        <input type="text" name="customer_name" id="customerName" required placeholder="Enter the customer name" oninput="fetchClientDetails()">
 
         <label for="number">Contact Number<span style="color: red;">*</span></label>
-        <input type="number" name="customer_number" required="true" placeholder="Enter the customer contact number">
+        <input type="number" name="customer_number" id="customerNumber" required placeholder="Enter the customer contact number" oninput="fetchClientDetails()">
         
+        <!-- Client 360° Section -->
+        <div id="clientDetails">
+            <h3>Client 360°</h3>
+            <p>Customer Type: <span id="customerType">-</span></p>
+            <p>Last Visit: <span id="lastVisit">-</span></p>
+            <p>Total Visits: <span id="totalVisits">-</span></p>
+            <p>Total Spendings: <span id="totalSpendings">-</span> INR</p>
+            <p>Membership: <span id="membershipStatus">-</span></p>
+        </div>
+
         <label for="date">Date:</label>
         <input type="date" id="date" name="date" readonly><br><br>
 
         <label for="time">Time:</label>
         <input type="time" id="time" name="time" readonly><br><br>
 
-        <label for="specialist">Stylist under service:</label>
-        <select name="specialist" id="specialist">
-            <% staffMembers.forEach(function(staff) { %>
-                <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
-            <% }); %>
-        </select>
+        <!-- Gender Field -->
+        <label for="gender">Gender:</label>
+        <select name="gender" id="gender" required>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+        </select><br><br>
 
+        <!-- Membership Checkbox and Field -->
         <label for="hasMembership">Do you have a membership?</label>
         <input type="checkbox" id="hasMembership" name="hasMembership" onchange="toggleMembershipIDField()">
 
@@ -43,101 +56,129 @@
             <input type="text" id="membershipID" name="membershipID" placeholder="Enter your membership ID" onblur="validateMembershipID()">
             <small id="membershipMessage" style="color: red;"></small>
         </div>
-        
 
+        <!-- Services Section -->
         <div id="service-container">
-            <!-- Placeholder for dynamically added service and price inputs -->
             <div class="service-item">
                 <label for="services1">Service:</label>
-                <input type="text" name="services1" required="true" placeholder="Enter the service">
-                
+                <input type="text" name="services1" required placeholder="Enter the service">
+
                 <label for="prices1">Price:</label>
-                <input type="number" name="prices1" required="true" placeholder="Enter the price" readonly><br><br>
-                
+                <input type="number" name="prices1" required readonly><br><br>
+
+                <label for="stylist1">Stylist under service:</label>
+                <select name="stylist1" required>
+                    <% staffMembers.forEach(function(staff) { %>
+                        <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
+                    <% }); %>
+                </select><br><br>
+
+                <label for="startTime1">Start Time:</label>
+                <input type="time" name="startTime1" required><br><br>
+
+                <label for="endTime1">End Time:</label>
+                <input type="time" name="endTime1" required><br><br>
             </div>
         </div>
         <button type="button" onclick="addMore()">Add More</button><br><br>
-        <button type="submit">Find</button>
-        <label for="subtotal">Subtotal:</label>
-        <input type="number" name="subtotal" id="subtotal" readonly>
         
+        <label for="subtotal">Subtotal:</label>
+        <input type="number" name="subtotal" id="subtotal" readonly><br><br>
+
+        <!-- Discount and Grand Total Fields -->
+        <label for="discount">Discount (%):</label>
+        <input type="number" name="discount" id="discount" placeholder="Enter discount percentage" oninput="calculateGrandTotal()"><br><br>
+
+        <label for="grandTotal">Grand Total:</label>
+        <input type="number" name="grandTotal" id="grandTotal" readonly><br><br>
+        <button type="submit">Generate Bill</button>
     </form>
+
     <script>
-        let services = [];  // Define services globally to ensure it's accessible
-    
+        let services = [];
+        let serviceCount = 1;
+
         window.onload = function() {
-            updateDateTime(); // Set initial date and time
-            setInterval(updateDateTime, 1000); // Update time every second
-            setupEventListeners(); // Setup event listeners after the page has fully loaded
-    
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+            setupEventListeners();
+
             // Fetch service data from the server
             fetch("/api/services")
                 .then(response => response.json())
-                .then(data => {
-                    services = data;  // Store the fetched services globally
-                })
+                .then(data => { services = data; })
                 .catch(error => console.error('Error fetching services:', error));
         };
-    
+
         function setupEventListeners() {
             const container = document.getElementById('service-container');
             container.addEventListener('input', function(e) {
                 if (e.target.name.startsWith('services')) {
-                    const index = e.target.name.match(/\d+/)[0];  // Extract the index from the name
+                    const index = e.target.name.match(/\d+/)[0];
                     const priceInput = document.querySelector(`[name='prices${index}']`);
                     const isMember = document.getElementById('hasMembership').checked;
                     const foundService = services.find(s => s.serviceName.toLowerCase() === e.target.value.toLowerCase());
-    
+
                     if (foundService) {
                         priceInput.value = isMember ? foundService.membershipPrice : foundService.regularPrice;
                         updateSubtotal();
                     } else {
-                        priceInput.value = '';  // Clear if no match found
+                        priceInput.value = '';
                     }
                 }
             });
         }
-    
+
         function updateDateTime() {
-            var today = new Date();
-            var date = today.getFullYear() + '-' + (today.getMonth() + 1).toString().padStart(2, '0') + '-' + today.getDate().toString().padStart(2, '0');
-            var time = today.getHours().toString().padStart(2, '0') + ':' + today.getMinutes().toString().padStart(2, '0');
-    
+            const today = new Date();
+            const date = today.getFullYear() + '-' + (today.getMonth() + 1).toString().padStart(2, '0') + '-' + today.getDate().toString().padStart(2, '0');
+            const time = today.getHours().toString().padStart(2, '0') + ':' + today.getMinutes().toString().padStart(2, '0');
             document.getElementById('date').value = date;
             document.getElementById('time').value = time;
         }
-    
+
         function toggleMembershipIDField() {
-            var checkbox = document.getElementById('hasMembership');
-            var membershipField = document.getElementById('membershipIDField');
+            const checkbox = document.getElementById('hasMembership');
+            const membershipField = document.getElementById('membershipIDField');
             membershipField.style.display = checkbox.checked ? 'block' : 'none';
+
         }
-    
-        // Initialize counter for unique input names
-        let serviceCount = 1;
-    
-        // Function to add more service and price input fields
+
         function addMore() {
-            var container = document.getElementById('service-container');
+            const container = document.getElementById('service-container');
             serviceCount++;
-            var newService = document.createElement('div');
+            const newService = document.createElement('div');
             newService.classList.add('service-item');
             newService.innerHTML = `
                 <label for="services${serviceCount}">Service:</label>
-                <input type="text" name="services${serviceCount}" required="true" placeholder="Enter the service">
-                    
+                <input type="text" name="services${serviceCount}" required placeholder="Enter the service">
+
                 <label for="prices${serviceCount}">Price:</label>
-                <input type="number" name="prices${serviceCount}" required="true" readonly><br><br>
+                <input type="number" name="prices${serviceCount}" required readonly><br><br>
+
+                <label for="stylist${serviceCount}">Stylist under service:</label>
+                <select name="stylist${serviceCount}" required>
+                    <% staffMembers.forEach(function(staff) { %>
+                        <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
+                    <% }); %>
+                </select><br><br>
+
+                <label for="startTime${serviceCount}">Start Time:</label>
+                <input type="time" name="startTime${serviceCount}" required><br><br>
+
+                <label for="endTime${serviceCount}">End Time:</label>
+                <input type="time" name="endTime${serviceCount}" required><br><br>
+
                 <span class="delete-btn" onclick="removeService(this)">&#128465;</span><br><br>
             `;
             container.appendChild(newService);
         }
-    
+
         function removeService(element) {
             element.parentNode.remove();
             updateSubtotal();
         }
-    
+
         function updateSubtotal() {
             const priceInputs = document.querySelectorAll('[name^="prices"]');
             const subtotal = Array.from(priceInputs).reduce((total, input) => {
@@ -147,33 +188,84 @@
         }
 
         function validateMembershipID() {
-        const membershipID = document.getElementById('membershipID').value;
-        const messageDisplay = document.getElementById('membershipMessage');
+            const membershipID = document.getElementById('membershipID').value;
+            const messageDisplay = document.getElementById('membershipMessage');
 
-        fetch('/validate-membership', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ membershipID })
-        })
-        .then(response => response.json())
-        .then(data => {
-            messageDisplay.textContent = data.message;
-            messageDisplay.style.color = data.message === 'Valid membership ID' ? 'green' : 'red';
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            messageDisplay.textContent = 'Error checking membership ID';
-            messageDisplay.style.color = 'red';
-        });
-    }
+            fetch('/validate-membership', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ membershipID })
+            })
+            .then(response => response.json())
+            .then(data => {
+                messageDisplay.textContent = data.message;
+                messageDisplay.style.color = data.message === 'Valid membership ID' ? 'green' : 'red';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                messageDisplay.textContent = 'Error checking membership ID';
+                messageDisplay.style.color = 'red';
+            });
+        }
 
-    document.getElementById('membershipID').addEventListener('blur', validateMembershipID);
+        document.getElementById('membershipID').addEventListener('blur', validateMembershipID);
 
+            
+        async function fetchClientDetails() {
+            const name = document.getElementById('customerName').value;
+            const number = document.getElementById('customerNumber').value;
+
+            if (name && number) {
+                try {
+                    const response = await fetch('/search-customer', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ customerName: name, customerNumber: number })
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        document.getElementById('customerType').textContent = data.customerType || '-';
+                        document.getElementById('lastVisit').textContent = data.lastVisit || '-';
+                        document.getElementById('totalVisits').textContent = data.visits || '-';
+                        document.getElementById('totalSpendings').textContent = data.totalSpent || '-';
+                        document.getElementById('membershipStatus').textContent = data.membership || '-';
+                    } else {
+                        resetClientDetails();
+                    }
+                } catch (error) {
+                    console.error('Error fetching client details:', error);
+                    resetClientDetails();
+                }
+            } else {
+                resetClientDetails();
+            }
+        }
+
+        function resetClientDetails() {
+            document.getElementById('customerType').textContent = '-';
+            document.getElementById('lastVisit').textContent = '-';
+            document.getElementById('totalVisits').textContent = '-';
+            document.getElementById('totalSpendings').textContent = '-';
+            document.getElementById('membershipStatus').textContent = '-';
+        }
+
+        function calculateGrandTotal() {
+            const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;
+            const discount = parseFloat(document.getElementById('discount').value) || 0;
+            const grandTotal = subtotal - (subtotal * (discount / 100));
+            document.getElementById('grandTotal').value = grandTotal.toFixed(2);
+        }
+
+        function updateSubtotal() {
+            const priceInputs = document.querySelectorAll('[name^="prices"]');
+            const subtotal = Array.from(priceInputs).reduce((total, input) => {
+                return total + (parseFloat(input.value) || 0);
+            }, 0);
+            document.getElementById('subtotal').value = subtotal.toFixed(2);
+            calculateGrandTotal(); // Recalculate the grand total when subtotal changes
+        }
 
     </script>
-    
-    
 </body>
 </html>

@@ -1,13 +1,13 @@
 const express = require("express");
 const cors = require('cors');
-const mongoose = require("mongoose");
+const cron = require('node-cron');
 const Signup = require("./models/signup");
 const Fetch = require("./models/fetch"); // Ensure this points to the file where Fetch is defined
 const Menu = require("./models/menu");
 const Appointment = require('./models/appointment');
 const Membership = require('./models/membership');
 const Staff = require('./models/staff');
-const Target = require('./models/target');
+const MonthlyData = require('./models/monthlydata');
 const Product = require('./models/inventory');
 
 require("./connection");
@@ -38,87 +38,376 @@ app.get("/", async (req, res) => {
 
 app.post("/bill", async (req, res) => {
     try {
-        const { customer_name, customer_number, date, time, membershipID, specialist, subtotal } = req.body;
+        const { customer_name, customer_number, date, time, gender, membershipID, subtotal, discount, grandTotal } = req.body;
         let services = [];
         let index = 1;
-        console.log(req.body);
-        // Loop until there's no service or price with the next index
-        while(req.body[`services${index}`] && req.body[`prices${index}`]) {
+
+        // Extract services array from the request
+        while (req.body[`services${index}`] && req.body[`prices${index}`] && req.body[`stylist${index}`]) {
             services.push({
                 name: req.body[`services${index}`],
-                price: parseFloat(req.body[`prices${index}`]) // Ensure the price is a number
+                price: parseFloat(req.body[`prices${index}`]),
+                stylist: req.body[`stylist${index}`],
+                startTime: req.body[`startTime${index}`],
+                endTime: req.body[`endTime${index}`]
             });
             index++;
-            
         }
-        console.log(services);
 
+        // Create a new bill record in the Fetch collection
         const user = await Fetch.create({
             customer_name,
             customer_number,
             date,
             time,
-            membershipID, 
-            specialist,
-            subtotal,
-            services // Assuming the schema expects an array of service objects
+            gender,
+            membershipID,
+            subtotal: parseFloat(subtotal),
+            discount: parseFloat(discount) || 0,
+            grandTotal: parseFloat(grandTotal),
+            services
         });
 
         if (user) {
+            // Update monthly data
+            const currentDate = new Date();
+            const currentMonth = currentDate.toLocaleString('default', { month: 'short' });
+            const currentYear = currentDate.getFullYear();
+
+            // Check if a record for the current month already exists
+            const monthlyData = await MonthlyData.findOne({ month: currentMonth, year: currentYear });
+
+            if (monthlyData) {
+                monthlyData.achieved += 1;
+                await monthlyData.save();
+            } else {
+                await MonthlyData.create({
+                    month: currentMonth,
+                    year: currentYear,
+                    target: 0,
+                    achieved: 1
+                });
+            }
+
+            // Redirect to the homepage upon successful creation
             res.status(200).redirect('/');
         } else {
             res.status(400).send("Failed to create receipt");
         }
     } catch (err) {
-        console.error(err);
+        console.error("Error creating bill:", err);
         res.status(500).send(err.message);
     }
 });
 
-app.post("/bill", async (req, res) => {
+app.post('/search-customer', async (req, res) => {
     try {
-        const { customer_name, customer_number, specialist } = req.body;
-        console.log("Selected Specialist ID:", specialist);
-        // Process the form submission, including the selected specialist
-        // Redirect or send a response back to the client
-        res.status(200).redirect('/');
+        const { customerName, customerNumber } = req.body;
+        const customerNameRegex = new RegExp('^' + customerName + '$', 'i');
+
+        const customerData = await Fetch.find({
+            customer_name: customerNameRegex,
+            customer_number: customerNumber
+        });
+
+        if (customerData.length > 0) {
+            const totalSpent = customerData.reduce((sum, record) => sum + record.services.reduce((serviceSum, service) => serviceSum + service.price, 0), 0);
+            const lastVisit = customerData[customerData.length - 1].date.toISOString().split('T')[0];
+            const membership = customerData[0].membershipID ? 'Active' : '----';
+
+            // Determine Customer Type
+            let customerType = 'New';
+            const visits = customerData.length;
+            const lastVisitDate = new Date(customerData[customerData.length - 1].date);
+            const daysSinceLastVisit = (new Date() - lastVisitDate) / (1000 * 60 * 60 * 24);
+
+            if (visits > 2) {
+                customerType = 'Active';
+            } else if (daysSinceLastVisit > 180) {
+                customerType = 'Dormant';
+            }
+
+            res.json({
+                success: true,
+                customerType,
+                lastVisit,
+                visits,
+                totalSpent,
+                membership
+            });
+        } else {
+            res.json({ success: false });
+        }
     } catch (error) {
-        console.error("Error processing the bill:", error);
-        res.status(500).send("Failed to process the bill.");
+        console.error('Error retrieving customer data:', error);
+        res.status(500).json({ success: false });
     }
 });
 
+
+
+
 app.get('/dashboard', async (req, res) => {
-    const targets = await Target.find();
+    try {
+        // Fetch data for staff members
+        const staffMembers = await Staff.find();
 
-    // Get the first and last dates of the current month
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+        // Render the dashboard and pass staffMembers data
+        res.render('dashboard', { staffMembers });
+    } catch (error) {
+        console.error("Failed to fetch staff members:", error);
+        res.status(500).send("Error loading the dashboard.");
+    }
+});
 
-    // Count documents within the current month range
-    const monthlyClients = await Fetch.countDocuments({
-        date: { $gte: startOfMonth, $lte: endOfMonth }
-    });
 
-    res.render('dashboard', {
-        targets: JSON.stringify(targets),
-        monthlyClients: JSON.stringify(monthlyClients),
-        currentMonth: now.toLocaleString('default', { month: 'long' })
-    });
+app.get('/monthly-data', async (req, res) => {
+    try {
+        const data = await MonthlyData.find().sort({ createdAt: 1 }); // Sort by 'createdAt' in ascending order
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching monthly data", error });
+    }
+});
+
+app.post('/monthly-data', async (req, res) => {
+    const { month, year, target, achieved } = req.body;
+
+    try {
+        const existingData = await MonthlyData.findOne({ month, year });
+        if (existingData) {
+            // Update existing record
+            existingData.target = target;
+            existingData.achieved = achieved;
+            await existingData.save();
+        } else {
+            // Create new record
+            await MonthlyData.create({ month, year, target, achieved });
+        }
+        res.status(200).json({ message: "Monthly data saved successfully" });
+    } catch (error) {
+        res.status(500).json({ message: "Error saving monthly data", error });
+    }
+});
+
+
+app.get('/current-month-data', async (req, res) => {
+    try {
+        const currentDate = new Date();
+        const month = currentDate.toLocaleString('default', { month: 'short' });
+        const year = currentDate.getFullYear();
+
+        const currentMonthData = await MonthlyData.findOne({ month, year });
+
+        if (currentMonthData) {
+            res.json({
+                success: true,
+                target: currentMonthData.target,
+                achieved: currentMonthData.achieved,
+            });
+        } else {
+            res.json({
+                success: false,
+                message: "No data found for the current month",
+            });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching current month data", error });
+    }
 });
 
 
 
-app.post('/dashboard', async (req, res) => {
-    const { month, target } = req.body;
-    await Target.findOneAndUpdate(
-        { month },
-        { target },
-        { upsert: true } // If the target for the month doesn't exist, create it
-    );
-    res.redirect('/dashboard');
+
+// Endpoint to get the count of clients for the current month
+app.get('/client-count', async (req, res) => {
+    try {
+        const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59);
+        
+        const clientCount = await Fetch.countDocuments({
+            date: { $gte: startOfMonth, $lte: endOfMonth }
+        });
+        
+        res.json({ clientCount });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching client count', error });
+    }
 });
+
+
+// Endpoint to get gender diversity data
+app.get('/gender-data', async (req, res) => {
+    try {
+        const maleCount = await Fetch.countDocuments({ gender: 'Male' });
+        const femaleCount = await Fetch.countDocuments({ gender: 'Female' });
+        const othersCount = await Fetch.countDocuments({ gender: 'Others' });
+
+        res.json({ maleCount, femaleCount, othersCount });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching gender diversity data', error });
+    }
+});
+
+
+// Endpoint to get the count of employees
+app.get('/menu-count', async (req, res) => {
+    try {
+        const serviceCount = await Menu.countDocuments();
+       
+        
+        res.json({ serviceCount });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching service count', error });
+    }
+});
+
+// Endpoint to get the count of upcoming appointments
+app.get('/appointment-count', async (req, res) => {
+    try {
+        const now = new Date(); // Current date and time
+        
+        const upcomingAppointmentCount = await Appointment.countDocuments({
+            dateTime: { $gte: now } // Only count future appointments
+        });
+        
+        res.json({ appointmentCount: upcomingAppointmentCount });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching appointment count', error });
+    }
+});
+
+// Endpoint to get the count of valid, non-expired memberships
+app.get('/valid-membership-count', async (req, res) => {
+    try {
+        const now = new Date(); // Current date and time
+        const validMembershipCount = await Membership.countDocuments({
+            validTillDate: { $gte: now } // Only count memberships with a future expiration date
+        });
+        res.json({ validMembershipCount });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching valid membership count', error });
+    }
+});
+
+
+
+// Endpoint to get top trending services for the current month
+app.get('/trending-services', async (req, res) => {
+    try {
+        const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59);
+
+        // Aggregate data to get the count of each service's usage within the current month
+        const topServices = await Fetch.aggregate([
+            { 
+                $match: { 
+                    date: { $gte: startOfMonth, $lte: endOfMonth } 
+                } 
+            },
+            { $unwind: "$services" },
+            { $group: { _id: "$services.name", utilization: { $sum: 1 } } },
+            { $sort: { utilization: -1 } },
+            { $limit: 10 } // Limit to top 10 services
+        ]);
+
+        const trendingServices = topServices.map((service, index) => ({
+            name: service._id,
+            utilization: service.utilization,
+        }));
+
+        res.json(trendingServices);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching trending services", error });
+    }
+});
+
+
+// Route to get appointments for a specific date
+app.get('/appointments/:date', async (req, res) => {
+    const selectedDate = req.params.date; // YYYY-MM-DD format
+
+    const startOfDay = new Date(`${selectedDate}T00:00:00`);
+    const endOfDay = new Date(`${selectedDate}T23:59:59`);
+
+    try {
+        const appointments = await Appointment.find({
+            dateTime: { $gte: startOfDay, $lte: endOfDay }
+        }).sort({ dateTime: 1 });
+
+        res.json(appointments);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching appointments', error });
+    }
+});
+
+
+
+// Ensure you add this part in your app.js to schedule the task
+// Schedule a task to run at midnight on the 1st of each month
+cron.schedule('0 0 1 * *', async () => {
+    try {
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.toLocaleString('default', { month: 'short' }); // E.g., "Jan"
+        
+        // Check if the record for the new month already exists to avoid duplicates
+        const existingData = await MonthlyData.findOne({ month: currentMonth, year: currentYear });
+
+        if (!existingData) {
+            // Create a new record for the new month with default target and achieved values
+            await MonthlyData.create({
+                month: currentMonth,
+                year: currentYear,
+                target: 0,    // Set initial target as 0, can be updated later
+                achieved: 0   // Set initial achieved as 0, will be updated as the month progresses
+            });
+            console.log(`Monthly data created for ${currentMonth} ${currentYear}`);
+        } else {
+            console.log(`Monthly data for ${currentMonth} ${currentYear} already exists.`);
+        }
+    } catch (error) {
+        console.error("Error creating monthly data:", error);
+    }
+});
+
+// Endpoint to set or update the monthly target and achieved values
+app.post('/set-monthly-target', async (req, res) => {
+    const { target } = req.body;
+    const currentDate = new Date();
+    const month = currentDate.toLocaleString('default', { month: 'short' });
+    const year = currentDate.getFullYear();
+
+    try {
+        // Calculate the number of clients achieved for the current month
+        const startOfMonth = new Date(year, currentDate.getMonth(), 1);
+        const endOfMonth = new Date(year, currentDate.getMonth() + 1, 0, 23, 59, 59);
+        const achieved = await Fetch.countDocuments({ date: { $gte: startOfMonth, $lte: endOfMonth } });
+
+        // Find or update the monthly data for the current month
+        let monthlyData = await MonthlyData.findOneAndUpdate(
+            { month, year },
+            { target, achieved },
+            { upsert: true, new: true }
+        );
+
+        res.status(200).json({ message: "Monthly target updated successfully", data: monthlyData });
+    }catch (error){
+        res.status(500).json({ message: "Error updating monthly data", error });
+    }
+});
+
+// Endpoint to fetch monthly data for display purposes
+app.get('/monthly-data', async (req, res) => {
+    try {
+        const data = await MonthlyData.find().sort({ createdAt: 1 }); // Sort by 'createdAt' in ascending order
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching monthly data", error });
+    }
+});
+
+
 
 
 app.post('/validate-membership', async (req, res) => {
