@@ -61,7 +61,14 @@
         <div id="service-container">
             <div class="service-item">
                 <label for="services1">Service:</label>
-                <input type="text" name="services1" required placeholder="Enter the service">
+                <input type="text" list="serviceList1" name="services1" required placeholder="Enter the service" oninput="filterServices(this)">
+                
+                <!-- Datalist for services -->
+                <datalist id="serviceList1">
+                    <% services.forEach(function(service) { %>
+                        <option value="<%= service.serviceName %>"><%= service.serviceName %> - ₹<%= service.regularPrice %> (Member: ₹<%= service.membershipPrice %>)</option>
+                    <% }); %>
+                </datalist>
 
                 <label for="prices1">Price:</label>
                 <input type="number" name="prices1" required readonly><br><br>
@@ -80,6 +87,7 @@
                 <input type="time" name="endTime1" required><br><br>
             </div>
         </div>
+        
         <button type="button" onclick="addMore()">Add More</button><br><br>
         
         <label for="subtotal">Subtotal:</label>
@@ -112,19 +120,41 @@
 
         function setupEventListeners() {
             const container = document.getElementById('service-container');
+            const isMember = document.getElementById('hasMembership').checked;
+
             container.addEventListener('input', function(e) {
                 if (e.target.name.startsWith('services')) {
                     const index = e.target.name.match(/\d+/)[0];
-                    const priceInput = document.querySelector(`[name='prices${index}']`);
-                    const isMember = document.getElementById('hasMembership').checked;
-                    const foundService = services.find(s => s.serviceName.toLowerCase() === e.target.value.toLowerCase());
+                    const priceInput = document.querySelector([name='prices${index}']);
 
-                    if (foundService) {
-                        priceInput.value = isMember ? foundService.membershipPrice : foundService.regularPrice;
+                    const selectedService = services.find(service => service.serviceName.toLowerCase() === e.target.value.toLowerCase());
+
+                    if (selectedService) {
+                        priceInput.value = isMember ? selectedService.membershipPrice : selectedService.regularPrice;
                         updateSubtotal();
                     } else {
                         priceInput.value = '';
                     }
+                }
+            });
+        }
+
+        function filterServices(input) {
+            const index = input.name.match(/\d+/)[0];
+            const listId = `serviceList${index}`;
+            const datalist = document.getElementById(listId);
+            
+            // Clear existing options
+            datalist.innerHTML = '';
+
+            const searchText = input.value.toLowerCase();
+
+            services.forEach(service => {
+                if (service.serviceName.toLowerCase().includes(searchText)) {
+                    const option = document.createElement('option');
+                    option.value = service.serviceName;
+                    option.textContent = `${service.serviceName} - ₹${service.regularPrice} (Member: ₹${service.membershipPrice})`;
+                    datalist.appendChild(option);
                 }
             });
         }

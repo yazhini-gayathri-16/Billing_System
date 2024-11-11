@@ -25,16 +25,17 @@ app.use(express.static("public"));
 // In your app.js or server.js file
 app.get("/", async (req, res) => {
     try {
-        // Fetch all staff members from the database
+        // Fetch all staff members and services from the database
         const staffMembers = await Staff.find({});
-        // Pass staff members to the template
-        res.render("index", { staffMembers });
+        const services = await Menu.find({}); // Fetch services from the Menu collection
+        
+        // Pass staff members and services to the EJS template
+        res.render("index", { staffMembers, services });
     } catch (error) {
-        console.error("Failed to fetch staff members:", error);
+        console.error("Failed to fetch data:", error);
         res.status(500).send("Error loading the page.");
     }
 });
-
 
 app.post("/bill", async (req, res) => {
     try {
