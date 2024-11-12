@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Noble Evergreen</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css"> -->
+     <link rel="stylesheet" href="/styles/billingstyle.css">
     <style>
         .delete-btn {
             color: red;
@@ -14,17 +18,120 @@
     </style>
 </head>
 <body>
-    <h1>Generate new receipt</h1>
-    <form action="/bill" method="post">
-        <!-- Customer Name and Contact Number -->
-        <label for="name">Customer Name<span style="color: red;">*</span></label>
-        <input type="text" name="customer_name" id="customerName" required placeholder="Enter the customer name" oninput="fetchClientDetails()">
+    <%- include('partials/navbar') %>
+    <div class="container">
+        <!-- Generate Bill Section -->
+        <div class="billing-form">
+            <h1>Generate new receipt</h1>
+            <form action="/bill" method="post">
+    
+                <!-- Customer Name and Contact Number on the same line -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Customer Name<span style="color: red;">*</span></label>
+                        <input type="text" name="customer_name" id="customerName" required placeholder="Enter the customer name" oninput="fetchClientDetails()">
+                    </div>
+                    <div class="form-group">
+                        <label>Contact Number<span style="color: red;">*</span></label>
+                        <input type="number" name="customer_number" id="customerNumber" required placeholder="Enter the customer contact number" oninput="fetchClientDetails()">
+                    </div>
+                </div>
+    
+                <!-- Date, Time, and Gender on the same line -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Date of billing:</label>
+                        <input type="date" id="date" name="date" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Time of billing:</label>
+                        <input type="time" id="time" name="time" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Gender:</label>
+                        <select name="gender" id="gender" required>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+    
+                <!-- Membership Checkbox and Membership ID on the same line -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Do you have a membership?</label>
+                        <input type="checkbox" id="hasMembership" name="hasMembership" onchange="toggleMembershipIDField()">
+                    </div>
+                    <div class="form-group" id="membershipIDField" style="display: none;">
+                        <label>Membership ID:</label>
+                        <input type="text" id="membershipID" name="membershipID" placeholder="Enter your membership ID" onblur="validateMembershipID()">
+                    </div>
+                </div>
+    
+                <!-- Services Section -->
+                <!-- Services Section -->
+                <div id="service-container">
+                    <div class="service-item">
+                        <!-- Service, Price, and Stylist on the same line -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Service:</label>
+                                <input type="text" list="serviceList1" name="services1" required placeholder="Enter the service" oninput="filterServices(this)">
+                                <datalist id="serviceList1"></datalist>
+                            </div>
+                            <div class="form-group">
+                                <label>Price:</label>
+                                <input type="number" name="prices1" required readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>Stylist under service:</label>
+                                <select name="stylist1" required>
+                                    <% staffMembers.forEach(function(staff) { %>
+                                        <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
+                                    <% }); %>
+                                </select>
+                            </div>
+                        </div>
 
-        <label for="number">Contact Number<span style="color: red;">*</span></label>
-        <input type="number" name="customer_number" id="customerNumber" required placeholder="Enter the customer contact number" oninput="fetchClientDetails()">
-        
-        <!-- Client 360° Section -->
-        <div id="clientDetails">
+                        <!-- Start Time and End Time on the same line -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Start Time:</label>
+                                <input type="time" name="startTime1" required>
+                            </div>
+                            <div class="form-group">
+                                <label>End Time:</label>
+                                <input type="time" name="endTime1" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add More Button aligned to the right -->
+                <div class="add-more-button">
+                    <button type="button" onclick="addMore()">Add More</button>
+                </div>
+
+    
+                <div class="form-group">
+                    <label>Subtotal:</label>
+                    <input type="number" name="subtotal" id="subtotal" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Discount (%):</label>
+                    <input type="number" name="discount" id="discount" oninput="calculateGrandTotal()">
+                </div>
+                <div class="form-group">
+                    <label>Grand Total:</label>
+                    <input type="number" name="grandTotal" id="grandTotal" readonly>
+                </div>
+                <button type="submit">Generate Bill</button>
+            </form>
+        </div>
+    
+        <!-- Client 360 Section -->
+        <div class="client-details">
             <h3>Client 360°</h3>
             <p>Customer Type: <span id="customerType">-</span></p>
             <p>Last Visit: <span id="lastVisit">-</span></p>
@@ -32,76 +139,8 @@
             <p>Total Spendings: <span id="totalSpendings">-</span> INR</p>
             <p>Membership: <span id="membershipStatus">-</span></p>
         </div>
-
-        <label for="date">Date:</label>
-        <input type="date" id="date" name="date" readonly><br><br>
-
-        <label for="time">Time:</label>
-        <input type="time" id="time" name="time" readonly><br><br>
-
-        <!-- Gender Field -->
-        <label for="gender">Gender:</label>
-        <select name="gender" id="gender" required>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-            <option value="Other">Other</option>
-        </select><br><br>
-
-        <!-- Membership Checkbox and Field -->
-        <label for="hasMembership">Do you have a membership?</label>
-        <input type="checkbox" id="hasMembership" name="hasMembership" onchange="toggleMembershipIDField()">
-
-        <div id="membershipIDField" style="display: none;">
-            <label for="membershipID">Membership ID:</label>
-            <input type="text" id="membershipID" name="membershipID" placeholder="Enter your membership ID" onblur="validateMembershipID()">
-            <small id="membershipMessage" style="color: red;"></small>
-        </div>
-
-        <!-- Services Section -->
-        <div id="service-container">
-            <div class="service-item">
-                <label for="services1">Service:</label>
-                <input type="text" list="serviceList1" name="services1" required placeholder="Enter the service" oninput="filterServices(this)">
-                
-                <!-- Datalist for services -->
-                <datalist id="serviceList1">
-                    <% services.forEach(function(service) { %>
-                        <option value="<%= service.serviceName %>"><%= service.serviceName %> - ₹<%= service.regularPrice %> (Member: ₹<%= service.membershipPrice %>)</option>
-                    <% }); %>
-                </datalist>
-
-                <label for="prices1">Price:</label>
-                <input type="number" name="prices1" required readonly><br><br>
-
-                <label for="stylist1">Stylist under service:</label>
-                <select name="stylist1" required>
-                    <% staffMembers.forEach(function(staff) { %>
-                        <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
-                    <% }); %>
-                </select><br><br>
-
-                <label for="startTime1">Start Time:</label>
-                <input type="time" name="startTime1" required><br><br>
-
-                <label for="endTime1">End Time:</label>
-                <input type="time" name="endTime1" required><br><br>
-            </div>
-        </div>
-        
-        <button type="button" onclick="addMore()">Add More</button><br><br>
-        
-        <label for="subtotal">Subtotal:</label>
-        <input type="number" name="subtotal" id="subtotal" readonly><br><br>
-
-        <!-- Discount and Grand Total Fields -->
-        <label for="discount">Discount (%):</label>
-        <input type="number" name="discount" id="discount" placeholder="Enter discount percentage" oninput="calculateGrandTotal()"><br><br>
-
-        <label for="grandTotal">Grand Total:</label>
-        <input type="number" name="grandTotal" id="grandTotal" readonly><br><br>
-        <button type="submit">Generate Bill</button>
-    </form>
-
+    </div>
+    
     <script>
         let services = [];
         let serviceCount = 1;
@@ -125,7 +164,7 @@
             container.addEventListener('input', function(e) {
                 if (e.target.name.startsWith('services')) {
                     const index = e.target.name.match(/\d+/)[0];
-                    const priceInput = document.querySelector([name='prices${index}']);
+                    const priceInput = document.querySelector(`[name='prices${index}']`);
 
                     const selectedService = services.find(service => service.serviceName.toLowerCase() === e.target.value.toLowerCase());
 
@@ -177,32 +216,60 @@
         function addMore() {
             const container = document.getElementById('service-container');
             serviceCount++;
+
             const newService = document.createElement('div');
             newService.classList.add('service-item');
+
             newService.innerHTML = `
-                <label for="services${serviceCount}">Service:</label>
-                <input type="text" name="services${serviceCount}" required placeholder="Enter the service">
+                <!-- Service, Price, and Stylist on the same line -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="services${serviceCount}">Service:</label>
+                        <input type="text" list="serviceList${serviceCount}" name="services${serviceCount}" required placeholder="Enter the service" oninput="filterServices(this)">
+                        <datalist id="serviceList${serviceCount}">
+                            <% services.forEach(function(service) { %>
+                                <option value="<%= service.serviceName %>"><%= service.serviceName %> - ₹<%= service.regularPrice %> (Member: ₹<%= service.membershipPrice %>)</option>
+                            <% }); %>
+                        </datalist>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="prices${serviceCount}">Price:</label>
+                        <input type="number" name="prices${serviceCount}" required readonly>
+                    </div>
 
-                <label for="prices${serviceCount}">Price:</label>
-                <input type="number" name="prices${serviceCount}" required readonly><br><br>
+                    <div class="form-group">
+                        <label for="stylist${serviceCount}">Stylist under service:</label>
+                        <select name="stylist${serviceCount}" required>
+                            <% staffMembers.forEach(function(staff) { %>
+                                <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
+                            <% }); %>
+                        </select>
+                    </div>
+                </div>
 
-                <label for="stylist${serviceCount}">Stylist under service:</label>
-                <select name="stylist${serviceCount}" required>
-                    <% staffMembers.forEach(function(staff) { %>
-                        <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
-                    <% }); %>
-                </select><br><br>
+                <!-- Start Time and End Time on the next line -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="startTime${serviceCount}">Start Time:</label>
+                        <input type="time" name="startTime${serviceCount}" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="endTime${serviceCount}">End Time:</label>
+                        <input type="time" name="endTime${serviceCount}" required>
+                    </div>
+                </div>
 
-                <label for="startTime${serviceCount}">Start Time:</label>
-                <input type="time" name="startTime${serviceCount}" required><br><br>
-
-                <label for="endTime${serviceCount}">End Time:</label>
-                <input type="time" name="endTime${serviceCount}" required><br><br>
-
-                <span class="delete-btn" onclick="removeService(this)">&#128465;</span><br><br>
+                <span class="delete-btn" onclick="removeService(this)">&#128465;</span>
             `;
+
             container.appendChild(newService);
+
+            // Attach event listeners to the new elements
+            setupEventListeners();
         }
+
 
         function removeService(element) {
             element.parentNode.remove();

@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Menu Management</title>
-    <link rel="stylesheet" href="/stylesheets/style.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css"> -->
 </head>
 <body>
+    <%- include('partials/navbar') %>
     <h1>Menu Management</h1>
     <form action="/add-service" method="post">
         <input type="text" name="serviceName" placeholder="Enter service name" required>

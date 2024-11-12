@@ -1,0 +1,64 @@
+/* Reset some default styles */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+/* Navbar Styling */
+.navbar {
+    background-color: #8DBE50; /* Green background */
+    padding: 10px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+/* Upper half: Logo section */
+.navbar-upper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 2.5px solid #D97C17; /* Orange border */
+}
+
+.logo img {
+    max-height: 70px;
+    object-fit: contain;
+}
+
+/* Lower half: Horizontal navigation links */
+.navbar-lower {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 15px 0;
+    border-top: 1px solid #D97C17; /* Orange border  */
+    background-color: #8DBE50; /* Same green background */
+    border-bottom: 3.5px solid #D97C17; /* Orange border */
+    
+
+}
+   
+.navbar-lower nav {
+    display: flex;
+      gap: 60px; /*Space between menu items  */
+    
+}
+
+.navbar-lower nav a {
+    color: #333;
+    text-decoration: none;
+    font-weight: bold;
+    background-color: #F5F5F5; /* Light grey background for buttons */
+    padding: 10px 20px;
+    border-radius: 3px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.15); /* 3D shadow effect */
+    transition: all 0.3s ease;
+}
+
+.navbar-lower nav a:hover {
+    background-color: #D97C17; /* Orange background on hover */
+    color: #fff;
+    transform: translateY(-2px); /* Lift effect on hover */
+}

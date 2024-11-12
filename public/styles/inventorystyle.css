@@ -1,0 +1,95 @@
+body {
+    font-family: 'Gowun Batang', serif;
+    background-color: #D3E4CD;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    padding: 20px;
+    text-align: center;
+}
+
+h1 {
+    margin-bottom: 30px;
+    color: #333;
+}
+
+/* Add Item Form */
+.add-item-form {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+.add-item-form input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 200px;
+}
+
+.add-item-form button {
+    background-color: #D97C17;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.add-item-form button:hover {
+    background-color: #A65B0F;
+}
+
+/* Product Cards */
+.product-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+.product-card {
+    background-color: #F5F5DC;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 200px;
+    text-align: left;
+    position: relative;
+}
+
+.product-card h3 {
+    margin-top: 0;
+    font-size: 1.2em;
+    display: flex;
+    justify-content: space-between;
+}
+
+.product-card p {
+    margin: 10px 0;
+}
+
+.button-group {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.button-group button {
+    background-color: #D97C17;
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.button-group button:hover {
+    background-color: #A65B0F;
+}
