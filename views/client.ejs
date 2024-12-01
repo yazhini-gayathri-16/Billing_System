@@ -46,18 +46,29 @@
         <button type="button" onclick="toggleMembershipForm()">Add New Membership</button>
         <div id="membershipForm" class="add-membership-form">
             <form id="newMembershipForm">
-                <label for="customername">Customer Name:</label>
-                <input type="text" autocomplete="off" name="customername" placeholder="Customer Name" required>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="customername">Customer Name:</label>
+                        <input type="text" autocomplete="off" name="customername" placeholder="Customer Name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="membershipID">Card Number:</label>
+                        <input type="text" autocomplete="off" name="membershipID" placeholder="Card Number" required>
+                    </div>                    
+                </div>    
 
-                <label for="membershipID">Card Number:</label>
-                <input type="text" autocomplete="off" name="membershipID" placeholder="Card Number" required>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="phoneNumber">Phone Number:</label>
+                        <input type="number" autocomplete="off" name="phoneNumber" placeholder="Phone Number" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="birthDate">Birth Date:</label>
+                        <input type="date" autocomplete="off" name="birthDate" required>
+                    </div>
+                </div>
 
-                <label for="phoneNumber">Phone Number:</label>
-                <input type="number" autocomplete="off" name="phoneNumber" placeholder="Phone Number" required>
-
-                <label for="birthDate">Birth Date:</label>
-                <input type="date" autocomplete="off" name="birthDate" required>
-
+                <div class="form-row">
                 <label for="anniversaryDate">Anniversary Date:</label>
                 <input type="date" autocomplete="off" name="anniversaryDate">
 
@@ -66,7 +77,8 @@
 
                 <label for="validTillDate">Valid Till Date:</label>
                 <input type="date" autocomplete="off" id="validTillDate" name="validTillDate" readonly>
-
+                </div>
+                
                 <button type="button" onclick="addMembership()">Add</button>
             </form>
         </div>

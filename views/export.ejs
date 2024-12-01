@@ -4,17 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Export Billing Data</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/exportstyle.css">
 </head>
 <body>
-    <h2>Export Billing Data</h2>
-    <form action="/export" method="POST">
-        <label for="fromDate">From Date:</label>
-        <input type="date" id="fromDate" name="fromDate" required>
-        <br><br>
-        <label for="toDate">To Date:</label>
-        <input type="date" id="toDate" name="toDate" required>
-        <br><br>
-        <button type="submit">Export PDF</button>
-    </form>
+    <%- include('partials/navbar') %>
+
+    <div class="container">
+        <div class="export-form">
+            <h2>Export Billing Data</h2>
+            <form action="/export" method="POST">
+                <div class="form-row">
+                    <div class="form-group">
+                <label for="fromDate">From Date:</label>
+                <input type="date" id="fromDate" name="fromDate" required>
+                <br><br>
+                </div>
+                <div class="form-group">
+                <label for="toDate">To Date:</label>
+                <input type="date" id="toDate" name="toDate" required>
+                <br><br>
+                </div>
+                </div>
+                <button type="submit">Export PDF</button>
+            </form>
+        </div>    
+    </div>    
 </body>
 </html>
