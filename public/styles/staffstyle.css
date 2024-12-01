@@ -6,22 +6,23 @@ body {
 }
 
 .container {
-    width: 60%;
-    margin: auto;
-    background-color: #F5F5DC;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
 }
 
-h1 {
+.staff-form h1 {
     text-align: center;
-    margin-bottom: 20px;
 }
 
 .staff-form {
-    display: flex;
-    flex-direction: column;
+    width: 70%;
+    background-color: #F5F5DC;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
 }
 
 .form-row {
@@ -66,6 +67,51 @@ textarea {
 
 .submit-btn:hover {
     background-color: #45a049;
+}
+
+.staff-list{
+    width: 80%;
+    background-color: #E6F7D1;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table th, table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.edit-btn {
+    background-color: #007BFF;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    margin-right: 5px;
+    border: none;
+}
+
+.delete-btn {
+    background-color: #DC3545;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    border: none;
+}
+
+.edit-btn:hover {
+    background-color: #0056b3;
+}
+
+.delete-btn:hover {
+    background-color: #c82333;
 }
 
 @media (max-width: 768px) {

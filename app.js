@@ -731,11 +731,18 @@ app.post("/do-signin",async (req,res)=>{
 
 })
 
-app.get('/staff', (req, res) => {
-    res.render('staff');
+// Route to fetch all staff members
+app.get('/staff', async (req, res) => {
+    try {
+        const staffMembers = await Staff.find({});
+        res.render('staff', { staffMembers });
+    } catch (err) {
+        console.error('Error fetching staff members:', err);
+        res.status(500).send('Error fetching staff members');
+    }
 });
 
-// Route to handle form submission
+// Route to handle adding new staff
 app.post('/add-staff', async (req, res) => {
     const { name, birthdate, contactNumber, gender, address, jobTitle, employmentStartDate } = req.body;
     try {
@@ -751,10 +758,38 @@ app.post('/add-staff', async (req, res) => {
         });
         // Save the staff to the database
         await newStaff.save();
-        // Send JSON response
+        res.redirect("/staff");
+        
+    } catch (err) {
+        res.status(500).send('Error adding staff members');
+    }
+});
+
+// Route to update staff details
+app.post('/update-staff', async (req, res) => {
+    const { id, name, contactNumber, jobTitle, employmentStartDate } = req.body;
+    try {
+        await Staff.findByIdAndUpdate(id, {
+            name,
+            contactNumber,
+            jobTitle,
+            employmentStartDate
+        });
         res.json({ success: true });
     } catch (err) {
-        res.json({ success: false });
+        console.error('Error updating staff member:', err);
+        res.status(500).send('Error updating staff members');
+    }
+});
+
+// Route to delete a staff member
+app.post('/delete-staff', async (req, res) => {
+    try {
+        await Staff.findByIdAndDelete(req.body.id);
+        res.redirect("/staff");
+    } catch (err) {
+        console.error('Error deleting staff member:', err);
+        res.status(500).send('Error deleting staff members');
     }
 });
 
