@@ -9,6 +9,11 @@ const Membership = require('./models/membership');
 const Staff = require('./models/staff');
 const MonthlyData = require('./models/monthlydata');
 const Product = require('./models/inventory');
+const PDFDocument = require("pdfkit");
+const puppeteer = require("puppeteer");
+const fs = require("fs");
+const path = require("path");
+
 
 require("./connection");
 
@@ -45,13 +50,23 @@ app.post("/bill", async (req, res) => {
 
         // Extract services array from the request
         while (req.body[`services${index}`] && req.body[`prices${index}`] && req.body[`stylist${index}`]) {
+            const stylistId = req.body[`stylist${index}`];
+
+            // Fetch the stylist name from the Staff database
+            const stylist = await Staff.findById(stylistId);
+
+            if (!stylist) {
+                return res.status(400).send(`Stylist with ID ${stylistId} not found`);
+            }
+
             services.push({
                 name: req.body[`services${index}`],
                 price: parseFloat(req.body[`prices${index}`]),
-                stylist: req.body[`stylist${index}`],
+                stylist: stylist.name, // Replace the ID with the stylist's name
                 startTime: req.body[`startTime${index}`],
                 endTime: req.body[`endTime${index}`]
             });
+
             index++;
         }
 
@@ -104,7 +119,9 @@ app.post("/bill", async (req, res) => {
 app.post('/search-customer', async (req, res) => {
     try {
         const { customerName, customerNumber } = req.body;
-        const customerNameRegex = new RegExp('^' + customerName + '$', 'i');
+
+        // Create a case-insensitive regex for customer name
+        const customerNameRegex = new RegExp(`^${customerName}$`, 'i');
 
         const customerData = await Fetch.find({
             customer_name: customerNameRegex,
@@ -112,7 +129,13 @@ app.post('/search-customer', async (req, res) => {
         });
 
         if (customerData.length > 0) {
-            const totalSpent = customerData.reduce((sum, record) => sum + record.services.reduce((serviceSum, service) => serviceSum + service.price, 0), 0);
+            const totalSpent = customerData.reduce(
+                (sum, record) => sum + record.services.reduce((serviceSum, service) => serviceSum + service.price, 0), 
+                0
+            );
+
+            const services = customerData.flatMap(record => record.services.map(service => service.name));
+            const uniqueServices = [...new Set(services)];
             const lastVisit = customerData[customerData.length - 1].date.toISOString().split('T')[0];
             const membership = customerData[0].membershipID ? 'Active' : '----';
 
@@ -134,6 +157,7 @@ app.post('/search-customer', async (req, res) => {
                 lastVisit,
                 visits,
                 totalSpent,
+                services: uniqueServices,
                 membership
             });
         } else {
@@ -141,12 +165,9 @@ app.post('/search-customer', async (req, res) => {
         }
     } catch (error) {
         console.error('Error retrieving customer data:', error);
-        res.status(500).json({ success: false });
+        res.status(500).json({ success: false, message: 'Internal server error' });
     }
 });
-
-
-
 
 app.get('/dashboard', async (req, res) => {
     try {
@@ -240,9 +261,12 @@ app.get('/client-count', async (req, res) => {
 // Endpoint to get gender diversity data
 app.get('/gender-data', async (req, res) => {
     try {
-        const maleCount = await Fetch.countDocuments({ gender: 'Male' });
-        const femaleCount = await Fetch.countDocuments({ gender: 'Female' });
-        const othersCount = await Fetch.countDocuments({ gender: 'Others' });
+        const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59);
+        
+        const maleCount = await Fetch.countDocuments({ gender: 'Male',  date: { $gte: startOfMonth, $lte: endOfMonth }});
+        const femaleCount = await Fetch.countDocuments({ gender: 'Female',  date: { $gte: startOfMonth, $lte: endOfMonth } });
+        const othersCount = await Fetch.countDocuments({ gender: 'Other',  date: { $gte: startOfMonth, $lte: endOfMonth } });
 
         res.json({ maleCount, femaleCount, othersCount });
     } catch (error) {
@@ -323,15 +347,16 @@ app.get('/trending-services', async (req, res) => {
     }
 });
 
-
 // Route to get appointments for a specific date
 app.get('/appointments/:date', async (req, res) => {
     const selectedDate = req.params.date; // YYYY-MM-DD format
 
-    const startOfDay = new Date(`${selectedDate}T00:00:00`);
-    const endOfDay = new Date(`${selectedDate}T23:59:59`);
+    // Construct the start of the day and end of the day in UTC
+    const startOfDay = new Date(Date.UTC(...selectedDate.split('-').map((v, i) => i === 1 ? v - 1 : v), 0, 0, 0));
+    const endOfDay = new Date(Date.UTC(...selectedDate.split('-').map((v, i) => i === 1 ? v - 1 : v), 23, 59, 59));
 
     try {
+        // Fetch appointments where the dateTime is between start and end of the day in UTC
         const appointments = await Appointment.find({
             dateTime: { $gte: startOfDay, $lte: endOfDay }
         }).sort({ dateTime: 1 });
@@ -341,7 +366,6 @@ app.get('/appointments/:date', async (req, res) => {
         res.status(500).json({ message: 'Error fetching appointments', error });
     }
 });
-
 
 
 // Ensure you add this part in your app.js to schedule the task
@@ -413,7 +437,7 @@ app.get('/monthly-data', async (req, res) => {
 
 app.post('/validate-membership', async (req, res) => {
     try {
-        const { membershipID } = req.body;
+        const { membershipID } = req.body;        
         const membership = await Membership.findOne({ membershipID });
 
         if (!membership) {
@@ -503,7 +527,9 @@ app.get("/api/services", async (req, res) => {
 app.get("/appointment", async (req, res) => {
     try {
         const staffMembers = await Staff.find({});
-        const appointments = await Appointment.find();
+        const currentTimeIST = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000);
+
+        const appointments = await Appointment.find({ dateTime: { $gt: currentTimeIST } });
         res.render("appointment", { appointments, staffMembers });
     } catch (error) {
         console.error("Failed to fetch staff members:", error);
@@ -526,7 +552,12 @@ app.post('/appointments', async (req, res) => {
         });
 
         await newAppointment.save();
-        const appointments = await Appointment.find();
+        const currentTimeIST = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000);
+
+        const appointments = await Appointment.find({ dateTime: { $gt: currentTimeIST } });
+        //console.log(appointments);
+        
+
         res.json({
             success: true,
             appointmentIndex: appointments.length,
@@ -759,6 +790,67 @@ app.post("/delete-item", async (req, res) => {
         res.status(500).send(error.message);
     }
 });
+
+app.get("/export", (req, res) => {
+    res.render("export");
+});
+
+app.post("/export", async (req, res) => {
+    const { fromDate, toDate } = req.body;
+
+    try {
+        const data = await Fetch.find({
+            date: {
+                $gte: new Date(fromDate),
+                $lte: new Date(toDate)
+            }
+        });
+
+        if (data.length === 0) {
+            return res.status(404).send("No records found for the selected date range.");
+        }
+
+        // Render HTML content using EJS
+        const htmlContent = await new Promise((resolve, reject) => {
+            res.render("billingTemplate", { data }, (err, html) => {
+                if (err) reject(err);
+                else resolve(html);
+            });
+        });
+
+        // Generate PDF using Puppeteer
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+
+        const pdfPath = path.join(__dirname, "billing_data.pdf");
+        await page.pdf({
+            path: pdfPath,
+            format: "A4",
+            printBackground: true,
+            margin: {
+                top: "20mm",
+                bottom: "20mm",
+                left: "15mm",
+                right: "15mm",
+            },
+        });
+
+        await browser.close();
+
+        // Send the PDF as a download
+        res.download(pdfPath, "billing_data.pdf", (err) => {
+            if (err) {
+                console.error("Error downloading PDF:", err);
+                res.status(500).send("Error downloading file");
+            }
+        });
+    } catch (error) {
+        console.error("Error exporting data:", error);
+        res.status(500).send("Internal server error");
+    }
+});
+
 
 app.listen(port, () => {
     console.log(`Server is running on ${port}`);

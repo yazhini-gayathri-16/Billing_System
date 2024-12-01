@@ -1,0 +1,47 @@
+body {
+    font-family: 'Gowun Batang', serif;
+    background-color: #D3E4CD;
+}
+
+.container {
+    padding: 20px;
+    width: 80%;
+    margin: auto;
+}
+
+.form-inline {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+input, button {
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+.result {
+    background-color: #F5F5DC;
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+}
+
+.add-membership-form {
+    display: none;
+    background-color: #E6F7D1;
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+}

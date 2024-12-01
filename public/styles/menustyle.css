@@ -12,8 +12,8 @@ body {
     padding: 20px;
 }
 
-.inventory-form {
-    width: 80%;
+.menu-form {
+    width: 60%;
     background-color: #F5F5DC;
     padding: 20px;
     border-radius: 10px;
@@ -23,12 +23,11 @@ body {
 
 .form-inline {
     display: flex;
-    align-items: center;
     gap: 10px;
+    justify-content: center;
 }
 
 .form-inline input {
-    flex: 1;
     padding: 10px;
     border-radius: 5px;
     border: 1px solid #ccc;
@@ -41,53 +40,74 @@ body {
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
 }
 
 .form-inline button:hover {
-    background-color: #3e8e41;
+    background-color: #45a049;
 }
 
-.product-container {
+.service-container {
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
     justify-content: center;
 }
 
-.product-card {
+.service-card {
     background-color: #F0F8E2;
     padding: 20px;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     width: 300px;
+    text-align: left;
 }
 
-button {
-    background-color: #D97C17;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    padding: 10px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-button:hover {
-    background-color: #A65B0F;
-}
-
-.delete-btn {
-    background-color: #DC3545;
-    margin-top: 10px;
+.service-card p {
+    margin: 10px 0;
 }
 
 .edit-btn {
     background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px;
+    cursor: pointer;
+}
+
+.edit-btn:hover {
+    background-color: #0056b3;
+}
+
+.delete-btn {
+    background-color: #DC3545;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.delete-btn:hover {
+    background-color: #c82333;
+    
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
     margin-top: 10px;
 }
 
 .cancel-btn {
     background-color: #6c757d;
-    margin-top: 10px;
+    color: white;
+    padding: 8px;
+    border-radius: 5px;
+    margin-left: 10px;
+}
+
+.cancel-btn:hover {
+    background-color: #5a6268;
 }

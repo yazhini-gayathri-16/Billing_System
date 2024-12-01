@@ -29,11 +29,11 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Customer Name<span style="color: red;">*</span></label>
-                        <input type="text" name="customer_name" id="customerName" required placeholder="Enter the customer name" oninput="fetchClientDetails()">
+                        <input type="text" name="customer_name" id="customerName" required placeholder="Enter the customer name" autocomplete="off" oninput="fetchClientDetails()">
                     </div>
                     <div class="form-group">
                         <label>Contact Number<span style="color: red;">*</span></label>
-                        <input type="number" name="customer_number" id="customerNumber" required placeholder="Enter the customer contact number" oninput="fetchClientDetails()">
+                        <input type="number" name="customer_number" id="customerNumber" required placeholder="Enter the customer contact number" autocomplete="off" oninput="fetchClientDetails()">
                     </div>
                 </div>
     
@@ -65,8 +65,9 @@
                     </div>
                     <div class="form-group" id="membershipIDField" style="display: none;">
                         <label>Membership ID:</label>
-                        <input type="text" id="membershipID" name="membershipID" placeholder="Enter your membership ID" onblur="validateMembershipID()">
+                        <input type="text" id="membershipID" autocomplete="off" name="membershipID" placeholder="Enter your membership ID" onblur="validateMembershipID()">
                     </div>
+                    <div id="membershipMessage"></div>
                 </div>
     
                 <!-- Services Section -->
@@ -77,7 +78,7 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label>Service:</label>
-                                <input type="text" list="serviceList1" name="services1" required placeholder="Enter the service" oninput="filterServices(this)">
+                                <input type="text" list="serviceList1" autocomplete="off" name="services1" required placeholder="Enter the service" oninput="filterServices(this)">
                                 <datalist id="serviceList1"></datalist>
                             </div>
                             <div class="form-group">
@@ -160,6 +161,8 @@
         function setupEventListeners() {
             const container = document.getElementById('service-container');
             const isMember = document.getElementById('hasMembership').checked;
+            console.log(isMember);
+            
 
             container.addEventListener('input', function(e) {
                 if (e.target.name.startsWith('services')) {
@@ -169,6 +172,7 @@
                     const selectedService = services.find(service => service.serviceName.toLowerCase() === e.target.value.toLowerCase());
 
                     if (selectedService) {
+                        console.log(selectedService);
                         priceInput.value = isMember ? selectedService.membershipPrice : selectedService.regularPrice;
                         updateSubtotal();
                     } else {
@@ -179,6 +183,7 @@
         }
 
         function filterServices(input) {
+            setupEventListeners();
             const index = input.name.match(/\d+/)[0];
             const listId = `serviceList${index}`;
             const datalist = document.getElementById(listId);
@@ -209,6 +214,8 @@
         function toggleMembershipIDField() {
             const checkbox = document.getElementById('hasMembership');
             const membershipField = document.getElementById('membershipIDField');
+            const membershipmessagefield = document.getElementById('membershipMessage');
+            membershipmessagefield.style.display = checkbox.checked ? 'block' : 'none';
             membershipField.style.display = checkbox.checked ? 'block' : 'none';
 
         }
@@ -295,7 +302,7 @@
             })
             .then(response => response.json())
             .then(data => {
-                messageDisplay.textContent = data.message;
+                messageDisplay.textContent = data.message;                
                 messageDisplay.style.color = data.message === 'Valid membership ID' ? 'green' : 'red';
             })
             .catch(error => {

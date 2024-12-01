@@ -6,75 +6,83 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/clientstyle.css">
     <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css"> -->
 
 </head>
 <body>
     <%- include('partials/navbar') %>
-    <h1>Search for Client</h1>
-    <form id="searchForm">
-        <label for="name">Customer Name <span style="color: red;">*</span></label>
-        <input type="text" name="customerName" placeholder="Customer Name" required>
-        <label for="number">Customer Number <span style="color: red;">*</span></label>
-        <input type="text" name="customerNumber" placeholder="Customer Phone Number" required>
-        <button type="button" onclick="searchCustomer()">Find</button>
-    </form>
 
-    <div id="result" style="margin-top: 20px;">
-        <!-- Results will be displayed here -->
-    </div>
+    <div class="container">
+        <!-- Client Search Form -->
+        <div class="search-section">
+            <h1>Search for Client</h1>
+            <form id="searchForm" class="form-inline">
+                <label for="customerName">Customer Name:</label>
+                <input type="text" autocomplete="off" id="customerName" name="customerName" placeholder="Customer Name" required>
+                
+                <label for="customerNumber">Customer Number:</label>
+                <input type="text" autocomplete="off" id="customerNumber" name="customerNumber" placeholder="Customer Phone Number" required>
+                
+                <button type="button" onclick="searchCustomer()">Find</button>
+            </form>
+            <div id="result" class="result"></div>
+        </div>
 
-    <div id="searchMembershipForm" style="margin-top:20px;">
-        <h2>Search Membership</h2>
-        <form id="findMembershipForm">
-            <label for="membershipID">Membership card number <span style="color: red;">*</span></label>
-            <input type="text" name="searchCardNumber" placeholder="Membership Card Number" required>
-            <label for="number">Customer Number <span style="color: red;">*</span></label>
-            <input type="text" name="searchPhoneNumber" placeholder="Phone Number" required>
-            <button type="button" onclick="findMembership()">Find Membership</button>
-        </form>
-    </div>
-    
-    <div id="membershipDetails" style="margin-top: 20px;">
-        <!-- Membership details will be displayed here -->
-    </div>
+        <!-- Membership Search Section -->
+        <div class="search-membership">
+            <h2>Search Membership</h2>
+            <form id="findMembershipForm" class="form-inline">
+                <label for="searchCardNumber">Membership Card Number:</label>
+                <input type="text" autocomplete="off" name="searchCardNumber" placeholder="Card Number" required>
+                <label for="searchPhoneNumber">Phone Number:</label>
+                <input type="text" autocomplete="off" name="searchPhoneNumber" placeholder="Phone Number" required>
+                <button type="button" onclick="findMembership()">Find Membership</button>
+            </form>
+            <div id="membershipDetails" class="result"></div>
+        </div>
 
-    <button type="button" onclick="toggleMembershipForm()">Add New Membership</button>
-    <div id="membershipForm" style="display:none; margin-top:20px;">
-        <form id="newMembershipForm">
-            <label for="customername">Add Customer Name <span style="color: red;">*</span></label>
-            <input type="text" name="customername" placeholder="Customer Name" required>
-            
-            <label for="newcardnumber">Add new card number <span style="color: red;">*</span></label>
-            <input type="text" name="membershipID" placeholder="Card Number" required>
-    
-            <label for="number">Add Mobile Number <span style="color: red;">*</span></label>
-            <input type="number" name="phoneNumber" placeholder="Phone Number" required>
-    
-            <label for="birthday">Birth date <span style="color: red;">*</span></label>
-            <input type="date" name="birthDate" placeholder="Birth Date" required>
-    
-            <label for="anniversary">Anniversary date</label>
-            <input type="date" name="anniversaryDate" placeholder="Anniversary Date">
-    
-            <!-- New fields -->
-            <label for="registeredDate">Registered Date <span style="color: red;">*</span></label>
-            <input type="date" id="registeredDate" name="registeredDate" placeholder="Registered Date" required onchange="setValidTillDate()">
+        <!-- Add New Membership Section -->
+        <button type="button" onclick="toggleMembershipForm()">Add New Membership</button>
+        <div id="membershipForm" class="add-membership-form">
+            <form id="newMembershipForm">
+                <label for="customername">Customer Name:</label>
+                <input type="text" autocomplete="off" name="customername" placeholder="Customer Name" required>
 
-            <label for="validTillDate">Valid Till Date <span style="color: red;">*</span></label>
-            <input type="date" id="validTillDate" name="validTillDate" placeholder="Valid Till Date" readonly>
-    
-            <button type="button" onclick="addMembership()">Add</button>
-        </form>
+                <label for="membershipID">Card Number:</label>
+                <input type="text" autocomplete="off" name="membershipID" placeholder="Card Number" required>
+
+                <label for="phoneNumber">Phone Number:</label>
+                <input type="number" autocomplete="off" name="phoneNumber" placeholder="Phone Number" required>
+
+                <label for="birthDate">Birth Date:</label>
+                <input type="date" autocomplete="off" name="birthDate" required>
+
+                <label for="anniversaryDate">Anniversary Date:</label>
+                <input type="date" autocomplete="off" name="anniversaryDate">
+
+                <label for="registeredDate">Registered Date:</label>
+                <input type="date" autocomplete="off" id="registeredDate" name="registeredDate" required onchange="setValidTillDate()">
+
+                <label for="validTillDate">Valid Till Date:</label>
+                <input type="date" autocomplete="off" id="validTillDate" name="validTillDate" readonly>
+
+                <button type="button" onclick="addMembership()">Add</button>
+            </form>
+        </div>
     </div>
 
     <script>
+        document.addEventListener("DOMContentLoaded", function () {
+        // Function to search for a customer
         function searchCustomer() {
             const form = document.getElementById('searchForm');
             const formData = new FormData(form);
+            
+            // Convert formData to a JSON object
             const searchData = {};
             formData.forEach((value, key) => {
-                searchData[key] = value;
+                searchData[key] = value.trim();
             });
 
             fetch('/search-customer', {
@@ -87,11 +95,15 @@
             .then(response => response.json())
             .then(data => {
                 const resultDiv = document.getElementById('result');
+                
                 if (data.success) {
                     resultDiv.innerHTML = `
-                        <p>Number of Visits: ${data.visits}</p>
-                        <p>Total Spent: Rs:${data.totalSpent}</p>
-                        <p>Services Utilized: ${data.services.join(', ')}</p>
+                        <p><strong>Customer Type:</strong> ${data.customerType}</p>
+                        <p><strong>Last Visit:</strong> ${data.lastVisit}</p>
+                        <p><strong>Number of Visits:</strong> ${data.visits}</p>
+                        <p><strong>Total Spent:</strong> ₹${data.totalSpent}</p>
+                        <p><strong>Services Utilized:</strong> ${data.services.join(', ')}</p>
+                        <p><strong>Membership Status:</strong> ${data.membership}</p>
                     `;
                 } else {
                     resultDiv.innerHTML = `<p>No customer found with that information.</p>`;
@@ -99,29 +111,26 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                resultDiv.innerHTML = `<p>Error searching for customer.</p>`;
+                document.getElementById('result').innerHTML = `<p>Error searching for customer.</p>`;
             });
         }
 
-        function toggleMembershipForm() {
+    // Toggle the visibility of the Add Membership form
+    function toggleMembershipForm() {
         const form = document.getElementById('membershipForm');
         form.style.display = form.style.display === 'none' ? 'block' : 'none';
     }
 
-
+    // Find Membership Details
     function findMembership() {
         const form = document.getElementById('findMembershipForm');
         const formData = new FormData(form);
         const searchData = {};
-        formData.forEach((value, key) => {
-            searchData[key] = value;
-        });
+        formData.forEach((value, key) => searchData[key] = value);
 
         fetch('/find-membership', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(searchData)
         })
         .then(response => response.json())
@@ -129,11 +138,11 @@
             const detailsDiv = document.getElementById('membershipDetails');
             if (data.success) {
                 detailsDiv.innerHTML = `
-                    <p>Card Number: ${data.membershipID}</p>
-                    <p>Phone Number: ${data.phoneNumber}</p>
-                    <p>Birth Date: ${new Date(data.birthDate).toISOString().slice(0, 10)}</p>
-                    <p>Anniversary Date: ${data.anniversaryDate ? new Date(data.anniversaryDate).toISOString().slice(0, 10) : 'N/A'}</p>
-                    <p>Yearly Usage: ${JSON.stringify(data.yearlyUsage)}</p>
+                    <p><strong>Card Number:</strong> ${data.membershipID}</p>
+                    <p><strong>Phone Number:</strong> ${data.phoneNumber}</p>
+                    <p><strong>Birth Date:</strong> ${new Date(data.birthDate).toISOString().slice(0, 10)}</p>
+                    <p><strong>Anniversary Date:</strong> ${data.anniversaryDate ? new Date(data.anniversaryDate).toISOString().slice(0, 10) : 'N/A'}</p>
+                    <p><strong>Yearly Usage:</strong> ${JSON.stringify(data.yearlyUsage)}</p>
                 `;
             } else {
                 detailsDiv.innerHTML = `<p>No membership found with that information.</p>`;
@@ -141,31 +150,28 @@
         })
         .catch(error => {
             console.error('Error:', error);
-            detailsDiv.innerHTML = `<p>Error searching for membership.</p>`;
+            document.getElementById('membershipDetails').innerHTML = `<p>Error searching for membership.</p>`;
         });
     }
 
+    // Add a new membership
     function addMembership() {
         const form = document.getElementById('newMembershipForm');
         const formData = new FormData(form);
         const membershipData = {};
-        formData.forEach((value, key) => {
-            membershipData[key] = value;
-        });
+        formData.forEach((value, key) => membershipData[key] = value);
 
         fetch('/add-membership', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(membershipData)
         })
         .then(response => response.json())
         .then(data => {
             alert(data.message);
             if (data.success) {
-                form.reset(); // Reset form after successful submission
-                toggleMembershipForm(); // Optionally hide the form
+                form.reset();
+                toggleMembershipForm();
             }
         })
         .catch(error => {
@@ -173,20 +179,25 @@
             alert('Error adding membership');
         });
     }
-     
-    // Set Valid Till Date (2 years from Registered Date)
+
+    // Automatically set the "Valid Till Date" based on the "Registered Date"
     function setValidTillDate() {
         const registeredDate = document.getElementById('registeredDate').value;
         if (registeredDate) {
             const date = new Date(registeredDate);
-            date.setFullYear(date.getFullYear() + 2);  // Add 2 years to the registered date
-            date.setDate(date.getDate() - 1);  // Subtract 1 day to make the valid till date 1 day earlier
-
-            // Format the date as YYYY-MM-DD
-            const validTillDate = date.toISOString().split('T')[0];
-            document.getElementById('validTillDate').value = validTillDate;
+            date.setFullYear(date.getFullYear() + 2); // Add 2 years
+            date.setDate(date.getDate() - 1); // Subtract 1 day to make it valid till 1 day earlier
+            document.getElementById('validTillDate').value = date.toISOString().split('T')[0];
         }
     }
+
+    // Assign functions to global scope
+    window.searchCustomer = searchCustomer;
+    window.findMembership = findMembership;
+    window.addMembership = addMembership;
+    window.toggleMembershipForm = toggleMembershipForm;
+    window.setValidTillDate = setValidTillDate;
+});
 
     </script>
 </body>

@@ -7,82 +7,102 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/appointmentstyle.css">
     <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css"> -->
 </head>
 <body>
     <%- include('partials/navbar') %>
-    <h1>Add new Appointment</h1>
-    <form action="/appointments" method="post">
-        <label for="customerName">Customer Name:</label>
-        <input type="text" id="customerName" name="customerName" required><br>
+    
+    <div class="container">
+        <!-- Add Appointment Form -->
+        <div class="appointment-form">
+            <h1>Add New Appointment</h1>
+            <form action="/appointments" method="post" id="appointmentForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="customerName">Customer Name:</label>
+                        <input type="text" autocomplete="off" id="customerName" name="customerName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="dateTime">Preferred Date & Time:</label>
+                        <input type="datetime-local" autocomplete="off" id="dateTime" name="dateTime" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="contactNumber">Contact Number:</label>
+                        <input type="text" autocomplete="off" id="contactNumber" name="contactNumber" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="specialist">Choose Stylist:</label>
+                        <select name="specialist" id="specialist" required>
+                            <% staffMembers.forEach(function(staff) { %>
+                                <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
+                            <% }); %>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="serviceType">Type of Service:</label>
+                        <input autocomplete="off" type="text" id="serviceType" name="serviceType" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="specialNeeds">Special Needs (optional):</label>
+                        <input autocomplete="off" type="text" id="specialNeeds" name="specialNeeds">
+                    </div>
+                </div>
+                <button type="submit">Book Appointment</button>
+            </form>
+        </div>
 
-        <label for="dateTime">Preferred Date and Time:</label>
-        <input type="datetime-local" id="dateTime" name="dateTime" required><br>
-
-        <label for="contactNumber">Contact Number:</label>
-        <input type="text" id="contactNumber" name="contactNumber" required><br>
-
-        <label for="specialist">Choose Stylist:</label>
-        
-        <select name="specialist" id="specialist">
-            <% staffMembers.forEach(function(staff) { %>
-                <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
-            <% }); %>
-        </select>
-        
-        
-
-        <label for="serviceType">Type of Service:</label>
-        <input type="text" id="serviceType" name="serviceType" required><br>
-
-        <label for="specialNeeds">Special Needs (optional):</label>
-        <input type="text" id="specialNeeds" name="specialNeeds"><br>
-
-        <button type="submit">Book Appointment <button>
-    </form>
-
-    <h2>List of Appointments</h2>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Sl.no</th>
-                <th>Customer Name</th>
-                <th>Timings</th>
-                <th>Customer Number</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            <% appointments.forEach(function(appointment, index) { %>
-            <tr id="appointment-<%= index %>">
-                <td><%= index + 1 %></td>
-                <td class="editable customerName"><%= appointment.customerName %></td>
-                <td class="editable dateTime"><%= appointment.dateTime.toISOString().slice(0,16).replace('T', ' ') %></td>
-                <td class="editable contactNumber"><%= appointment.contactNumber %></td>
-                <td>
-                    <button type="button" onclick="enableEditing('appointment-<%= index %>')">Edit</button>
-                    <form action="/delete-appointment" method="post" style="display: inline;">
-                        <input type="hidden" name="id" value="<%= appointment._id %>">
-                        <button type="submit">Delete</button>
-                    </form>
-                </td>
-            </tr>
-            <% }); %>
-        </tbody>
-    </table>
+        <!-- List of Appointments -->
+        <div class="appointment-list">
+            <h2>List of Appointments</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Sl.no</th>
+                        <th>Customer Name</th>
+                        <th>Timings</th>
+                        <th>Contact Number</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% appointments.forEach(function(appointment, index) { %>
+                    <tr id="appointment-<%= index %>">
+                        <td><%= index + 1 %></td>
+                        <td class="editable customerName"><%= appointment.customerName %></td>
+                        <td class="editable dateTime"><%= appointment.dateTime.toISOString().slice(0,16).replace('T', ' ') %></td>
+                        <td class="editable contactNumber"><%= appointment.contactNumber %></td>
+                        <td>
+                            <button type="button" class="edit-btn" onclick="enableEditing('appointment-<%= index %>')">Edit</button>
+                            <form action="/delete-appointment" method="post" style="display: inline;">
+                                <input type="hidden" name="id" value="<%= appointment._id %>">
+                                <button type="submit" class="delete-btn">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
     <script>
 
 document.addEventListener("DOMContentLoaded", function() {
-    const form = document.querySelector('form');
+    const form = document.querySelector('#appointmentForm');
+    
+    // Form submission handler
     form.addEventListener('submit', function(event) {
-        event.preventDefault(); // Prevent the normal submission action
+        event.preventDefault();
 
         const formData = new FormData(form);
         const jsonData = {};
         formData.forEach((value, key) => {
             if (key === 'dateTime') {
-                // Convert local date-time to UTC
                 const localDateTime = new Date(value);
                 jsonData[key] = new Date(localDateTime.getTime() - (localDateTime.getTimezoneOffset() * 60000)).toISOString();
             } else {
@@ -92,88 +112,78 @@ document.addEventListener("DOMContentLoaded", function() {
 
         fetch('/appointments', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(jsonData)
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Clear the form
                 form.reset();
-                // Append the new appointment to the table
-                const table = document.querySelector('table tbody');
-                const newRow = document.createElement('tr');
-                newRow.innerHTML = `
-                    <td>${data.appointmentIndex}</td>
-                    <td>${jsonData.customerName}</td>
-                    <td>${new Date(jsonData.dateTime).toISOString().slice(0,16).replace('T', ' ')}</td>
-                    <td>${jsonData.contactNumber}</td>
-                    <td>
-                        <button type="button" onclick="enableEditing('appointment-${data.appointmentIndex - 1}')">Edit</button>
-                        <form action="/delete-appointment" method="post" style="display: inline;">
-                            <input type="hidden" name="id" value="${data.id}">
-                            <button type="submit">Delete</button>
-                        </form>
-                    </td>
-                `;
-                table.appendChild(newRow);
+                addAppointmentToTable(data.appointmentIndex, jsonData, data.id);
                 alert('Appointment booked successfully!');
             } else {
                 alert('Failed to book appointment');
             }
         })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error booking appointment');
-        });
+        .catch(error => console.error('Error:', error));
     });
 });
 
-        function enableEditing(rowId) {
-            const row = document.getElementById(rowId);
-            row.querySelectorAll('.editable').forEach(cell => {
-                const key = cell.classList[1];
-                if (key === 'dateTime') {
-                    cell.innerHTML = `<input type="datetime-local" name="${key}" value="${cell.textContent.trim().replace(' ', 'T')}">`;
-                } else {
-                    cell.innerHTML = `<input type="text" name="${key}" value="${cell.textContent.trim()}">`;
-                }
-            });
+function addAppointmentToTable(index, appointment, id) {
+    const table = document.querySelector('table tbody');
+    const newRow = document.createElement('tr');
+    newRow.id = `appointment-${index}`;
+    newRow.innerHTML = `
+        <td>${index + 1}</td>
+        <td class="editable customerName">${appointment.customerName}</td>
+        <td class="editable dateTime">${new Date(appointment.dateTime).toISOString().slice(0,16).replace('T', ' ')}</td>
+        <td class="editable contactNumber">${appointment.contactNumber}</td>
+        <td>
+            <button type="button" class="edit-btn" onclick="enableEditing('appointment-${index}')">Edit</button>
+            <form action="/delete-appointment" method="post" style="display: inline;">
+                <input type="hidden" name="id" value="${id}">
+                <button type="submit" class="delete-btn">Delete</button>
+            </form>
+        </td>
+    `;
+    table.appendChild(newRow);
+}
 
-            const editButton = row.querySelector('button');
-            editButton.textContent = 'Save';
-            editButton.setAttribute('onclick', `saveChanges('${rowId}')`);
+function enableEditing(rowId) {
+    const row = document.getElementById(rowId);
+    row.querySelectorAll('.editable').forEach(cell => {
+        const key = cell.classList[1];
+        cell.innerHTML = key === 'dateTime'
+            ? `<input autocomplete="off" type="datetime-local" name="${key}" value="${cell.textContent.trim().replace(' ', 'T')}">`
+            : `<input autocomplete="off" type="text" name="${key}" value="${cell.textContent.trim()}">`;
+    });
+
+    const editButton = row.querySelector('.edit-btn');
+    editButton.textContent = 'Save';
+    editButton.setAttribute('onclick', `saveChanges('${rowId}')`);
+}
+
+function saveChanges(rowId) {
+    const row = document.getElementById(rowId);
+    const formData = {};
+    row.querySelectorAll('input').forEach(input => formData[input.name] = input.value);
+
+    fetch(`/update-appointment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: rowId.split('-')[1], ...formData })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Failed to update appointment');
         }
+    })
+    .catch(error => console.error('Error:', error));
+}
 
-        function saveChanges(rowId) {
-            const row = document.getElementById(rowId);
-            const formData = {};
-            row.querySelectorAll('input').forEach(input => {
-                formData[input.name] = input.value;
-            });
-
-            fetch(`/update-appointment`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ id: rowId.split('-')[1], ...formData })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();  // Reload page to update the view
-                } else {
-                    alert('Failed to update appointment');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error updating appointment');
-            });
-        }
     </script>
 </body>
 </html>

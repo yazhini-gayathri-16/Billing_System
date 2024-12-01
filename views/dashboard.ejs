@@ -302,26 +302,35 @@
         </div>
         
 
-        <!-- Monthly Sales Target Chart -->
-        <h2>Monthly Sales Target Achievement Chart</h2>
-        <canvas id="monthlyChart" width="800" height="500"></canvas>
 
-         <!-- Top Trending Services Table -->
-         <div class="trending-services">
-            <h2>Top Trending Services</h2>
-            <table id="trendingServicesTable">
-                <thead>
-                    <tr>
-                        <th>Sl.no</th>
-                        <th>Service</th>
-                        <th>No. of Utilization</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Data will be populated here -->
-                </tbody>
-            </table>
+
+        <div style="display: flex;">
+            <!-- Monthly Sales Target Chart -->
+            <div>
+                <h2>Monthly Sales Target Achievement Chart</h2>
+                <canvas id="monthlyChart" width="650" height="200"></canvas>
+            </div>
+            
+
+            <!-- Top Trending Services Table -->
+            <div class="trending-services">
+                <h2>Top Trending Services</h2>
+                <table id="trendingServicesTable">
+                    <thead>
+                        <tr>
+                            <th>Sl.no</th>
+                            <th>Service</th>
+                            <th>No. of Utilization</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be populated here -->
+                    </tbody>
+                </table>
+            </div>
         </div>
+
+        
 
         <div style="display: flex; justify-content: space-between;">
             <!-- Existing Appointments Section -->
@@ -733,6 +742,8 @@
         // Function to fetch and display appointments for a specific date
         async function fetchAppointmentsForDate(date) {
             try {
+                console.log(date);
+                
                 const response = await fetch(`/appointments/${date}`);
                 const appointments = await response.json();
                 const appointmentsList = document.getElementById('appointmentsList');

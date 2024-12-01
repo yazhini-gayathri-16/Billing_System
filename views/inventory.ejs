@@ -2,40 +2,48 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventory Management</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
-    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css"> -->
+    <link rel="stylesheet" href="/styles/inventorystyle.css">
 </head>
 <body>
     <%- include('partials/navbar') %>
-    <h1>Inventory Management</h1>
-    <form action="/inventory" method="post">
-        <input type="text" name="productName" placeholder="Enter product name" required>
-        <input type="number" name="productPrice" placeholder="Enter product price" required>
-        <input type="number" name="stocksPurchased" placeholder="Enter stocks purchased" required>
-        <input type="number" name="stocksInInventory" placeholder="Enter stocks in inventory" required>
-        <button type="submit">Add Item</button>
-    </form>
     
-    <div class="product-container">
-        <% products.forEach(function(product, index) { %>
-            <div class="product-card">
-                <form id="product-form-<%= index %>" class="product-form" action="/edit-item" method="post">
-                    <input type="hidden" name="id" value="<%= product._id %>">
-                    <p><strong>Product Name:</strong> <span class="product-name"><%= product.productName %></span></p>
-                    <p><strong>Product Price:</strong> $<span class="product-price"><%= product.productPrice %></span></p>
-                    <p><strong>Stocks Purchased:</strong> <span class="stocks-purchased"><%= product.stocksPurchased %></span></p>
-                    <p><strong>Stocks in Inventory:</strong> <span class="stocks-inventory"><%= product.stocksInInventory %></span></p>
-                    <button type="button" onclick="enableEditing('product-form-<%= index %>')">Edit</button>
-                </form>
-                <form action="/delete-item" method="post">
-                    <input type="hidden" name="id" value="<%= product._id %>">
-                    <button type="submit">Delete</button>
-                </form>
-            </div>
-        <% }); %>
+    <div class="container">
+        <!-- Form to Add New Inventory Items -->
+        <div class="inventory-form">
+            <h1>Inventory Management</h1>
+            <form action="/inventory" method="post" class="form-inline">
+                <input type="text" name="productName" placeholder="Product Name" required>
+                <input type="number" name="productPrice" placeholder="Price" required>
+                <input type="number" name="stocksPurchased" placeholder="Purchased" required>
+                <input type="number" name="stocksInInventory" placeholder="In Inventory" required>
+                <button type="submit">Add Item</button>
+            </form>
+        </div>
+
+        <!-- Displaying Inventory Items -->
+        <div class="product-container">
+            <% products.forEach(function(product, index) { %>
+                <div class="product-card">
+                    <form id="product-form-<%= index %>" class="product-form" action="/edit-item" method="post">
+                        <input type="hidden" name="id" value="<%= product._id %>">
+                        <p><strong>Product Name:</strong> <span class="product-name"><%= product.productName %></span></p>
+                        <p><strong>Price:</strong> ₹<span class="product-price"><%= product.productPrice %></span></p>
+                        <p><strong>Purchased:</strong> <span class="stocks-purchased"><%= product.stocksPurchased %></span></p>
+                        <p><strong>In Inventory:</strong> <span class="stocks-inventory"><%= product.stocksInInventory %></span></p>
+                        <button type="button" class="edit-btn" onclick="enableEditing('product-form-<%= index %>')">Edit</button>
+                    </form>
+                    <form action="/delete-item" method="post">
+                        <input type="hidden" name="id" value="<%= product._id %>">
+                        <button type="submit" class="delete-btn">Delete</button>
+                    </form>
+                </div>
+            <% }); %>
+        </div>
     </div>
 
     <script>
@@ -46,17 +54,14 @@
             const stocksPurchased = form.querySelector('.stocks-purchased');
             const stocksInventory = form.querySelector('.stocks-inventory');
 
-            // Replace text with editable inputs
             productName.innerHTML = `<input type="text" name="productName" value="${productName.textContent.trim()}" required>`;
             productPrice.innerHTML = `<input type="number" name="productPrice" value="${productPrice.textContent.trim()}" required>`;
             stocksPurchased.innerHTML = `<input type="number" name="stocksPurchased" value="${stocksPurchased.textContent.trim()}" required>`;
             stocksInventory.innerHTML = `<input type="number" name="stocksInInventory" value="${stocksInventory.textContent.trim()}" required>`;
-
-            // Replace edit button with update and cancel buttons
+            
             const editButton = form.querySelector('button');
-            editButton.outerHTML = `
-            <button type='submit'>Update</button>
-            <button type='button' onclick='cancelEdit("${formId}")'>Cancel</button>`;
+            editButton.outerHTML = `<button type='submit'>Update</button>
+                                    <button type='button' class='cancel-btn' onclick='cancelEdit("${formId}")'>Cancel</button>`;
         }
 
         function cancelEdit(formId) {
@@ -66,15 +71,13 @@
             const stocksPurchasedInput = form.querySelector('.stocks-purchased input');
             const stocksInventoryInput = form.querySelector('.stocks-inventory input');
 
-            // Revert inputs back to text
-            form.querySelector('.product-name').innerHTML = productNameInput.value;
-            form.querySelector('.product-price').innerHTML = productPriceInput.value;
-            form.querySelector('.stocks-purchased').innerHTML = stocksPurchasedInput.value;
-            form.querySelector('.stocks-inventory').innerHTML = stocksInventoryInput.value;
+            form.querySelector('.product-name').textContent = productNameInput.value;
+            form.querySelector('.product-price').textContent = productPriceInput.value;
+            form.querySelector('.stocks-purchased').textContent = stocksPurchasedInput.value;
+            form.querySelector('.stocks-inventory').textContent = stocksInventoryInput.value;
 
-            // Replace buttons back to just the edit button
-            form.querySelector('[type="submit"]').remove(); // Remove the update button
-            form.querySelector('button').outerHTML = `<button type='button' onclick='enableEditing("${formId}")'>Edit</button>`;
+            form.querySelector('[type="submit"]').remove();
+            form.querySelector('button').outerHTML = `<button type='button' class='edit-btn' onclick='enableEditing("${formId}")'>Edit</button>`;
         }
     </script>
 </body>
