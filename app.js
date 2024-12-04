@@ -9,10 +9,6 @@ const Membership = require('./models/membership');
 const Staff = require('./models/staff');
 const MonthlyData = require('./models/monthlydata');
 const Product = require('./models/inventory');
-const PDFDocument = require("pdfkit");
-const puppeteer = require("puppeteer");
-const fs = require("fs");
-const path = require("path");
 
 
 require("./connection");
@@ -826,63 +822,43 @@ app.post("/delete-item", async (req, res) => {
     }
 });
 
-app.get("/export", (req, res) => {
-    res.render("export");
+app.get('/export', (req, res) => {
+    const defaultFromDate = new Date();
+    const defaultToDate = new Date();
+    
+    // Set the default date range to be the last 30 days
+    defaultFromDate.setDate(defaultFromDate.getDate() - 30);
+
+    // Initial render with no billing data
+    res.render('export', { 
+        billingData: null, 
+        fromDate: defaultFromDate.toISOString().split('T')[0], 
+        toDate: defaultToDate.toISOString().split('T')[0] 
+    });
 });
 
-app.post("/export", async (req, res) => {
+app.post('/export', async (req, res) => {
     const { fromDate, toDate } = req.body;
 
     try {
-        const data = await Fetch.find({
+        // Convert fromDate and toDate to Date objects
+        const startDate = new Date(fromDate);
+        const endDate = new Date(toDate);
+
+        // Query the Fetch model to get data within the date range
+        const billingData = await Fetch.find({
             date: {
-                $gte: new Date(fromDate),
-                $lte: new Date(toDate)
+                $gte: startDate,
+                $lte: endDate
             }
         });
 
-        if (data.length === 0) {
-            return res.status(404).send("No records found for the selected date range.");
-        }
+        // Render the export.ejs page with the fetched billing data
+        res.render('export', { billingData, fromDate, toDate });
 
-        // Render HTML content using EJS
-        const htmlContent = await new Promise((resolve, reject) => {
-            res.render("billingTemplate", { data }, (err, html) => {
-                if (err) reject(err);
-                else resolve(html);
-            });
-        });
-
-        // Generate PDF using Puppeteer
-        const browser = await puppeteer.launch();
-        const page = await browser.newPage();
-        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-
-        const pdfPath = path.join(__dirname, "billing_data.pdf");
-        await page.pdf({
-            path: pdfPath,
-            format: "A4",
-            printBackground: true,
-            margin: {
-                top: "20mm",
-                bottom: "20mm",
-                left: "15mm",
-                right: "15mm",
-            },
-        });
-
-        await browser.close();
-
-        // Send the PDF as a download
-        res.download(pdfPath, "billing_data.pdf", (err) => {
-            if (err) {
-                console.error("Error downloading PDF:", err);
-                res.status(500).send("Error downloading file");
-            }
-        });
     } catch (error) {
-        console.error("Error exporting data:", error);
-        res.status(500).send("Internal server error");
+        console.error("Error fetching billing data:", error);
+        res.status(500).send('Server Error');
     }
 });
 

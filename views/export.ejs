@@ -18,19 +18,82 @@
             <form action="/export" method="POST">
                 <div class="form-row">
                     <div class="form-group">
-                <label for="fromDate">From Date:</label>
-                <input type="date" id="fromDate" name="fromDate" required>
-                <br><br>
+                        <label for="fromDate">From Date:</label>
+                        <input type="date" id="fromDate" name="fromDate" value="<%= fromDate || '' %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="toDate">To Date:</label>
+                        <input type="date" id="toDate" name="toDate" value="<%= toDate || '' %>" required>
+                    </div>
                 </div>
-                <div class="form-group">
-                <label for="toDate">To Date:</label>
-                <input type="date" id="toDate" name="toDate" required>
-                <br><br>
-                </div>
-                </div>
-                <button type="submit">Export PDF</button>
+                <button type="submit">Show records</button>
             </form>
-        </div>    
-    </div>    
+        </div>
+
+        <% if (billingData && billingData.length > 0) { %>
+            <div class="billing-data-table">
+                <h3>Billing Data from <%= fromDate %> to <%= toDate %></h3>
+                <hr class="border-hr-dotted">
+                <!-- Iterate through each billing entry (each customer) -->
+                <% billingData.forEach(bill => { %>
+                    <div class="customer-details">
+                        <h4>Customer:<%= bill.customer_name %> (Phone: <%= bill.customer_number %>)</h4>
+                        <p>Date of Billing: <%= new Date(bill.date).toLocaleDateString() %></p>
+                        <p>Gender: <%= bill.gender %></p>
+                        <p>Time of Billing: <%= bill.time %></p>
+
+                        <!-- Customer Services Details Table -->
+                        <h5>Services Provided:</h5>
+                        <table border="1">
+                            <thead>
+                                <tr>
+                                    <th>Service Name</th>
+                                    <th>Price</th>
+                                    <th>Stylist</th>
+                                    <th>Start Time</th>
+                                    <th>End Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% bill.services.forEach(service => { %>
+                                    <tr>
+                                        <td><%= service.name %></td>
+                                        <td><%= service.price %></td>
+                                        <td><%= service.stylist %></td>
+                                        <td><%= service.startTime %></td>
+                                        <td><%= service.endTime %></td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+
+                        <!-- Bill Summary Table -->
+                        <h5>Bill Summary:</h5>
+                        <table border="1">
+                            <thead>
+                                <tr>
+                                    <th>Subtotal</th>
+                                    <th>Discount</th>
+                                    <th>Grand Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><%= bill.subtotal %></td>
+                                    <td><%= bill.discount %></td>
+                                    <td><%= bill.grandTotal %></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <hr class="border-hr-dotted">
+                    
+                <% }); %>
+
+            </div>
+        <% } else { %>
+            <p>No billing data found for the selected date range.</p>
+        <% } %>
+    </div>
 </body>
 </html>
