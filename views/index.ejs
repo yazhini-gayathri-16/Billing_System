@@ -57,7 +57,7 @@
                         </select>
                     </div>
                 </div>
-    
+                
                 <!-- Membership Checkbox and Membership ID on the same line -->
                 <div class="form-row">
                     <div class="form-group">
@@ -69,6 +69,26 @@
                         <input type="text" id="membershipID" autocomplete="off" name="membershipID" placeholder="Enter your membership ID" onblur="validateMembershipID()">
                     </div>
                     <div id="membershipMessage"></div>
+
+                    <div id="membershipDiscountOptions" style="display: none;">
+                        <div class="form-group">
+                            <label>Apply Birthday Discount</label>
+                            <input type="checkbox" id="applyBirthdayDiscount" name="applyBirthdayDiscount" onchange="toggleBirthdayDateField()">
+                        </div>
+                        <div class="form-group" id="birthdayDateField" style="display: none;">
+                            <label>Enter your Birthday:</label>
+                            <input type="date" id="birthdayDate" name="birthdayDate">
+                        </div>
+                
+                        <div class="form-group">
+                            <label>Apply Anniversary Discount</label>
+                            <input type="checkbox" id="applyAnniversaryDiscount" name="applyAnniversaryDiscount" onchange="toggleAnniversaryDateField()">
+                        </div>
+                        <div class="form-group" id="anniversaryDateField" style="display: none;">
+                            <label>Enter your Anniversary Date:</label>
+                            <input type="date" id="anniversaryDate" name="anniversaryDate">
+                        </div>
+                    </div>
                 </div>
     
                 <!-- Services Section -->
@@ -140,6 +160,8 @@
             <p>Total Visits: <span id="totalVisits">-</span></p>
             <p>Total Spendings: <span id="totalSpendings">-</span> INR</p>
             <p>Membership: <span id="membershipStatus">-</span></p>
+            <p>Birthday Offer Used: <span id="birthdayOfferStatus">-</span></p>
+            <p>Anniversary Offer Used: <span id="anniversaryOfferStatus">-</span></p>
         </div>
     </div>
     
@@ -218,8 +240,22 @@
             const membershipmessagefield = document.getElementById('membershipMessage');
             membershipmessagefield.style.display = checkbox.checked ? 'block' : 'none';
             membershipField.style.display = checkbox.checked ? 'block' : 'none';
+            const membershipOptions = document.getElementById('membershipDiscountOptions');
+            membershipOptions.style.display = checkbox.checked ? 'block' : 'none';
 
         }
+
+
+        function toggleBirthdayDateField() {
+            const birthdayField = document.getElementById('birthdayDateField');
+            birthdayField.style.display = document.getElementById('applyBirthdayDiscount').checked ? 'block' : 'none';
+        }
+
+        function toggleAnniversaryDateField() {
+            const anniversaryField = document.getElementById('anniversaryDateField');
+            anniversaryField.style.display = document.getElementById('applyAnniversaryDiscount').checked ? 'block' : 'none';
+        }
+
 
         function addMore() {
             const container = document.getElementById('service-container');
@@ -319,7 +355,6 @@
         async function fetchClientDetails() {
             const name = document.getElementById('customerName').value;
             const number = document.getElementById('customerNumber').value;
-
             if (name && number) {
                 try {
                     const response = await fetch('/search-customer', {
@@ -335,6 +370,10 @@
                         document.getElementById('totalVisits').textContent = data.visits || '-';
                         document.getElementById('totalSpendings').textContent = data.totalSpent || '-';
                         document.getElementById('membershipStatus').textContent = data.membership || '-';
+
+                        // Show discount usage statuses
+                        document.getElementById('birthdayOfferStatus').textContent = data.usedBirthdayOffer ? 'Yes' : 'No';
+                        document.getElementById('anniversaryOfferStatus').textContent = data.usedAnniversaryOffer ? 'Yes' : 'No';
                     } else {
                         resetClientDetails();
                     }
@@ -353,7 +392,10 @@
             document.getElementById('totalVisits').textContent = '-';
             document.getElementById('totalSpendings').textContent = '-';
             document.getElementById('membershipStatus').textContent = '-';
+            document.getElementById('birthdayOfferStatus').textContent = '-';
+            document.getElementById('anniversaryOfferStatus').textContent = '-';
         }
+
 
         function calculateGrandTotal() {
             const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;

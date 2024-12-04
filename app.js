@@ -39,8 +39,60 @@ app.get("/", async (req, res) => {
 });
 
 app.post("/bill", async (req, res) => {
-    try {
-        const { customer_name, customer_number, date, time, gender, membershipID, subtotal, discount, grandTotal } = req.body;
+    try {const { customer_name, customer_number, date, time, gender, membershipID, subtotal, discount, grandTotal, applyBirthdayDiscount, applyAnniversaryDiscount, birthdayDate, anniversaryDate } = req.body;
+    // Fetch the membership details for the given membership ID
+    const membership = await Membership.findOne({ membershipID });
+    if (!membership) {
+        return res.status(400).send('Membership not found');
+    }
+
+    // Get the current month and year
+    const currentMonth = new Date().toLocaleString('default', { month: 'short' });
+    const currentYear = new Date().getFullYear();
+
+    // Check if the customer is eligible for the birthday or anniversary discount
+    let birthdayDiscountApplied = false;
+    let anniversaryDiscountApplied = false;
+
+    // Apply birthday discount if eligible
+    if (applyBirthdayDiscount && birthdayDate) {
+        const customerBirthMonth = new Date(membership.birthDate).toLocaleString('default', { month: 'short' });
+        if (currentMonth === customerBirthMonth) {
+            birthdayDiscountApplied = true;
+        }
+    }
+
+    // Apply anniversary discount if eligible
+    if (applyAnniversaryDiscount && anniversaryDate) {
+        const customerAnniversaryMonth = new Date(membership.anniversaryDate).toLocaleString('default', { month: 'short' });
+        if (currentMonth === customerAnniversaryMonth) {
+            anniversaryDiscountApplied = true;
+        }
+    }
+
+    // Check if the customer has already used the discounts this year
+    const yearlyUsage = membership.yearlyUsage.find(usage => usage.year === currentYear);
+
+    if (yearlyUsage) {
+        if (birthdayDiscountApplied && yearlyUsage.usedBirthdayOffer) {
+            return res.status(400).send('Birthday discount already used this year.');
+        }
+        if (anniversaryDiscountApplied && yearlyUsage.usedAnniversaryOffer) {
+            return res.status(400).send('Anniversary discount already used this year.');
+        }
+    }
+
+    // Add the selected discounts to the yearlyUsage if not already used
+    if (birthdayDiscountApplied || anniversaryDiscountApplied) {
+        if (!yearlyUsage) {
+            membership.yearlyUsage.push({ year: currentYear, usedBirthdayOffer: birthdayDiscountApplied, usedAnniversaryOffer: anniversaryDiscountApplied });
+        } else {
+            yearlyUsage.usedBirthdayOffer = birthdayDiscountApplied;
+            yearlyUsage.usedAnniversaryOffer = anniversaryDiscountApplied;
+        }
+
+        await membership.save();
+    }
         let services = [];
         let index = 1;
 
@@ -118,12 +170,12 @@ app.post('/search-customer', async (req, res) => {
 
         // Create a case-insensitive regex for customer name
         const customerNameRegex = new RegExp(`^${customerName}$`, 'i');
-
+        
         const customerData = await Fetch.find({
             customer_name: customerNameRegex,
             customer_number: customerNumber
         });
-
+        
         if (customerData.length > 0) {
             const totalSpent = customerData.reduce(
                 (sum, record) => sum + record.services.reduce((serviceSum, service) => serviceSum + service.price, 0), 
@@ -133,7 +185,9 @@ app.post('/search-customer', async (req, res) => {
             const services = customerData.flatMap(record => record.services.map(service => service.name));
             const uniqueServices = [...new Set(services)];
             const lastVisit = customerData[customerData.length - 1].date.toISOString().split('T')[0];
-            const membership = customerData[0].membershipID ? 'Active' : '----';
+            // const membership = customerData[0].membershipID ? 'Active' : '----';
+            const membershipID = customerData[0].membershipID || null;
+            const membershipStatus = membershipID ? 'Active' : '----';
 
             // Determine Customer Type
             let customerType = 'New';
@@ -147,6 +201,21 @@ app.post('/search-customer', async (req, res) => {
                 customerType = 'Dormant';
             }
 
+            // Fetch membership details to check discount usage (birthday/anniversary)
+            let usedBirthdayOffer = false;
+            let usedAnniversaryOffer = false;
+
+            if (membershipID) {
+                const membership = await Membership.findOne({ membershipID });
+                const currentYear = new Date().getFullYear();
+                const yearlyUsage = membership.yearlyUsage.find(usage => usage.year === currentYear);
+
+                if (yearlyUsage) {
+                    usedBirthdayOffer = yearlyUsage.usedBirthdayOffer;
+                    usedAnniversaryOffer = yearlyUsage.usedAnniversaryOffer;
+                }
+            }
+
             res.json({
                 success: true,
                 customerType,
@@ -154,7 +223,9 @@ app.post('/search-customer', async (req, res) => {
                 visits,
                 totalSpent,
                 services: uniqueServices,
-                membership
+                membership: membershipStatus,
+                usedBirthdayOffer,
+                usedAnniversaryOffer
             });
         } else {
             res.json({ success: false });
@@ -600,36 +671,36 @@ app.get("/client", (req, res) => {
 });
 
 
-app.post('/search-customer', async (req, res) => {
-    try {
-        const { customerName, customerNumber } = req.body;
-        // Create a case-insensitive regular expression for customer name
-        const customerNameRegex = new RegExp('^' + customerName + '$', 'i');
+// app.post('/search-customer', async (req, res) => {
+//     try {
+//         const { customerName, customerNumber } = req.body;
+//         // Create a case-insensitive regular expression for customer name
+//         const customerNameRegex = new RegExp('^' + customerName + '$', 'i');
 
-        const customerData = await Fetch.find({
-            customer_name: customerNameRegex,  // Use regex for case-insensitive search
-            customer_number: customerNumber
-        });
+//         const customerData = await Fetch.find({
+//             customer_name: customerNameRegex,  // Use regex for case-insensitive search
+//             customer_number: customerNumber
+//         });
 
-        if (customerData.length > 0) {
-            const totalSpent = customerData.reduce((sum, record) => sum + record.services.reduce((serviceSum, service) => serviceSum + service.price, 0), 0);
-            const services = customerData.flatMap(record => record.services.map(service => service.name));
-            const uniqueServices = [...new Set(services)];
+//         if (customerData.length > 0) {
+//             const totalSpent = customerData.reduce((sum, record) => sum + record.services.reduce((serviceSum, service) => serviceSum + service.price, 0), 0);
+//             const services = customerData.flatMap(record => record.services.map(service => service.name));
+//             const uniqueServices = [...new Set(services)];
 
-            res.json({
-                success: true,
-                visits: customerData.length,
-                totalSpent,
-                services: uniqueServices
-            });
-        } else {
-            res.json({ success: false });
-        }
-    } catch (error) {
-        console.error('Error retrieving customer data:', error);
-        res.status(500).json({ success: false, message: 'Internal server error' });
-    }
-});
+//             res.json({
+//                 success: true,
+//                 visits: customerData.length,
+//                 totalSpent,
+//                 services: uniqueServices
+//             });
+//         } else {
+//             res.json({ success: false });
+//         }
+//     } catch (error) {
+//         console.error('Error retrieving customer data:', error);
+//         res.status(500).json({ success: false, message: 'Internal server error' });
+//     }
+// });
 
 app.post('/add-membership', async (req, res) => {
     try {
