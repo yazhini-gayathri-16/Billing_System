@@ -39,86 +39,101 @@ app.get("/", async (req, res) => {
 });
 
 app.post("/bill", async (req, res) => {
-    try {const { customer_name, customer_number, date, time, gender, membershipID, subtotal, discount, grandTotal, applyBirthdayDiscount, applyAnniversaryDiscount, birthdayDate, anniversaryDate } = req.body;
-    // Fetch the membership details for the given membership ID
-    const membership = await Membership.findOne({ membershipID });
-    if (!membership) {
-        return res.status(400).send('Membership not found');
-    }
+    try {
+        const {
+            customer_name,
+            customer_number,
+            date,
+            time,
+            gender,
+            membershipID,
+            subtotal,
+            discount, // The discount value from the request
+            grandTotal,
+            applyBirthdayDiscount,
+            applyAnniversaryDiscount,
+            birthdayDate,
+            anniversaryDate
+        } = req.body;
 
-    // Get the current month and year
-    const currentMonth = new Date().toLocaleString('default', { month: 'short' });
-    const currentYear = new Date().getFullYear();
-
-    // Check if the customer is eligible for the birthday or anniversary discount
-    let birthdayDiscountApplied = false;
-    let anniversaryDiscountApplied = false;
-
-    // Apply birthday discount if eligible
-    if (applyBirthdayDiscount && birthdayDate) {
-        const customerBirthMonth = new Date(membership.birthDate).toLocaleString('default', { month: 'short' });
-        if (currentMonth === customerBirthMonth) {
-            birthdayDiscountApplied = true;
+        // Fetch membership details
+        const membership = await Membership.findOne({ membershipID });
+        if (!membership) {
+            return res.status(400).send('Membership not found');
         }
-    }
 
-    // Apply anniversary discount if eligible
-    if (applyAnniversaryDiscount && anniversaryDate) {
-        const customerAnniversaryMonth = new Date(membership.anniversaryDate).toLocaleString('default', { month: 'short' });
-        if (currentMonth === customerAnniversaryMonth) {
-            anniversaryDiscountApplied = true;
+        // Get current month and year
+        const currentMonth = new Date().toLocaleString('default', { month: 'short' });
+        const currentYear = new Date().getFullYear();
+
+        // Determine eligibility for discounts
+        let birthdayDiscountApplied = false;
+        let anniversaryDiscountApplied = false;
+        if (applyBirthdayDiscount && birthdayDate) {
+            const customerBirthMonth = new Date(membership.birthDate).toLocaleString('default', { month: 'short' });
+            if (currentMonth === customerBirthMonth) {
+                birthdayDiscountApplied = true;
+            }
         }
-    }
-
-    // Check if the customer has already used the discounts this year
-    const yearlyUsage = membership.yearlyUsage.find(usage => usage.year === currentYear);
-
-    if (yearlyUsage) {
-        if (birthdayDiscountApplied && yearlyUsage.usedBirthdayOffer) {
-            return res.status(400).send('Birthday discount already used this year.');
+        if (applyAnniversaryDiscount && anniversaryDate) {
+            const customerAnniversaryMonth = new Date(membership.anniversaryDate).toLocaleString('default', { month: 'short' });
+            if (currentMonth === customerAnniversaryMonth) {
+                anniversaryDiscountApplied = true;
+            }
         }
-        if (anniversaryDiscountApplied && yearlyUsage.usedAnniversaryOffer) {
-            return res.status(400).send('Anniversary discount already used this year.');
-        }
-    }
 
-    // Add the selected discounts to the yearlyUsage if not already used
-    if (birthdayDiscountApplied || anniversaryDiscountApplied) {
+        // Check and update yearly usage
+        let yearlyUsage = membership.yearlyUsage.find(usage => usage.year === currentYear);
         if (!yearlyUsage) {
-            membership.yearlyUsage.push({ year: currentYear, usedBirthdayOffer: birthdayDiscountApplied, usedAnniversaryOffer: anniversaryDiscountApplied });
-        } else {
-            yearlyUsage.usedBirthdayOffer = birthdayDiscountApplied;
-            yearlyUsage.usedAnniversaryOffer = anniversaryDiscountApplied;
+            yearlyUsage = { year: currentYear, usedBirthdayOffer: false, usedAnniversaryOffer: false };
+            membership.yearlyUsage.push(yearlyUsage);
+        }
+        if (birthdayDiscountApplied && !yearlyUsage.usedBirthdayOffer) {
+            yearlyUsage.usedBirthdayOffer = true;
+        }
+        if (anniversaryDiscountApplied && !yearlyUsage.usedAnniversaryOffer) {
+            yearlyUsage.usedAnniversaryOffer = true;
+        }
+        await membership.save();
+
+        // Ensure the grandTotal is a valid number
+        let finalGrandTotal = parseFloat(grandTotal);
+        if (isNaN(finalGrandTotal)) {
+            return res.status(400).send("Invalid grand total value.");
         }
 
-        await membership.save();
-    }
+        // Apply discount if any
+        if (birthdayDiscountApplied || anniversaryDiscountApplied) {
+            const discountToApply = 0.20; // 20% discount
+            finalGrandTotal *= (1 - discountToApply);
+        }
+
+        // Ensure the discount is a valid number before assigning
+        let finalDiscount = parseFloat(discount);
+        if (isNaN(finalDiscount)) {
+            finalDiscount = 0; // Set to 0 if invalid
+        }
+
+        // Process services and bill
         let services = [];
         let index = 1;
-
-        // Extract services array from the request
         while (req.body[`services${index}`] && req.body[`prices${index}`] && req.body[`stylist${index}`]) {
             const stylistId = req.body[`stylist${index}`];
-
-            // Fetch the stylist name from the Staff database
             const stylist = await Staff.findById(stylistId);
-
             if (!stylist) {
                 return res.status(400).send(`Stylist with ID ${stylistId} not found`);
             }
-
             services.push({
                 name: req.body[`services${index}`],
                 price: parseFloat(req.body[`prices${index}`]),
-                stylist: stylist.name, // Replace the ID with the stylist's name
+                stylist: stylist.name,
                 startTime: req.body[`startTime${index}`],
                 endTime: req.body[`endTime${index}`]
             });
-
             index++;
         }
 
-        // Create a new bill record in the Fetch collection
+        // Create bill record in Fetch collection
         const user = await Fetch.create({
             customer_name,
             customer_number,
@@ -127,33 +142,18 @@ app.post("/bill", async (req, res) => {
             gender,
             membershipID,
             subtotal: parseFloat(subtotal),
-            discount: parseFloat(discount) || 0,
-            grandTotal: parseFloat(grandTotal),
+            discount: finalDiscount,  // Use the validated discount
+            grandTotal: finalGrandTotal,
             services
         });
 
         if (user) {
-            // Update monthly data
-            const currentDate = new Date();
-            const currentMonth = currentDate.toLocaleString('default', { month: 'short' });
-            const currentYear = currentDate.getFullYear();
-
-            // Check if a record for the current month already exists
-            const monthlyData = await MonthlyData.findOne({ month: currentMonth, year: currentYear });
-
-            if (monthlyData) {
-                monthlyData.achieved += 1;
-                await monthlyData.save();
-            } else {
-                await MonthlyData.create({
-                    month: currentMonth,
-                    year: currentYear,
-                    target: 0,
-                    achieved: 1
-                });
-            }
-
-            // Redirect to the homepage upon successful creation
+            // Update or create monthly data
+            const monthlyData = await MonthlyData.findOneAndUpdate(
+                { month: currentMonth, year: currentYear },
+                { $inc: { achieved: 1 } },
+                { upsert: true, new: true }
+            );
             res.status(200).redirect('/');
         } else {
             res.status(400).send("Failed to create receipt");
@@ -163,6 +163,7 @@ app.post("/bill", async (req, res) => {
         res.status(500).send(err.message);
     }
 });
+
 
 app.post('/search-customer', async (req, res) => {
     try {
@@ -185,7 +186,6 @@ app.post('/search-customer', async (req, res) => {
             const services = customerData.flatMap(record => record.services.map(service => service.name));
             const uniqueServices = [...new Set(services)];
             const lastVisit = customerData[customerData.length - 1].date.toISOString().split('T')[0];
-            // const membership = customerData[0].membershipID ? 'Active' : '----';
             const membershipID = customerData[0].membershipID || null;
             const membershipStatus = membershipID ? 'Active' : '----';
 
