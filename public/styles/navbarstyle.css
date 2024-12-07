@@ -13,16 +13,16 @@ body {
     margin-bottom: 0px;
 }
 
-/* Upper half: Logo section */
+/* Upper half: Logo and toggle button */
 .navbar-upper {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
     padding: 10px;
-    border-bottom: 2.5px solid #D97C17; /* Orange border */
+    border-bottom: 2.5px solid #eeb118; /* Orange border */
 }
 
-.logo img {
+.logo {
     max-height: 70px;
     object-fit: contain;
 }
@@ -32,33 +32,76 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 15px 0;
-    border-top: 1px solid #D97C17; /* Orange border  */
+    padding: 5px 0;
+    border-top: 1px solid #eeb118; /* Orange border */
     background-color: #8DBE50; /* Same green background */
-    border-bottom: 3.5px solid #D97C17; /* Orange border */
-    
-
+    border-bottom: 3.5px solid #eeb118; /* Orange border */
 }
-   
+
 .navbar-lower nav {
     display: flex;
-      gap: 60px; /*Space between menu items  */
-    
+    gap: 50px; /* Space between menu items */
 }
 
 .navbar-lower nav a {
     color: #333;
+    height: 25px;
     text-decoration: none;
     font-weight: bold;
-    background-color: #F5F5F5; /* Light grey background for buttons */
-    padding: 10px 20px;
-    border-radius: 3px;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.15); /* 3D shadow effect */
+    padding: 10px 10px;
     transition: all 0.3s ease;
+    margin-top: 13px;
 }
 
 .navbar-lower nav a:hover {
-    background-color: #D97C17; /* Orange background on hover */
+    background-color: #eeb118; /* Orange background on hover */
     color: #fff;
     transform: translateY(-2px); /* Lift effect on hover */
+    border-radius: 5px;
+}
+
+/* Responsive adjustments for tablets and below */
+@media (max-width: 768px) {
+    .navbar-lower nav {
+        flex-direction: column; /* Stack links vertically */
+        gap: 15px; /* Smaller gap for vertical layout */
+    }
+
+    .navbar-lower nav a {
+        width: 80%; /* Make links wider */
+        margin: 0 auto; /* Center links horizontally */
+        padding: 12px 10px; /* Adjust padding for better tap targets */
+    }
+
+    .logo img {
+        max-height: 50px; /* Smaller logo for smaller screens */
+    }
+
+    .navbar-toggle {
+        display: block; /* Show toggle button on small screens */
+    }
+
+    nav.active {
+        display: flex; /* Show navigation when active */
+    }
+}
+
+/* Additional responsive adjustments for smartphones */
+@media (max-width: 480px) {
+    .navbar {
+        flex-direction: column; /* Stack upper and lower navbar */
+    }
+
+    .navbar-upper, .navbar-lower {
+        width: 100%; /* Full width for better use of space */
+    }
+
+    .navbar-lower nav {
+        flex-direction: column; /* Ensure nav is still vertical */
+    }
+
+    .navbar-lower nav a {
+        width: 90%; /* Even wider links on small screens */
+        font-size: 14px; /* Larger font size for readability */
+    }
 }

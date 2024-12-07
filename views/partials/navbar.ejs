@@ -6,34 +6,36 @@
     <title>Document</title>
     <link rel="stylesheet" href="/styles/navbarstyle.css">
     <link rel="stylesheet" href="/styles/headerstyle.css">
-
-
 </head>
 <body>
     <!-- Navbar Structure -->
-<!-- Navbar Structure -->
-<div class="navbar">
-    <!-- Upper Half: Logo -->
-    <div class="navbar-upper">
-        <a href="/" class="logo">
-            <img src="/images/logo3.png" alt="Salon Logo">
-        </a>
+    <div class="navbar">
+        <!-- Upper Half: Logo -->
+        <div class="navbar-upper">
+            
+            
+        </div>
+
+        <!-- Lower Half: Navigation Links -->
+        <div class="navbar-lower">
+            <nav>
+                <img src="/images/logo3.png" alt="Salon Logo" class="logo" width="200px" height="80px">
+                <a href="/dashboard">Dashboard</a>
+                <a href="/">Billing</a>
+                <a href="/inventory">Inventory</a>
+                <a href="/client">Clients</a>
+                <a href="/appointment">Appointments</a>
+                <a href="/menu-management">Menu</a>
+                <a href="/staff">Staffs</a>
+                <a href="/export">Extract Bills</a>
+            </nav>
+        </div>
     </div>
 
-    <!-- Lower Half: Navigation Links -->
-    <div class="navbar-lower">
-        <nav>
-            <a href="/dashboard">Dashboard</a>
-            <a href="/">Billing</a>
-            <a href="/inventory">Inventory</a>
-            <a href="/client">Clients</a>
-            <a href="/appointment">Appointments</a>
-            <a href="/menu-management">Menu</a>
-            <a href="/staff">Staffs</a>
-            <a href="/export">Extract Bills</a>
-        </nav>
-    </div>
-</div>
-
+    <script>
+        document.querySelector('.navbar-toggle').addEventListener('click', function() {
+            document.querySelector('nav').classList.toggle('active');
+        });
+    </script>
 </body>
 </html>
