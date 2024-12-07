@@ -4,6 +4,7 @@ const serviceSchema = new mongoose.Schema({
     name: { type: String, required: true },
     price: { type: Number, required: true },
     stylist: { type: String, required: true },
+    stylist2: { type: String, default: null },
     startTime: { type: String, required: true },
     endTime: { type: String, required: true }
 });

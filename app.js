@@ -58,17 +58,16 @@ app.post("/bill", async (req, res) => {
 
         // Fetch membership details
         const membership = await Membership.findOne({ membershipID });
-        if (!membership) {
-            return res.status(400).send('Membership not found');
-        }
-
+        let birthdayDiscountApplied = false;
+        let anniversaryDiscountApplied = false;
         // Get current month and year
         const currentMonth = new Date().toLocaleString('default', { month: 'short' });
         const currentYear = new Date().getFullYear();
+        if (membership) {
+        
 
         // Determine eligibility for discounts
-        let birthdayDiscountApplied = false;
-        let anniversaryDiscountApplied = false;
+        
         if (applyBirthdayDiscount && birthdayDate) {
             const customerBirthMonth = new Date(membership.birthDate).toLocaleString('default', { month: 'short' });
             if (currentMonth === customerBirthMonth) {
@@ -95,7 +94,7 @@ app.post("/bill", async (req, res) => {
             yearlyUsage.usedAnniversaryOffer = true;
         }
         await membership.save();
-
+    }
         // Ensure the grandTotal is a valid number
         let finalGrandTotal = parseFloat(grandTotal);
         if (isNaN(finalGrandTotal)) {
@@ -113,23 +112,37 @@ app.post("/bill", async (req, res) => {
         if (isNaN(finalDiscount)) {
             finalDiscount = 0; // Set to 0 if invalid
         }
-
+    
         // Process services and bill
         let services = [];
         let index = 1;
-        while (req.body[`services${index}`] && req.body[`prices${index}`] && req.body[`stylist${index}`]) {
+        while (req.body[`services${index}`]) {
             const stylistId = req.body[`stylist${index}`];
+            const stylist2Id = req.body[`stylist2`]; // This is the optional second stylist
             const stylist = await Staff.findById(stylistId);
+            let stylist2;
+            
             if (!stylist) {
                 return res.status(400).send(`Stylist with ID ${stylistId} not found`);
             }
-            services.push({
+            
+            // Prepare the service object with second stylist if provided
+            let serviceObj = {
                 name: req.body[`services${index}`],
                 price: parseFloat(req.body[`prices${index}`]),
                 stylist: stylist.name,
                 startTime: req.body[`startTime${index}`],
                 endTime: req.body[`endTime${index}`]
-            });
+            };
+            
+            // If second stylist is provided, add to the service object
+            if (stylist2Id) {
+                stylist2 = await Staff.findById(stylist2Id);
+                if (stylist2) {
+                    serviceObj.stylist2 = stylist2.name;
+                }
+            }
+            services.push(serviceObj);
             index++;
         }
 
@@ -168,7 +181,7 @@ app.post("/bill", async (req, res) => {
 app.post('/search-customer', async (req, res) => {
     try {
         const { customerName, customerNumber } = req.body;
-
+        
         // Create a case-insensitive regex for customer name
         const customerNameRegex = new RegExp(`^${customerName}$`, 'i');
         

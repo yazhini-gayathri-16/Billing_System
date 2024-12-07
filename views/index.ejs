@@ -113,6 +113,7 @@
                                         <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
                                     <% }); %>
                                 </select>
+                                <button type="button" onclick="addStylist(event)">Add Stylist</button>
                             </div>
                         </div>
 
@@ -256,6 +257,45 @@
             anniversaryField.style.display = document.getElementById('applyAnniversaryDiscount').checked ? 'block' : 'none';
         }
 
+        
+        // Function to add a second stylist
+        function addStylist(event) {
+            // Prevent default form action if needed
+            event.preventDefault();
+
+            // Find the parent service item container of the clicked button
+            const serviceItem = event.target.closest('.service-item');
+
+            // Check if a second stylist select box already exists to prevent multiple additions
+            if (!serviceItem.querySelector('#stylist2-container')) {
+                const stylist2Html = `
+                    <div class="form-group" id="stylist2-container">
+                        <label for="stylist2">Second Stylist:</label>
+                        <select name="stylist2" id="stylist2">
+                            <% staffMembers.forEach(function(staff) { %>
+                                <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
+                            <% }); %>
+                        </select>
+                        <span class="delete-btn" onclick="removeStylist(event)">&#128465;</span>
+                    </div>
+                `;
+                serviceItem.insertAdjacentHTML('beforeend', stylist2Html);
+            }
+        }
+
+        function removeStylist(event) {
+            // Prevent default form action if needed
+            event.preventDefault();
+
+            // Find and remove the stylist2-container within the same service item
+            const stylistContainer = event.target.closest('#stylist2-container');
+            if (stylistContainer) {
+                stylistContainer.remove();
+            }
+        }
+
+
+
 
         function addMore() {
             const container = document.getElementById('service-container');
@@ -265,6 +305,7 @@
             newService.classList.add('service-item');
 
             newService.innerHTML = `
+                
                 <!-- Service, Price, and Stylist on the same line -->
                 <div class="form-row">
                     <div class="form-group">
@@ -289,6 +330,7 @@
                                 <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
                             <% }); %>
                         </select>
+                        <button type="button" onclick="addStylist(event)">Add Stylist</button>
                     </div>
                 </div>
 
@@ -306,6 +348,7 @@
                 </div>
 
                 <span class="delete-btn" onclick="removeService(this)">&#128465;</span>
+                
             `;
 
             container.appendChild(newService);
