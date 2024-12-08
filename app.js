@@ -180,17 +180,14 @@ app.post("/bill", async (req, res) => {
 
 app.post('/search-customer', async (req, res) => {
     try {
-        const { customerName, customerNumber } = req.body;
+        const { customerNumber } = req.body;
         
-        // Create a case-insensitive regex for customer name
-        const customerNameRegex = new RegExp(`^${customerName}$`, 'i');
         
         const customerData = await Fetch.find({
-            customer_name: customerNameRegex,
             customer_number: customerNumber
         });
-        
         if (customerData.length > 0) {
+            const cust_name = customerData[0].customer_name;
             const totalSpent = customerData.reduce(
                 (sum, record) => sum + record.services.reduce((serviceSum, service) => serviceSum + service.price, 0), 
                 0
@@ -231,6 +228,7 @@ app.post('/search-customer', async (req, res) => {
 
             res.json({
                 success: true,
+                cust_name,
                 customerType,
                 lastVisit,
                 visits,
@@ -684,15 +682,14 @@ app.get("/client", (req, res) => {
 });
 
 
-// app.post('/search-customer', async (req, res) => {
+// app.post('/search-client', async (req, res) => {
 //     try {
-//         const { customerName, customerNumber } = req.body;
+//         const {customer_num } = req.body;
 //         // Create a case-insensitive regular expression for customer name
-//         const customerNameRegex = new RegExp('^' + customerName + '$', 'i');
+       
 
 //         const customerData = await Fetch.find({
-//             customer_name: customerNameRegex,  // Use regex for case-insensitive search
-//             customer_number: customerNumber
+//             customer_number: customer_num
 //         });
 
 //         if (customerData.length > 0) {
@@ -737,15 +734,15 @@ app.post('/add-membership', async (req, res) => {
 
 app.post('/find-membership', async (req, res) => {
     try {
-        const { searchCardNumber, searchPhoneNumber } = req.body;
+        const {searchPhoneNumber } = req.body;
         const membership = await Membership.findOne({
-            membershipID: searchCardNumber,
             phoneNumber: searchPhoneNumber
         });
 
         if (membership) {
             res.json({
                 success: true,
+                name: membership.customername,
                 membershipID: membership.membershipID,
                 phoneNumber: membership.phoneNumber,
                 birthDate: membership.birthDate,

@@ -19,9 +19,6 @@
         <div class="search-section">
             <h1>Search for Client</h1>
             <form id="searchForm" class="form-inline">
-                <label for="customerName">Customer Name:</label>
-                <input type="text" autocomplete="off" id="customerName" name="customerName" placeholder="Customer Name" required>
-                
                 <label for="customerNumber">Customer Number:</label>
                 <input type="text" autocomplete="off" id="customerNumber" name="customerNumber" placeholder="Customer Phone Number" required>
                 
@@ -34,15 +31,13 @@
         <div class="search-membership">
             <h2>Search Membership</h2>
             <form id="findMembershipForm" class="form-inline">
-                <label for="searchCardNumber">Membership Card Number:</label>
-                <input type="text" autocomplete="off" name="searchCardNumber" placeholder="Card Number" required>
                 <label for="searchPhoneNumber">Phone Number:</label>
-                <input type="text" autocomplete="off" name="searchPhoneNumber" placeholder="Phone Number" required>
+                <input type="text" autocomplete="off" id="searchNumber" name="searchPhoneNumber" placeholder="Phone Number" required>
                 <button type="button" onclick="findMembership()">Find Membership</button>
             </form>
             <div id="membershipDetails" class="result"></div>
         </div>
-
+    
         <!-- Add New Membership Section -->
         <button type="button" onclick="toggleMembershipForm()">Add New Membership</button>
         <div id="membershipForm" class="add-membership-form">
@@ -89,21 +84,16 @@
         document.addEventListener("DOMContentLoaded", function () {
         // Function to search for a customer
         function searchCustomer() {
-            const form = document.getElementById('searchForm');
-            const formData = new FormData(form);
+            const customerNumber = document.getElementById("customerNumber").value;
+          
             
-            // Convert formData to a JSON object
-            const searchData = {};
-            formData.forEach((value, key) => {
-                searchData[key] = value.trim();
-            });
 
             fetch('/search-customer', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(searchData)
+                body: JSON.stringify({customerNumber})
             })
             .then(response => response.json())
             .then(data => {
@@ -111,13 +101,16 @@
                 
                 if (data.success) {
                     resultDiv.innerHTML = `
-                        <p><strong>Customer Type:</strong> ${data.customerType}</p>
-                        <p><strong>Last Visit:</strong> ${data.lastVisit}</p>
-                        <p><strong>Number of Visits:</strong> ${data.visits}</p>
-                        <p><strong>Total Spent:</strong> ₹${data.totalSpent}</p>
-                        <p><strong>Services Utilized:</strong> ${data.services.join(', ')}</p>
-                        <p><strong>Membership Status:</strong> ${data.membership}</p>
-                    `;
+                        <p>Customer Name: <span id="cust_name">${data.cust_name}</span></p>
+                        <p>Customer Type: <span id="customerType">${data.customerType}</span></p>
+                        <p>Last Visit: <span id="lastVisit">${data.lastVisit}</span></p>
+                        <p>Total Visits: <span id="totalVisits">${data.visits}</span></p>
+                        <p>Total Spendings: <span id="totalSpendings">${data.totalSpent}</span> INR</p>
+                        <p>Services: <span id="services">${data.services}</span></p>
+                        <p>Membership: <span id="membershipStatus">${data.membership}</span></p>
+                        <p>Birthday Offer Used: <span id="birthdayOfferStatus">${data.usedBirthdayOffer}</span></p>
+                        <p>Anniversary Offer Used: <span id="anniversaryOfferStatus">${data.usedAnniversaryOffer}</span></p>
+                                `;
                 } else {
                     resultDiv.innerHTML = `<p>No customer found with that information.</p>`;
                 }
@@ -136,21 +129,19 @@
 
     // Find Membership Details
     function findMembership() {
-        const form = document.getElementById('findMembershipForm');
-        const formData = new FormData(form);
-        const searchData = {};
-        formData.forEach((value, key) => searchData[key] = value);
+        const searchPhoneNumber = document.getElementById("searchNumber").value;
 
         fetch('/find-membership', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(searchData)
+            body: JSON.stringify({searchPhoneNumber})
         })
         .then(response => response.json())
         .then(data => {
             const detailsDiv = document.getElementById('membershipDetails');
             if (data.success) {
                 detailsDiv.innerHTML = `
+                    <p><strong>Member Name:</strong> ${data.name}</p>
                     <p><strong>Card Number:</strong> ${data.membershipID}</p>
                     <p><strong>Phone Number:</strong> ${data.phoneNumber}</p>
                     <p><strong>Birth Date:</strong> ${new Date(data.birthDate).toISOString().slice(0, 10)}</p>

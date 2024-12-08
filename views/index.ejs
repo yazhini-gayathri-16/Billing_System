@@ -30,7 +30,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Customer Name<span style="color: red;">*</span></label>
-                        <input type="text" name="customer_name" id="customerName" required placeholder="Enter the customer name" autocomplete="off" oninput="fetchClientDetails()">
+                        <input type="text" name="customer_name" id="customerName" required placeholder="Enter the customer name" autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label>Contact Number<span style="color: red;">*</span></label>
@@ -104,7 +104,7 @@
                             </div>
                             <div class="form-group">
                                 <label>Price:</label>
-                                <input type="number" name="prices1" required readonly>
+                                <input type="number" name="prices1" required oninput="updateSubtotal()">
                             </div>
                             <div class="form-group">
                                 <label>Stylist under service:</label>
@@ -142,8 +142,12 @@
                     <input type="number" name="subtotal" id="subtotal" readonly>
                 </div>
                 <div class="form-group">
-                    <label>Discount (%):</label>
+                    <label>Discount in percentage(%):</label>
                     <input type="number" name="discount" id="discount" oninput="calculateGrandTotal()">
+                </div>
+                <div class="form-group">
+                    <label>Discount in rupees(₹):</label>
+                    <input type="number" name="discount" id="discountrupees" oninput="calculaterupeesGrandTotal()">
                 </div>
                 <div class="form-group">
                     <label>Grand Total:</label>
@@ -156,6 +160,7 @@
         <!-- Client 360 Section -->
         <div class="client-details">
             <h3>Client 360°</h3>
+            <p>Customer Name: <span id="cust_name">-</span></p>
             <p>Customer Type: <span id="customerType">-</span></p>
             <p>Last Visit: <span id="lastVisit">-</span></p>
             <p>Total Visits: <span id="totalVisits">-</span></p>
@@ -320,7 +325,7 @@
                     
                     <div class="form-group">
                         <label for="prices${serviceCount}">Price:</label>
-                        <input type="number" name="prices${serviceCount}" required readonly>
+                        <input type="number" name="prices${serviceCount}" required oninput="updateSubtotal()">
                     </div>
 
                     <div class="form-group">
@@ -396,18 +401,19 @@
 
             
         async function fetchClientDetails() {
-            const name = document.getElementById('customerName').value;
+            // const name = document.getElementById('customerName').value;
             const number = document.getElementById('customerNumber').value;
-            if (name && number) {
+            if (number) {
                 try {
                     const response = await fetch('/search-customer', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ customerName: name, customerNumber: number })
+                        body: JSON.stringify({ customerNumber: number })
                     });
                     const data = await response.json();
 
                     if (data.success) {
+                        document.getElementById('cust_name').textContent = data.cust_name || '-';
                         document.getElementById('customerType').textContent = data.customerType || '-';
                         document.getElementById('lastVisit').textContent = data.lastVisit || '-';
                         document.getElementById('totalVisits').textContent = data.visits || '-';
@@ -444,6 +450,13 @@
             const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;
             const discount = parseFloat(document.getElementById('discount').value) || 0;
             const grandTotal = subtotal - (subtotal * (discount / 100));
+            document.getElementById('grandTotal').value = grandTotal.toFixed(2);
+        }
+
+        function calculaterupeesGrandTotal(){
+            const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;
+            const discount = parseFloat(document.getElementById('discountrupees').value) || 0;
+            const grandTotal = subtotal - (discount);
             document.getElementById('grandTotal').value = grandTotal.toFixed(2);
         }
 

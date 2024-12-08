@@ -25,6 +25,12 @@ body {
     text-align: center;
 }
 
+#searchForm{
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+}
+
 .search-membership{
     width: 70%;
     background-color: #F5F5DC;
@@ -55,6 +61,12 @@ body {
     gap: 20px;
     margin-bottom: 20px;
     align-items: center;
+}
+
+#findMembershipForm{
+    text-align: center;
+    align-items: center;
+    justify-content: center;
 }
 
 .form-group {
