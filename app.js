@@ -53,7 +53,8 @@ app.post("/bill", async (req, res) => {
             applyBirthdayDiscount,
             applyAnniversaryDiscount,
             birthdayDate,
-            anniversaryDate
+            anniversaryDate,
+            paymentMethod
         } = req.body;
 
         // Fetch membership details
@@ -157,6 +158,7 @@ app.post("/bill", async (req, res) => {
             subtotal: parseFloat(subtotal),
             discount: finalDiscount,  // Use the validated discount
             grandTotal: finalGrandTotal,
+            paymentMethod,
             services
         });
 

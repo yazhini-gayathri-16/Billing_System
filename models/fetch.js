@@ -35,6 +35,11 @@ const customer_id_schema = new mongoose.Schema({
         type: Number,
         required: false
     },
+    paymentMethod: {
+        type: String,
+        required: true,
+        enum: ['UPI', 'Card', 'Cash']
+    },
     subtotal: {
         type: Number,
         required: true
