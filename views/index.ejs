@@ -137,7 +137,7 @@
                 </div>
 
                 <!-- Payment Method Section -->
-                <div class="form-group">
+                <div class="form-group-PM">
                     <label>Payment Method:</label>
                     <div>
                         <input type="radio" id="paymentUPI" name="paymentMethod" value="UPI" required>
@@ -155,18 +155,39 @@
                     <label>Subtotal:</label>
                     <input type="number" name="subtotal" id="subtotal" readonly>
                 </div>
-                <div class="form-group">
-                    <label>Discount in percentage(%):</label>
-                    <input type="number" name="discount" id="discount" oninput="calculateGrandTotal()">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="discountType">Discount Type</label><br>
+                        <label>
+                            <input type="radio" name="discountType" value="percentage" id="discountPercentage" checked onchange="toggleDiscountType()">
+                            Percentage
+                        </label>
+                        <label>
+                            <input type="radio" name="discountType" value="rupees" id="discountRupees" onchange="toggleDiscountType()">
+                            Rupees
+                        </label>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Discount in rupees(₹):</label>
-                    <input type="number" name="discount" id="discountrupees" oninput="calculaterupeesGrandTotal()">
+
+                <!-- Discount in Percentage -->
+                <div class="form-group" id="percentageDiscountField">
+                    <label>Discount in Percentage (%):</label>
+                    <input type="number" name="discountPercentage" id="discountPercentageInput" oninput="calculateGrandTotal()">
                 </div>
+
+                <!-- Discount in Rupees -->
+                <div class="form-group" id="rupeesDiscountField" style="display: none;">
+                    <label>Discount in Rupees (₹):</label>
+                    <input type="number" name="discountRupees" id="discountRupeesInput" oninput="calculaterupeesGrandTotal()">
+                </div>
+
+                <!-- Grand Total -->
                 <div class="form-group">
                     <label>Grand Total:</label>
                     <input type="number" name="grandTotal" id="grandTotal" readonly>
                 </div>
+
                 <button type="submit">Generate Bill</button>
             </form>
         </div>
@@ -192,6 +213,7 @@
         window.onload = function() {
             updateDateTime();
             setInterval(updateDateTime, 1000);
+            toggleDiscountType(); // Ensure correct display on load
             setupEventListeners();
 
             // Fetch service data from the server
@@ -221,6 +243,21 @@
                     } else {
                         priceInput.value = '';
                     }
+                }
+            });
+
+            const discountPercentageInput = document.getElementById('discountPercentageInput');
+            const discountRupeesInput = document.getElementById('discountRupeesInput');
+
+            discountPercentageInput.addEventListener('input', function() {
+                if (document.getElementById('discountPercentage').checked) {
+                    calculateGrandTotal();
+                }
+            });
+
+            discountRupeesInput.addEventListener('input', function() {
+                if (document.getElementById('discountRupees').checked) {
+                    calculateGrandTotal();
                 }
             });
         }
@@ -276,7 +313,28 @@
             anniversaryField.style.display = document.getElementById('applyAnniversaryDiscount').checked ? 'block' : 'none';
         }
 
-        
+
+
+        function toggleDiscountType() {
+            const discountType = document.querySelector('input[name="discountType"]:checked').value;
+
+            const percentageField = document.getElementById('percentageDiscountField');
+            const rupeesField = document.getElementById('rupeesDiscountField');
+
+            if (discountType === 'percentage') {
+                percentageField.style.display = 'block';
+                rupeesField.style.display = 'none';
+                calculateGrandTotal();
+            } else {
+                percentageField.style.display = 'none';
+                rupeesField.style.display = 'block';
+                calculateGrandTotal();
+            }
+        }
+
+        // Initialize the toggle
+        toggleDiscountType();
+
         // Function to add a second stylist
         function addStylist(event) {
             // Prevent default form action if needed
@@ -388,6 +446,7 @@
                 return total + (parseFloat(input.value) || 0);
             }, 0);
             document.getElementById('subtotal').value = subtotal.toFixed(2);
+            calculateGrandTotal();
         }
 
         function validateMembershipID() {
@@ -462,8 +521,19 @@
 
         function calculateGrandTotal() {
             const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;
-            const discount = parseFloat(document.getElementById('discount').value) || 0;
-            const grandTotal = subtotal - (subtotal * (discount / 100));
+            let grandTotal = subtotal;
+            const discountType = document.querySelector('input[name="discountType"]:checked').value;
+
+            if (discountType === 'percentage') {
+                const discountPercent = parseFloat(document.getElementById('discountPercentageInput').value) || 0;
+                grandTotal = subtotal - subtotal * (discountPercent / 100);
+            } else {
+                const discountRupees = parseFloat(document.getElementById('discountRupeesInput').value) || 0;
+                grandTotal = subtotal - discountRupees;
+            }
+
+            console.log(grandTotal);
+
             document.getElementById('grandTotal').value = grandTotal.toFixed(2);
         }
 

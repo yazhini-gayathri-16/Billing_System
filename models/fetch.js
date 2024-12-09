@@ -44,6 +44,11 @@ const customer_id_schema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    discountType: {
+        type: String,
+        required: true,
+        enum: ["percentage", "rupees"], // Either percentage or rupees
+    },
     discount: {
         type: Number,
         required: false,

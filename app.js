@@ -47,8 +47,10 @@ app.post("/bill", async (req, res) => {
             time,
             gender,
             membershipID,
-            subtotal,
-            discount, // The discount value from the request
+            subtotal, 
+            discountPercentage,  // Discount Percentage
+            discountRupees,       // Discount in Rupees
+            discountType, 
             grandTotal,
             applyBirthdayDiscount,
             applyAnniversaryDiscount,
@@ -102,18 +104,23 @@ app.post("/bill", async (req, res) => {
             return res.status(400).send("Invalid grand total value.");
         }
 
+        let finalDiscount = 0;
+
+        if (discountType === "percentage") {
+             finalDiscount = parseFloat(discountPercentage) || 0;
+        //     finalGrandTotal -= finalGrandTotal * (finalDiscount / 100);
+        } else if (discountType === "rupees") {
+             finalDiscount = parseFloat(discountRupees) || 0;
+        //     finalGrandTotal -= finalDiscount;
+        }
+
         // Apply discount if any
         if (birthdayDiscountApplied || anniversaryDiscountApplied) {
             const discountToApply = 0.20; // 20% discount
             finalGrandTotal *= (1 - discountToApply);
         }
 
-        // Ensure the discount is a valid number before assigning
-        let finalDiscount = parseFloat(discount);
-        if (isNaN(finalDiscount)) {
-            finalDiscount = 0; // Set to 0 if invalid
-        }
-    
+        finalGrandTotal = Math.max(finalGrandTotal, 0);
         // Process services and bill
         let services = [];
         let index = 1;
@@ -156,7 +163,8 @@ app.post("/bill", async (req, res) => {
             gender,
             membershipID,
             subtotal: parseFloat(subtotal),
-            discount: finalDiscount,  // Use the validated discount
+            discount: finalDiscount,  // Store the calculated discount
+            discountType,  
             grandTotal: finalGrandTotal,
             paymentMethod,
             services
