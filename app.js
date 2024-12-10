@@ -9,6 +9,7 @@ const Membership = require('./models/membership');
 const Staff = require('./models/staff');
 const MonthlyData = require('./models/monthlydata');
 const Product = require('./models/inventory');
+const multer = require('multer');
 
 
 require("./connection");
@@ -18,6 +19,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 } // for example, 10 MB limit
+});
+
+
 
 const port = process.env.PORT || 3000;
 app.set('view engine', 'ejs');
@@ -830,9 +837,15 @@ app.get('/staff', async (req, res) => {
 });
 
 // Route to handle adding new staff
-app.post('/add-staff', async (req, res) => {
-    const { name, birthdate, contactNumber, gender, address, jobTitle, employmentStartDate } = req.body;
+app.post('/add-staff', upload.single('aadhaarPhoto'), async (req, res) => {
+    const { name, birthdate, contactNumber, gender, address, jobTitle, employmentStartDate, aadhaarId } = req.body;
+    const aadhaarPhoto = req.file ? `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}` : null;
     try {
+
+        // if (! || !) {
+        //     throw new Error("Aadhaar ID and photo are mandatory.");
+        // }
+
         // Create a new staff document
         const newStaff = new Staff({
             name,
@@ -841,13 +854,16 @@ app.post('/add-staff', async (req, res) => {
             gender,
             address,
             jobTitle,
-            employmentStartDate
+            employmentStartDate,
+            aadhaarId,
+            aadhaarPhoto
         });
         // Save the staff to the database
         await newStaff.save();
         res.redirect("/staff");
         
     } catch (err) {
+        console.log(err);
         res.status(500).send('Error adding staff members');
     }
 });

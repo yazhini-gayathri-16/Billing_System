@@ -8,7 +8,9 @@ const StaffSchema = new mongoose.Schema({
     gender: { type: String, required: true },
     address: { type: String, required: true },
     jobTitle: { type: String, required: true },
-    employmentStartDate: { type: Date, required: true }
+    employmentStartDate: { type: Date, required: true },
+    aadhaarId: { type: String, required: true },  // Add Aadhaar ID field
+    aadhaarPhoto: { type: String, required: false } // Add Aadhaar Photo field (filename/URL)
 });
 
 // Create the Staff model
