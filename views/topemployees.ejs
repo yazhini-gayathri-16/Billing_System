@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top Employees</title>
+    <link rel="stylesheet" href="/styles/topemployeestyle.css">
+</head>
+<body>
+    <h1>Top Employees</h1>
+    <div class="cards">
+        <div class="card">
+            <h2>Employee of the Day</h2>
+            <p><%= topOfDay && topOfDay.length ? `${topOfDay[0]._id} with ${topOfDay[0].count} services` : 'No data available' %></p>
+        </div>
+        <div class="card">
+            <h2>Employee of the Week</h2>
+            <p><%= topOfWeek && topOfWeek.length ? `${topOfWeek[0]._id} with ${topOfWeek[0].count} services` : 'No data available' %></p>
+        </div>
+        <div class="card">
+            <h2>Employee of the Month</h2>
+            <p><%= topOfMonth && topOfMonth.length ? `${topOfMonth[0]._id} with ${topOfMonth[0].count} services` : 'No data available' %></p>
+        </div>
+    </div>
+</body>
+</html>

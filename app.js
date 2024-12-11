@@ -969,6 +969,51 @@ app.post('/export', async (req, res) => {
     }
 });
 
+app.get('/top-employees', async (req, res) => {
+    try {
+        const today = new Date();
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+
+        // Adjust these to fit how your week and month should start
+        const startOfWeek = new Date(today - today.getDay() * 24*60*60*1000); 
+        const endOfWeek = new Date(startOfWeek.getTime() + 7 * 24*60*60*1000);
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+        const topOfDay = await Fetch.aggregate([
+            { $match: { date: { $gte: startOfDay, $lt: endOfDay } } },
+            { $unwind: "$services" },
+            { $group: { _id: "$services.stylist", count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+            { $limit: 1 }
+        ]);
+
+        const topOfWeek = await Fetch.aggregate([
+            { $match: { date: { $gte: startOfWeek, $lt: endOfWeek } } },
+            { $unwind: "$services" },
+            { $group: { _id: "$services.stylist", count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+            { $limit: 1 }
+        ]);
+
+        const topOfMonth = await Fetch.aggregate([
+            { $match: { date: { $gte: startOfMonth, $lt: endOfMonth } } },
+            { $unwind: "$services" },
+            { $group: { _id: "$services.stylist", count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+            { $limit: 1 }
+        ]);
+
+        // Render the EJS template and pass the results
+        res.render('topemployees', { topOfDay, topOfWeek, topOfMonth });
+    } catch (error) {
+        console.error('Error fetching top employees:', error);
+        res.status(500).send('Error fetching top employees');
+    }
+});
+
+
 app.listen(port, () => {
     console.log(`Server is running on ${port}`);
 });
