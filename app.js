@@ -1013,6 +1013,45 @@ app.get('/top-employees', async (req, res) => {
     }
 });
 
+app.get('/top-stylists', async (req, res) => {
+    const { period } = req.query; // Expect 'day', 'week', or 'month' as a query parameter
+    const today = new Date();
+    let start, end;
+
+    switch (period) {
+        case 'day':
+            start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+            break;
+        case 'week':
+            start = new Date(today - today.getDay() * 24 * 60 * 60 * 1000);
+            end = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
+            break;
+        case 'month':
+            start = new Date(today.getFullYear(), today.getMonth(), 1);
+            end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            break;
+        default:
+            return res.status(400).json({ error: "Invalid period specified" });
+    }
+
+    try {
+        const topStylists = await Fetch.aggregate([
+            { $match: { date: { $gte: start, $lt: end } } },
+            { $unwind: "$services" },
+            { $group: { _id: "$services.stylist", count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+            { $limit: 3 }
+        ]);
+
+        res.json(topStylists);
+    } catch (error) {
+        console.error('Error fetching top stylists:', error);
+        res.status(500).send('Error fetching top stylists');
+    }
+});
+
+
 
 app.listen(port, () => {
     console.log(`Server is running on ${port}`);
