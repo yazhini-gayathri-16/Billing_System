@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enter Expenses</title>
+    <link rel="stylesheet" href="/styles/expenses.css"> <!-- Ensure the path to your CSS file is correct -->
+</head>
+<body>
+    <div class="container">
+        <h1>Expense Entry Form</h1>
+        <div class="inventory-form">
+            <form id="expenseForm" class="form-inline">
+                <label for="type">Expense Type:</label>
+                <select id="type" name="type" required>
+                    <option value="Tea/Coffee">Tea/Coffee</option>
+                    <option value="Lunch">Lunch</option>
+                    <option value="Breakfast">Breakfast</option>
+                    <option value="Snacks">Snacks</option>
+                    <option value="Dinner">Dinner</option>
+                    <option value="Others">Others</option>
+                </select>
+
+                <label for="date">Date:</label>
+                <input type="date" id="date" name="date" required>
+
+                <label for="amount">Amount:</label>
+                <input type="number" id="amount" name="amount" required>
+
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" required></textarea>
+
+                <button type="submit">Submit</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('expenseForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent the form from submitting through the browser
+
+            let expenseData = {
+                type: document.getElementById('type').value,
+                date: document.getElementById('date').value,
+                amount: document.getElementById('amount').value,
+                description: document.getElementById('description').value
+            };
+
+            fetch('/add-expense', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(expenseData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message); // Display success message from server response
+                document.getElementById('expenseForm').reset(); // Reset the form after submission
+            })
+            .catch(error => {
+                console.error('Error adding expense:', error);
+                alert('Error adding expense: ' + error);
+            });
+        });
+    </script>
+</body>
+</html>

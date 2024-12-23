@@ -9,6 +9,7 @@ const Membership = require('./models/membership');
 const Staff = require('./models/staff');
 const MonthlyData = require('./models/monthlydata');
 const Product = require('./models/inventory');
+const Expense = require('./models/expenseschema'); 
 const multer = require('multer');
 
 
@@ -527,6 +528,26 @@ app.get('/monthly-data', async (req, res) => {
     }
 });
 
+
+// Route to display the expense form
+app.get('/expenses', (req, res) => {
+    res.render('expenses');
+});
+
+// Route to handle form submission
+app.post('/add-expense', (req, res) => {
+    const { type, description, amount, date } = req.body;
+    
+    // Here you can validate the inputs
+    if (!type || !description || !amount || !date) {
+        return res.status(400).json({ message: 'All fields are required!' });
+    }
+
+    const newExpense = new Expense({ type, description, amount, date });
+    newExpense.save()
+        .then(() => res.json({ message: 'Expense added successfully' }))
+        .catch(err => res.status(400).json({ error: 'Failed to add expense' }));
+});
 
 
 

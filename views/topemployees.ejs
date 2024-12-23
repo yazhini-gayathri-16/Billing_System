@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Top Employees</title>
+    <link rel="icon" href="/images/logo 3-square.png" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles/topemployeestyle.css">
 </head>
 <body>
@@ -44,26 +48,16 @@
     </table>
 
     <script>
-
     document.addEventListener('DOMContentLoaded', function() {
         const tableBody = document.getElementById('stylistTable');
         const periodSelect = document.getElementById('periodSelect');
 
-        // Function to fetch top stylists and update the table
         function fetchTopStylists(period) {
             fetch(`/top-stylists?period=${period}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
+                .then(response => response.json())
                 .then(data => {
                     tableBody.innerHTML = ''; // Clear existing rows
-
-                    // Check if data is returned
                     if (data && data.length > 0) {
-                        // Iterate over each stylist and append a row to the table
                         data.forEach(stylist => {
                             const row = tableBody.insertRow();
                             const cell1 = row.insertCell(0);
@@ -72,7 +66,6 @@
                             cell2.textContent = stylist.count;
                         });
                     } else {
-                        // Handle case where no data is returned
                         tableBody.innerHTML = '<tr><td colspan="2">No data available for this period</td></tr>';
                     }
                 })
@@ -82,62 +75,11 @@
                 });
         }
 
-        // Initial fetch for the current day
-        fetchTopStylists('day');
-
-        // Event listener for dropdown changes
+        fetchTopStylists('day'); // Initial fetch for the current day
         periodSelect.addEventListener('change', function() {
-            fetchTopStylists(this.value);
+            fetchTopStylists(this.value); // Event listener for dropdown changes
         });
     });
-        
-    document.addEventListener('DOMContentLoaded', function() {
-        const tableBody = document.getElementById('stylistTable');
-        const periodSelect = document.getElementById('periodSelect');
-
-        // Function to fetch top stylists and update the table
-        function fetchTopStylists(period) {
-            fetch(`/top-stylists?period=${period}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok ' + response.statusText);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    tableBody.innerHTML = ''; // Clear existing rows
-
-                    // Check if data is returned
-                    if (data && data.length > 0) {
-                        // Iterate over each stylist and append a row to the table
-                        data.forEach(stylist => {
-                            const row = tableBody.insertRow();
-                            const cell1 = row.insertCell(0);
-                            const cell2 = row.insertCell(1);
-                            cell1.textContent = stylist._id;
-                            cell2.textContent = stylist.count;
-                        });
-                    } else {
-                        // Handle case where no data is returned
-                        tableBody.innerHTML = '<tr><td colspan="2">No data available for this period</td></tr>';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching data:', error);
-                    tableBody.innerHTML = '<tr><td colspan="2">Error loading data</td></tr>';
-                });
-        }
-
-        // Initial fetch for the current day
-        fetchTopStylists('day');
-
-        // Event listener for dropdown changes
-        periodSelect.addEventListener('change', function() {
-            fetchTopStylists(this.value);
-        });
-    });
-
-
     </script>
 </body>
 </html>
