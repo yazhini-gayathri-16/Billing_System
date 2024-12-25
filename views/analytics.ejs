@@ -10,249 +10,176 @@
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    
+   
     <style>
         body {
             font-family: Arial, sans-serif;
             padding: 20px;
-            background-color: #f9f9f9;
+            margin: 0;
+            background-color: #f9f9f9; /* Light gray background */
+            box-sizing: border-box;
         }
+    
         .container {
-            width: 80%;
+            width: 90%;
+            max-width: 1200px;
             margin: 0 auto;
             text-align: center;
         }
-
-      /* Styling for the cards */
-      .metrics {
+    
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333; /* Dark gray text */
+        }
+    
+        /* Metrics Section */
+        .metrics {
             display: flex;
-            justify-content: space-around;
+            flex-wrap: wrap;
+            justify-content: center;
             gap: 15px;
             margin-bottom: 20px;
         }
+    
         .metric-card {
-            width: 150px;
+            flex: 1 1 150px;
+            max-width: 200px;
             padding: 15px;
             border-radius: 10px;
-            background-color: #fff;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background-color: #fff; /* White background */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
-            position: relative;
         }
+    
         .metric-card img {
             width: 40px;
             height: 40px;
             margin-bottom: 10px;
         }
+    
         .metric-card h3 {
             margin: 0;
             font-size: 14px;
-            color: #666;
+            color: #666; /* Medium gray text */
         }
+    
         .metric-card p {
             margin: 0;
             font-size: 22px;
             font-weight: bold;
-            color: #333;
+            color: #333; /* Dark gray text */
         }
-
+    
+        /* Target Form */
         .target-form {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
             margin-bottom: 20px;
         }
-        /* Adjust the size of the half-donut chart */
-        #clientDonutChart, #genderPieChart {
-        max-width: 300px;
-        max-height: 300px;
-        margin: 20px auto;
+    
+        .target-form input {
+            padding: 10px;
+            border: 1px solid #ccc; /* Light gray border */
+            border-radius: 5px;
+            width: 150px;
+            max-width: 100%;
         }
-        /* Make the monthly line chart larger */
+    
+        .target-form button {
+            background-color: #4CAF50; /* Green background */
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    
+        .target-form button:hover {
+            background-color: #45a049; /* Darker green on hover */
+        }
+    
+        /* Charts Section */
+        #clientDonutChart, #genderPieChart {
+            max-width: 300px;
+            max-height: 300px;
+            margin: 10px auto;
+        }
+    
+        /* Monthly Line Chart */
         #monthlyChart {
+            width: 100%;
             max-width: 800px;
-            max-height: 500px;
+            max-height: 400px;
             margin: 20px auto;
         }
-         /* Styling for the trending services table */
-         .trending-services {
+    
+        /* Trending Services Table */
+        .trending-services {
             margin-top: 30px;
-            text-align: left;
         }
+    
         .trending-services h2 {
+            font-size: 18px;
             margin-bottom: 10px;
-            font-size: 20px;
-            text-decoration: underline;
+            color: #333; /* Dark gray text */
+            text-align: center;
         }
+    
         .trending-services table {
             width: 100%;
             border-collapse: collapse;
             margin: 0 auto;
         }
+    
         .trending-services th, .trending-services td {
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid #ddd; /* Light gray border */
             text-align: center;
         }
+    
         .trending-services th {
-            background-color: #f1f1f1;
+            background-color: #f1f1f1; /* Light gray background for headers */
             font-weight: bold;
         }
-
-        .appointments-container {
-        width: 100%;
-        max-width: 400px;
-        margin: 0 auto;
-        padding: 20px;
-        background-color: #f7f7f7;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .appointments-container h2 {
-        font-size: 20px;
-        margin-bottom: 15px;
-        text-align: left;
-    }
-
-    .appointments {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .appointment-card {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 15px;
-        border-radius: 8px;
-        background-color: #ffffff;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .appointment-details {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
-
-    .appointment-image {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        object-fit: cover;
-    }
-
-    .appointment-details h3 {
-        margin: 0;
-        font-size: 16px;
-        font-weight: bold;
-        color: #333;
-    }
-
-    .appointment-details p {
-        margin: 3px 0;
-        font-size: 14px;
-        color: #777;
-    }
-
-    .appointment-time {
-        color: #555;
-    }
-
-    .appointment-price {
-        font-size: 18px;
-        font-weight: bold;
-        color: #333;
-    }
-
-    .calendar-header {
-        display: flex;
-        align-items: center;
-        justify-content: start;
-        gap: 8px;
-        font-size: 18px;
-        margin: 10px 0;
-    }
-
-    .calendar-icon {
-        width: 24px;
-        height: 24px;
-    }
-
-    .date-selector {
-        display: flex;
-        justify-content: space-around;
-        margin: 10px 0 20px;
-        gap: 10px;
-    }
-
-    .date-card {
-        padding: 10px;
-        background-color: #f0f0f0;
-        border-radius: 8px;
-        text-align: center;
-        cursor: pointer;
-        width: 50px;
-    }
-
-    .date-card.active {
-        background-color: #0066ff;
-        color: white;
-    }
-
-    .date-card p {
-        margin: 0;
-        font-size: 12px;
-    }
-
-    .date-card .day {
-        font-weight: bold;
-        font-size: 14px;
-    }
-
-    .stylists-container {
-        width: 300px;
-        padding: 15px;
-        border-radius: 8px;
-        background-color: #f7f7f7;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        text-align: left;
-    }
-    .stylists-container h2 {
-        font-size: 20px;
-        margin-bottom: 15px;
-    }
-    .stylist-card {
-        display: flex;
-        align-items: center;
-        padding: 15px;
-        border-radius: 8px;
-        background-color: #ffffff;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        margin-bottom: 10px;
-    }
-    .stylist-image {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        margin-right: 15px;
-    }
-    .stylist-details h3 {
-        margin: 0;
-        font-size: 16px;
-        font-weight: bold;
-        color: #333;
-    }
-    .stylist-details p {
-        margin: 5px 0;
-        font-size: 14px;
-        color: #777;
-    }
-
     
+        .trending-services tbody tr:nth-child(even) {
+            background-color: #f9f9f9; /* Alternating light gray rows */
+        }
+    
+        .trending-services tbody tr:hover {
+            background-color: #f1f1f1; /* Light gray hover effect */
+        }
+    
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .metrics {
+                flex-direction: column;
+                align-items: center;
+            }
+    
+            .metric-card {
+                width: 100%;
+                max-width: 250px;
+            }
+    
+            #monthlyChart {
+                max-width: 100%;
+            }
+    
+            .target-form input {
+                width: 100%;
+            }
+        }
     </style>
+    
+    
 </head>
 <body>
     <%- include('partials/navbar') %>
@@ -331,45 +258,6 @@
                 </table>
             </div>
         </div>
-
-        
-
-        <div style="display: flex; justify-content: space-between;">
-            <!-- Existing Appointments Section -->
-            <div class="appointments-container">
-                <h2>Upcoming Appointments</h2>
-                <div class="calendar-header">
-                    <img src="/images/appointment.png" alt="Calendar Icon" class="calendar-icon">
-                    <span id="currentMonth"></span>
-                </div>
-                <div id="dateSelector" class="date-selector">
-                    <!-- Date cards will be dynamically generated here -->
-                </div>
-                <div class="appointments" id="appointmentsList">
-                    <!-- Appointment cards will be populated here -->
-                </div>
-            </div>
-        
-            <!-- New Stylists Section -->
-            <div class="stylists-container">
-                <h2>Stylists</h2>
-                <div class="stylists">
-                    <% staffMembers.forEach((staff) => { %>
-                        <div class="stylist-card">
-                            <img src="/images/barber.png" alt="Stylist Image" class="stylist-image">
-                            <div class="stylist-details">
-                                <h3><%= staff.name %></h3>
-                                <p><%= staff.jobTitle %></p>
-                                <p><%= staff.employmentStartDate.toDateString() %></p>
-                            </div>
-                        </div>
-                    <% }) %>
-                </div>
-            </div>
-        </div>
-        
-        
-
     </div>
 
     <script>
@@ -379,8 +267,6 @@
         let monthlyChart;       // Reference for the monthly line chart
 
         document.addEventListener("DOMContentLoaded", () => {
-            generateDateCards();
-            fetchAppointmentsForDate(getTodayDateString()); // Fetch appointments for today on load
             fetchMetrics();                                // Load metrics on page load
             fetchCurrentMonthData();                       // Load donut chart data on page load
             fetchMonthlyData();   
@@ -388,7 +274,7 @@
             // Refresh the metrics every 30 seconds
             setInterval(fetchMetrics, 30000);// Load line chart data on page load
         });
-
+        
         // Fetch counts for metrics
         async function fetchMetrics() {
             try {
@@ -417,6 +303,7 @@
         // Fetch metrics on load
         fetchMetrics();
         
+
         async function fetchCurrentMonthData() {
             try {
                 const response = await fetch('/current-month-data');
@@ -437,7 +324,6 @@
                 updateDonutChart(0, 0); // Reset the chart in case of an error
             }
         }
-
 
         function createDonutChart() {
             const ctx = document.getElementById('clientDonutChart').getContext('2d');
@@ -561,10 +447,6 @@
 
         fetchGenderData();
 
-
-
-
-
         // Set Monthly Target Function
         async function setMonthlyTarget() {
             const targetValue = document.getElementById('monthlyTarget').value;
@@ -657,9 +539,8 @@
         }
 
         fetchMonthlyData(); // Fetch data and render the monthly chart
-
-         // Fetch trending services data and populate table
-         async function fetchTrendingServices() {
+ // Fetch trending services data and populate table
+ async function fetchTrendingServices() {
             try {
                 const response = await fetch('/trending-services');
                 const data = await response.json();
@@ -681,124 +562,7 @@
         }
 
         fetchTrendingServices(); // Fetch trending services on load
-
-
-        function getTodayDateString() {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-
-
-        function generateDateCards() {
-            const dateSelector = document.getElementById('dateSelector');
-            const currentMonth = document.getElementById('currentMonth');
-            const today = new Date();
-
-            // Display current month
-            const monthOptions = { month: 'long', year: 'numeric' };
-            currentMonth.innerText = today.toLocaleDateString('en-US', monthOptions);
-
-            // Generate date cards for the next 7 days
-            dateSelector.innerHTML = '';
-            for (let i = 0; i < 7; i++) {
-                const date = new Date(today);
-                date.setDate(today.getDate() + i);
-
-                const dateCard = document.createElement('div');
-                dateCard.className = 'date-card';
-                
-                const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'short' });
-                const dateOfMonth = date.getDate();
-
-                dateCard.innerHTML = `<p class="day">${dayOfWeek}</p><p>${dateOfMonth}</p>`;
-
-                // Format date as YYYY-MM-DD for backend query
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                const localDateString = `${year}-${month}-${day}`;
-                
-                dateCard.dataset.date = localDateString;
-
-                // Handle click to fetch appointments for selected date
-                dateCard.addEventListener('click', () => {
-                    document.querySelectorAll('.date-card').forEach(card => card.classList.remove('active'));
-                    dateCard.classList.add('active');
-                    fetchAppointmentsForDate(localDateString);
-                });
-
-                dateSelector.appendChild(dateCard);
-
-                // Set today as active initially
-                if (i === 0) {
-                    dateCard.classList.add('active');
-                }
-            }
-        }
-
-
-
-        // Function to fetch and display appointments for a specific date
-        async function fetchAppointmentsForDate(date) {
-            try {
-                console.log(date);
-                
-                const response = await fetch(`/appointments/${date}`);
-                const appointments = await response.json();
-                const appointmentsList = document.getElementById('appointmentsList');
-                appointmentsList.innerHTML = ''; // Clear previous appointments
-
-                if (appointments.length === 0) {
-                    // Show a message if there are no appointments for the selected date
-                    const noAppointmentsMessage = document.createElement('p');
-                    noAppointmentsMessage.textContent = 'No appointments for today';
-                    noAppointmentsMessage.style.color = '#777'; // Optional styling
-                    noAppointmentsMessage.style.textAlign = 'center';
-                    appointmentsList.appendChild(noAppointmentsMessage);
-                } else {
-                    // Render appointment cards if appointments exist
-                    appointments.forEach(appointment => {
-                        const appointmentCard = document.createElement('div');
-                        appointmentCard.className = 'appointment-card';
-
-                        const appointmentDate = new Date(appointment.dateTime);
-                        
-                        // Format time in UTC
-                        let hours = appointmentDate.getUTCHours();
-                        const minutes = appointmentDate.getUTCMinutes().toString().padStart(2, '0');
-                        const period = hours >= 12 ? 'p.m.' : 'a.m.';
-                        hours = hours % 12 || 12; // Convert to 12-hour format
-
-                        const formattedTime = `${hours}:${minutes} ${period}`;
-                       
-                        appointmentCard.innerHTML = `
-                            <div class="appointment-details">
-                                <img src="/images/shampoo.png" alt="Client" class="appointment-image">
-                                <div>
-                                    <h3>${appointment.customerName}</h3>
-                                    <p>${appointment.serviceType}</p>
-                                    <p class="appointment-time">${formattedTime}</p>
-                                </div>
-                            </div>
-                        `;
-                        appointmentsList.appendChild(appointmentCard);
-                    });
-                }
-            } catch (error) {
-                console.error("Error fetching appointments:", error);
-            }
-        }
-
-
-        // Generate date cards and fetch appointments for the first date on load
-        generateDateCards();
-        fetchAppointmentsForDate(new Date().toISOString().split('T')[0]); // Fetch for today by default
-
-
-
+    
     </script>
 </body>
 </html>
