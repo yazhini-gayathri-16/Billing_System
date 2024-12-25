@@ -74,6 +74,23 @@
                 <label for="validTillDate">Valid Till Date:</label>
                 <input type="date" autocomplete="off" id="validTillDate" name="validTillDate" readonly>
                 </div>
+
+                <!-- Add Price and Payment Method Section -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="memprice">Price:</label>
+                        <input type="number" autocomplete="off" name="memprice" placeholder="Membership Price" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="mempaymentMethod">Payment Method:</label>
+                        <div>
+                            <input type="radio" id="paymentUPI" name="mempaymentMethod" value="UPI" required><label for="paymentUPI">UPI</label>
+                            <input type="radio" id="paymentCash" name="mempaymentMethod" value="Cash" required><label for="paymentCash">Cash</label>
+                            <input type="radio" id="paymentCard" name="mempaymentMethod" value="Card" required><label for="paymentCard">Card</label>
+                        </div>
+                    </div>
+                </div>
+
                 
                 <button type="button" onclick="addMembership()">Add</button>
             </form>

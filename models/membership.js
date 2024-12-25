@@ -8,6 +8,8 @@ const membershipSchema = new mongoose.Schema({
     anniversaryDate: { type: Date },
     registeredDate: { type: Date, required: true},
     validTillDate: {type: Date, required: true},
+    memprice: { type: Number, required: false },  // New field for membership price
+    mempaymentMethod: { type: String, required: false, enum: ['UPI', 'Cash', 'Card'] },
     yearlyUsage: [{
         year: Number,
         usedBirthdayOffer: { type: Boolean, default: false },

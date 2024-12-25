@@ -752,7 +752,7 @@ app.get("/client", (req, res) => {
 
 app.post('/add-membership', async (req, res) => {
     try {
-        const { customername, membershipID, phoneNumber, birthDate, anniversaryDate, registeredDate, validTillDate } = req.body;
+        const { customername, membershipID, phoneNumber, birthDate, anniversaryDate, registeredDate, validTillDate, memprice, mempaymentMethod } = req.body;
         const newMembership = new Membership({
             customername,
             membershipID,
@@ -760,7 +760,9 @@ app.post('/add-membership', async (req, res) => {
             birthDate,
             anniversaryDate,
             registeredDate,
-            validTillDate
+            validTillDate,
+            memprice,             
+            mempaymentMethod
         });
         await newMembership.save();
         res.json({ success: true, message: 'Membership added successfully!' });
