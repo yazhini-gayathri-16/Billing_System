@@ -278,6 +278,19 @@ app.get('/dashboard', async (req, res) => {
     }
 });
 
+app.get('/employees',async (req,res)=>{
+    try {
+        // Fetch data for staff members
+        const staffMembers = await Staff.find();
+
+        // Render the dashboard and pass staffMembers data
+        res.render('employees', { staffMembers });
+    } catch (error) {
+        console.error("Failed to fetch staff members:", error);
+        res.status(500).send("Error loading the employees.");
+    }
+})
+
 
 app.get('/monthly-data', async (req, res) => {
     try {
@@ -653,6 +666,14 @@ app.get("/appointment", async (req, res) => {
     }
 });
 
+app.get('/analytics',(req,res)=>{
+    res.render('analytics');
+});
+
+
+app.get('/remainders',(req,res)=>{
+    res.render('remainders');
+});
 
 app.post('/appointments', async (req, res) => {
     try {
