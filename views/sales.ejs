@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Dashboard</title>
+    <link rel="stylesheet" href="/styles/main.css"> <!-- Ensure you have this CSS file for styling -->
+    <style>
+        body {
+            font-family: 'Gowun Batang', serif; /* Updated font family */
+            background-color: #D3E4CD; /* Light green background */
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-around; /* Adjusted for better alignment */
+            align-items: center; /* Ensures vertical alignment */
+            padding: 20px;
+            flex-wrap: nowrap; /* Prevents wrapping to ensure one line */
+            max-width: 1200px; /* Adjust width as necessary */
+            margin: auto; /* Center the container */
+        }
+
+        .dashboard-box {
+            background-color: #F5F5DC; /* Light beige background */
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 10px 20px; /* Adjusted padding for a more rectangular shape */
+            margin: 5px;
+            width: 20%; /* Adjust width for smaller boxes */
+            text-align: center;
+            flex-grow: 1; /* Allows boxes to grow and fill the container evenly */
+        }
+
+        .dashboard-box h2 {
+            color: #333;
+            font-size: 16px; /* Smaller font size for headers */
+        }
+
+        .dashboard-box p {
+            font-size: 20px; /* Adjusted font size */
+            font-weight: bold;
+            color: #666;
+            margin: 5px 0; /* Reduced margin for compact design */
+        }
+
+        .payment-summary {
+            width: 100%;
+            background-color: #F0F8E2; /* Very pale (mostly white) green */
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .payment-summary h2 {
+            margin-left: 20px;
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-left: 20px;
+        }
+
+        table th, table td {
+            text-align: left;
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        thead th {
+            background-color: #F5F5DC;
+        }
+
+        tbody tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        button {
+            background-color: #D97C17; /* Updated button color */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #A65B0F; /* Darker shade for hover effect */
+        }
+
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+    <%- include('partials/second_navbar') %>
+
+    <div class="container">
+        <div class="dashboard-box">
+            <h2>Total Income</h2>
+            <p>₹<%= totalIncome.toFixed(2) %></p>
+        </div>
+        <div class="dashboard-box">
+            <h2>Total Expenses</h2>
+            <p>₹<%= totalExpenses.toFixed(2) %></p>
+        </div>
+        <div class="dashboard-box">
+            <h2>Income from Services</h2>
+            <p>₹<%= serviceIncome.toFixed(2) %></p>
+        </div>
+        <div class="dashboard-box">
+            <h2>Income from Memberships</h2>
+            <p>₹<%= membershipIncome.toFixed(2) %></p>
+        </div>
+    </div>
+
+    <div class="payment-summary">
+        <h2>Payment Summary</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Billing Type</th>
+                    <th>UPI</th>
+                    <th>Cash</th>
+                    <th>Card</th>
+                    <th>Grand Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Service</td>
+                    <td>₹ <%= totalUPI %></td>
+                    <td>₹ <%= totalCash %></td>
+                    <td>₹ <%= totalCard %></td>
+                    <td>₹ <%= serviceIncome.toFixed(2) %></td>
+                </tr>
+                <tr>
+                    <td>Memberships</td>
+                    <td>₹ <%= totalUPIM %></td>
+                    <td>₹ <%= totalCashM %></td>
+                    <td>₹ <%= totalCardM %></td>
+                    <td>₹ <%= membershipIncome.toFixed(2) %></td>
+                </tr>
+                <tr>
+                    <td><strong>Total</strong></td>
+                    <td><strong>₹ <%= totUPI %></strong></td>
+                    <td><strong>₹ <%= totCash %></strong></td>
+                    <td><strong>₹ <%= totCard %></strong></td>
+                    <td><strong>₹ <%= totalIncome.toFixed(2) %></strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+
+    
+</body>
+</html>

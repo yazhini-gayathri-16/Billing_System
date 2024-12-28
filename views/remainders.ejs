@@ -35,29 +35,29 @@
 
         .card-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Adjusted for smaller cards */
             gap: 20px;
             width: 100%;
+            justify-content: center; /* Centers cards when fewer than max per row */
         }
+
 
         .appointment-card {
             background-color: #F5F5DC;
-            padding: 20px;
+            padding: 15px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
-        }
-
-        .appointment-details {
-            text-align: center;
+            width: 150px; /* Adjusted width to make it smaller */
+            height: 200px; /* Fixed height for uniformity */
         }
 
         .appointment-image {
-            width: 60px;
-            height: 60px;
+            width: 80px; /* Adjusted size */
+            height: 80px; /* Adjusted size */
             border-radius: 50%;
             object-fit: cover;
             margin-bottom: 10px;
@@ -65,16 +65,17 @@
 
         .appointment-details h3 {
             margin: 0;
-            font-size: 18px;
+            font-size: 16px; /* Slightly smaller font size */
             font-weight: bold;
             color: #333;
         }
 
         .appointment-details p {
             margin: 5px 0;
-            font-size: 14px;
+            font-size: 12px; /* Smaller font size */
             color: #555;
         }
+
 
         .calendar-header {
             display: flex;
@@ -128,7 +129,6 @@
     <%- include('partials/navbar') %>
     <%- include('partials/second_navbar') %>
     <div class="container">
-        <!-- Upcoming Appointments Section -->
         <h2>Upcoming Appointments</h2>
         <div class="calendar-header">
             <img src="/images/appointment.png" alt="Calendar Icon" class="calendar-icon">
@@ -141,7 +141,7 @@
             <!-- Appointment cards will be populated here -->
         </div>
     </div>
-
+    
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             generateDateCards();
