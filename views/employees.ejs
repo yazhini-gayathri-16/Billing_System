@@ -84,7 +84,8 @@
             <div class="card-grid">
                 <% staffMembers.forEach((staff) => { %>
                     <div class="stylist-card">
-                        <img src="/images/barber.png" alt="Stylist Image" class="stylist-image">
+                        <!-- <img src="/images/barber.png" alt="Stylist Image" class="stylist-image"> -->
+                        <img src= "<%= staff.aadhaarPhoto %>" alt="Stylist Image" class="stylist-image">
                         <div class="stylist-details">
                             <h3><%= staff.name %></h3>
                             <p><%= staff.jobTitle %></p>

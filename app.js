@@ -266,16 +266,7 @@ app.post('/search-customer', async (req, res) => {
 });
 
 app.get('/dashboard', async (req, res) => {
-    try {
-        // Fetch data for staff members
-        const staffMembers = await Staff.find();
-
-        // Render the dashboard and pass staffMembers data
-        res.render('dashboard', { staffMembers });
-    } catch (error) {
-        console.error("Failed to fetch staff members:", error);
-        res.status(500).send("Error loading the dashboard.");
-    }
+    res.render("analytics");
 });
 
 app.get('/employees',async (req,res)=>{
@@ -290,6 +281,168 @@ app.get('/employees',async (req,res)=>{
         res.status(500).send("Error loading the employees.");
     }
 })
+
+app.get('/sales', async (req, res) => {
+    try {
+        const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        const currentMonthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
+
+        // Total income from all sources
+        const totalIncome = await Fetch.aggregate([
+            { $match: { date: { $gte: currentMonthStart, $lte: currentMonthEnd } } },
+            { $group: { _id: null, total: { $sum: "$grandTotal" } } }
+        ]);
+
+        // Total expenses for the current month
+        const totalExpenses = await Expense.aggregate([
+            { $match: { date: { $gte: currentMonthStart, $lte: currentMonthEnd } } },
+            { $group: { _id: null, total: { $sum: "$amount" } } }
+        ]);
+
+        // Sum of income specifically from services for the current month, assuming services have a specific type or category
+        const serviceIncome = await Fetch.aggregate([
+            { 
+                $match: { 
+                    date: { $gte: currentMonthStart, $lte: currentMonthEnd }
+                } 
+            },
+            { $group: { _id: null, total: { $sum: "$grandTotal" } } }
+        ]);
+
+        // Sum of membership fees collected this month
+        const membershipIncome = await Membership.aggregate([
+            { $match: { registeredDate: { $gte: currentMonthStart, $lte: currentMonthEnd } } },
+            { $group: { _id: null, total: { $sum: "$memprice" } } }
+        ]);
+
+        const totalIncomeUPI = await Fetch.aggregate([
+            { 
+                $match: { 
+                    date: { $gte: currentMonthStart, $lte: currentMonthEnd },
+                    paymentMethod: "UPI" // Ensuring only UPI payments are considered
+                }
+            },
+            { 
+                $group: { 
+                    _id: null, 
+                    total: { $sum: "$grandTotal" } // Summing up grandTotal for UPI payments
+                }
+            }
+        ]);
+
+        const totalIncomeCard = await Fetch.aggregate([
+            { 
+                $match: { 
+                    date: { $gte: currentMonthStart, $lte: currentMonthEnd },
+                    paymentMethod: "Card" // Ensuring only UPI payments are considered
+                }
+            },
+            { 
+                $group: { 
+                    _id: null, 
+                    total: { $sum: "$grandTotal" } // Summing up grandTotal for UPI payments
+                }
+            }
+        ]);
+
+        const totalIncomeCash = await Fetch.aggregate([
+            { 
+                $match: { 
+                    date: { $gte: currentMonthStart, $lte: currentMonthEnd },
+                    paymentMethod: "Cash" // Ensuring only UPI payments are considered
+                }
+            },
+            { 
+                $group: { 
+                    _id: null, 
+                    total: { $sum: "$grandTotal" } // Summing up grandTotal for UPI payments
+                }
+            }
+        ]);
+
+        const totalIncomeUPIM = await Membership.aggregate([
+            { 
+                $match: { 
+                    registeredDate: { $gte: currentMonthStart, $lte: currentMonthEnd },
+                    mempaymentMethod: "UPI" // Corrected field for payment method
+                }
+            },
+            { 
+                $group: { 
+                    _id: null, 
+                    total: { $sum: "$memprice" } // Summing membership price for UPI payments
+                }
+            }
+        ]);
+        
+        const totalIncomeCardM = await Membership.aggregate([
+            { 
+                $match: { 
+                    registeredDate: { $gte: currentMonthStart, $lte: currentMonthEnd },
+                    mempaymentMethod: "Card" // Corrected field for payment method
+                }
+            },
+            { 
+                $group: { 
+                    _id: null, 
+                    total: { $sum: "$memprice" } // Summing membership price for Card payments
+                }
+            }
+        ]);
+        
+        const totalIncomeCashM = await Membership.aggregate([
+            { 
+                $match: { 
+                    registeredDate: { $gte: currentMonthStart, $lte: currentMonthEnd },
+                    mempaymentMethod: "Cash" // Corrected field for payment method
+                }
+            },
+            { 
+                $group: { 
+                    _id: null, 
+                    total: { $sum: "$memprice" } // Summing membership price for Cash payments
+                }
+            }
+        ]);
+        
+
+        // Safe accessing of aggregation results
+        const totalUPI = totalIncomeUPI.length > 0 ? totalIncomeUPI[0].total : 0;
+        const totalCard = totalIncomeCard.length > 0 ? totalIncomeCard[0].total : 0;
+        const totalCash = totalIncomeCash.length > 0 ? totalIncomeCash[0].total : 0;
+
+        const totalUPIM = totalIncomeUPIM.length > 0 ? totalIncomeUPIM[0].total : 0;
+        const totalCardM = totalIncomeCardM.length > 0 ? totalIncomeCardM[0].total : 0;
+        const totalCashM = totalIncomeCashM.length > 0 ? totalIncomeCashM[0].total : 0;
+
+
+        const totUPI = totalUPI + totalUPIM;
+        const totCard = totalCard + totalCardM;
+        const totCash = totalCash + totalCashM;
+
+        const finalTotal = (totalIncome[0] ? totalIncome[0].total : 0) + (membershipIncome[0] ? membershipIncome[0].total : 0);
+
+        res.render('sales', {
+            totalIncome: finalTotal,
+            totalExpenses: totalExpenses[0] ? totalExpenses[0].total : 0,
+            serviceIncome: serviceIncome[0] ? serviceIncome[0].total : 0,
+            membershipIncome: membershipIncome[0] ? membershipIncome[0].total : 0,
+            totalUPI,
+            totalCard,
+            totalCash,
+            totalUPIM,
+            totalCardM,
+            totalCashM,
+            totUPI,
+            totCard,
+            totCash
+        });
+    } catch (error) {
+        console.error('Error fetching sales data:', error);
+        res.status(500).send('Error loading sales data');
+    }
+});
+
 
 
 app.get('/monthly-data', async (req, res) => {
