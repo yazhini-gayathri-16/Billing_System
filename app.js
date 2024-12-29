@@ -1166,7 +1166,7 @@ app.post('/export', async (req, res) => {
     }
 });
 
-app.get('/top-employees', async (req, res) => {
+app.get('/topemployees', async (req, res) => {
     try {
         const today = new Date();
         const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
