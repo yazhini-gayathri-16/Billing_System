@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Package Billing</title>
+    <link rel="icon" href="/images/logo 3-square.png" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/billingstyle.css">
+</head>
+<body>
+    <h1>Package Billing</h1>
+
+    <form id="packageBillingForm">
+        <div id="package-container">
+            <div class="package-item">
+                <div class="form-row">
+                    <!-- Package Selection -->
+                    <div class="form-group basis-package">
+                        <label for="packages1">Package:</label>
+                        <input type="text" list="packageList1" name="packages1" autocomplete="off" required placeholder="Enter the package" oninput="filterPackages(this)">
+                        <datalist id="packageList1">
+                            <% packages.forEach(function(package) { %>
+                                <option value="<%= package.packageName %>">
+                                    <%= package.packageName %> - ₹<%= package.packagePrice %>
+                                </option>
+                            <% }); %>
+                        </datalist>
+                    </div>
+
+                    <!-- Package Price -->
+                    <div class="form-group basis-price">
+                        <label for="packagePrices1">Price:</label>
+                        <input type="number" name="packagePrices1" readonly required>
+                    </div>
+
+                    <!-- Stylist Selection -->
+                    <div class="form-group basis-stylist">
+                        <label for="stylist1">Stylist under package:</label>
+                        <div class="flex">
+                            <select name="stylist1" required>
+                                <% staffMembers.forEach(function(staff) { %>
+                                    <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
+                                <% }); %>
+                            </select>
+                            <button type="button" onclick="addStylist(event)">Add Stylist</button>
+                        </div>
+                    </div>
+
+                    <!-- Start and End Time -->
+                    <div class="form-group basis-time">
+                        <label for="startTime1">Start Time:</label>
+                        <input type="time" name="startTime1" required>
+                    </div>
+                    <div class="form-group basis-time">
+                        <label for="endTime1">End Time:</label>
+                        <input type="time" name="endTime1" required>
+                    </div>
+                </div>
+
+                <span class="delete-btn" onclick="removePackage(this)">&#128465;</span>
+            </div>
+        </div>
+
+        <button type="button" onclick="addMorePackages()">Add More Packages</button>
+        
+        <!-- Subtotal and Grand Total -->
+        <div>
+            <label for="subtotal">Subtotal:</label>
+            <input type="number" id="subtotal" readonly>
+        </div>
+        <div>
+            <label for="grandTotal">Grand Total:</label>
+            <input type="number" id="grandTotal" readonly>
+        </div>
+
+        <button type="submit">Generate Bill</button>
+    </form>
+
+    <script>
+        let packages = [];
+        let packageCount = 1;
+
+        window.onload = function () {
+            fetch("/api/packages")
+                .then(response => response.json())
+                .then(data => { packages = data; })
+                .catch(error => console.error('Error fetching packages:', error));
+
+            //updateDateTime();
+           //setInterval(updateDateTime, 1000);
+            //setupEventListeners();
+        };
+
+        function filterPackages(input) {
+            const index = input.name.match(/\d+/)[0];
+            const listId = `packageList${index}`;
+            const datalist = document.getElementById(listId);
+            
+            datalist.innerHTML = ''; // Clear existing options
+            const searchText = input.value.toLowerCase();
+
+            packages.forEach(pkg => {
+                if (pkg.packageName.toLowerCase().includes(searchText)) {
+                    const option = document.createElement('option');
+                    option.value = pkg.packageName;
+                    option.textContent = `${pkg.packageName} - ₹${pkg.packagePrice}`;
+                    datalist.appendChild(option);
+                }
+            });
+        }
+
+        function addMorePackages() {
+            const container = document.getElementById('package-container');
+            packageCount++;
+
+            const newPackage = document.createElement('div');
+            newPackage.classList.add('package-item');
+            newPackage.innerHTML = `
+                <div class="form-row">
+                    <div class="form-group basis-package">
+                        <label for="packages${packageCount}">Package:</label>
+                        <input type="text" list="packageList${packageCount}" name="packages${packageCount}" autocomplete="off" required placeholder="Enter the package" oninput="filterPackages(this)">
+                        <datalist id="packageList${packageCount}"></datalist>
+                    </div>
+                    <div class="form-group basis-price">
+                        <label for="packagePrices${packageCount}">Price:</label>
+                        <input type="number" name="packagePrices${packageCount}" readonly required>
+                    </div>
+                    <div class="form-group basis-stylist">
+                        <label for="stylist${packageCount}">Stylist under package:</label>
+                        <div class="flex">
+                            <select name="stylist${packageCount}" required>
+                                <% staffMembers.forEach(function(staff) { %>
+                                    <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
+                                <% }); %>
+                            </select>
+                            <button type="button" onclick="addStylist(event)">Add Stylist</button>
+                        </div>
+                    </div>
+                    <div class="form-group basis-time">
+                        <label for="startTime${packageCount}">Start Time:</label>
+                        <input type="time" name="startTime${packageCount}" required>
+                    </div>
+                    <div class="form-group basis-time">
+                        <label for="endTime${packageCount}">End Time:</label>
+                        <input type="time" name="endTime${packageCount}" required>
+                    </div>
+                </div>
+                <span class="delete-btn" onclick="removePackage(this)">&#128465;</span>
+            `;
+            container.appendChild(newPackage);
+        }
+
+        function removePackage(element) {
+            element.parentNode.remove();
+            updateSubtotal();
+        }
+    </script>
+</body>
+</html>

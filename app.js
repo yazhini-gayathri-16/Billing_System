@@ -10,6 +10,7 @@ const Staff = require('./models/staff');
 const MonthlyData = require('./models/monthlydata');
 const Product = require('./models/inventory');
 const Expense = require('./models/expenseschema'); 
+const Package = require('./models/packages');
 const multer = require('multer');
 
 
@@ -133,8 +134,11 @@ app.post("/bill", async (req, res) => {
         let services = [];
         let index = 1;
         while (req.body[`services${index}`]) {
+            console.log(req.body[`services${index}`]);
+            
             const stylistId = req.body[`stylist${index}`];
             const stylist2Id = req.body[`stylist2`]; // This is the optional second stylist
+            
             const stylist = await Staff.findById(stylistId);
             let stylist2;
             
@@ -158,6 +162,9 @@ app.post("/bill", async (req, res) => {
                     serviceObj.stylist2 = stylist2.name;
                 }
             }
+
+            console.log(`stylist 1: ${stylist.name}\nstylist 2: ${stylist2.name}`);
+            
             services.push(serviceObj);
             index++;
         }
@@ -280,7 +287,87 @@ app.get('/employees',async (req,res)=>{
         console.error("Failed to fetch staff members:", error);
         res.status(500).send("Error loading the employees.");
     }
-})
+});
+
+app.get("/packagebill", async (req, res) => {
+    try {
+        // Fetch all staff members and packages from the database
+        const staffMembers = await Staff.find({});
+        const packages = await Package.find({}); // Fetch packages from the Package collection
+        
+        // Pass staff members and packages to the EJS template
+        res.render("packagebill", { staffMembers, packages });
+    } catch (error) {
+        console.error("Failed to fetch data:", error);
+        res.status(500).send("Error loading the package billing page.");
+    }
+});
+
+app.get("/api/packages", async (req, res) => {
+    try {
+        // Fetch all packages from the database
+        const packages = await Package.find({});
+        
+        // Send the package list as JSON response
+        res.status(200).json(packages);
+    } catch (error) {
+        console.error("Failed to fetch packages:", error);
+        res.status(500).json({ error: "Failed to fetch packages" });
+    }
+});
+
+
+
+
+// Route for getting package management page
+app.get('/packages', async (req, res) => {
+    try {
+        const packages = await Package.find();
+        res.render('packages', { packages });
+    } catch (error) {
+        res.status(500).send('Error accessing package management page');
+    }
+});
+
+
+// Route to add a new package
+app.post('/add-package', async (req, res) => {
+    try {
+        const { packageName, packagePrice, includedServices, gender } = req.body;
+        const servicesArray = includedServices.split(',').map(service => service.trim()); // Assuming services are submitted as a comma-separated list
+        const newPackage = new Package({ packageName, packagePrice, includedServices: servicesArray, gender });
+        await newPackage.save();
+        res.redirect('/packages');
+    } catch (error) {
+        res.status(500).send('Error adding new package');
+    }
+});
+
+
+// Route to edit an existing package
+app.post('/edit-package', async (req, res) => {
+    try {
+        const { id, packageName, packagePrice, includedServices, gender } = req.body;
+        const servicesArray = includedServices.split(',').map(service => service.trim());
+        await Package.findByIdAndUpdate(id, { packageName, packagePrice, includedServices: servicesArray, gender });
+        res.redirect('/packages');
+    } catch (error) {
+        res.status(500).send('Error updating package');
+    }
+});
+
+
+// Route to delete a package
+app.post('/delete-package', async (req, res) => {
+    try {
+        const { id } = req.body;
+        await Package.findByIdAndDelete(id);
+        res.redirect('/packages');
+    } catch (error) {
+        res.status(500).send('Error deleting package');
+    }
+});
+
 
 app.get('/sales', async (req, res) => {
     try {

@@ -15,29 +15,7 @@
     <%- include('partials/navbar') %>
 
     <div class="container">
-        <!-- Client Search Form -->
-        <div class="search-section">
-            <h1>Search for Client</h1>
-            <form id="searchForm" class="form-inline">
-                <label for="customerNumber">Customer Number:</label>
-                <input type="text" autocomplete="off" id="customerNumber" name="customerNumber" placeholder="Customer Phone Number" required>
-                
-                <button type="button" onclick="searchCustomer()">Find</button>
-            </form>
-            <div id="result" class="result"></div>
-        </div>
 
-        <!-- Membership Search Section -->
-        <div class="search-membership">
-            <h2>Search Membership</h2>
-            <form id="findMembershipForm" class="form-inline">
-                <label for="searchPhoneNumber">Phone Number:</label>
-                <input type="text" autocomplete="off" id="searchNumber" name="searchPhoneNumber" placeholder="Phone Number" required>
-                <button type="button" onclick="findMembership()">Find Membership</button>
-            </form>
-            <div id="membershipDetails" class="result"></div>
-        </div>
-    
         <!-- Add New Membership Section -->
         <button type="button" onclick="toggleMembershipForm()">Add New Membership</button>
         <div id="membershipForm" class="add-membership-form">
@@ -95,6 +73,31 @@
                 <button type="button" onclick="addMembership()">Add</button>
             </form>
         </div>
+
+        <!-- Client Search Form -->
+        <div class="search-section">
+            <h1>Search for Client</h1>
+            <form id="searchForm" class="form-inline">
+                <label for="customerNumber">Customer Number:</label>
+                <input type="text" autocomplete="off" id="customerNumber" name="customerNumber" placeholder="Customer Phone Number" required>
+                
+                <button type="button" onclick="searchCustomer()">Find</button>
+            </form>
+            <div id="result" class="result"></div>
+        </div>
+
+        <!-- Membership Search Section -->
+        <div class="search-membership">
+            <h2>Search Membership</h2>
+            <form id="findMembershipForm" class="form-inline">
+                <label for="searchPhoneNumber">Phone Number:</label>
+                <input type="text" autocomplete="off" id="searchNumber" name="searchPhoneNumber" placeholder="Phone Number" required>
+                <button type="button" onclick="findMembership()">Find Membership</button>
+            </form>
+            <div id="membershipDetails" class="result"></div>
+        </div>
+    
+        
     </div>
 
     <script>

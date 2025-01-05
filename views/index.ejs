@@ -34,7 +34,7 @@
                     </div>
                     <div class="form-group basis">
                         <label>Contact Number<span style="color: red;">*</span></label>
-                        <input type="text" name="customer_number" id="customerNumber" placeholder="Enter the customer contact number" autocomplete="off" oninput="fetchClientDetails()" maxlength="10" required>
+                        <input type="number" name="customer_number" id="customerNumber" placeholder="Enter the customer contact number" autocomplete="off" oninput="fetchClientDetails()" maxlength="10" required>
                     </div>
                     <div class="form-group basis-short">
                         <label>Date :</label>
@@ -392,16 +392,20 @@
                 <!-- Service, Price, and Stylist on the same line -->
                         <div class="form-row">
                             <div class="form-group basis-service">
-                                <label>Service:</label>
-                                <input type="text" list="serviceList${serviceCount}" autocomplete="off" name="services${serviceCount}" required placeholder="Enter the service" oninput="filterServices(this)">
-                                <datalist id="serviceList${serviceCount}"></datalist>
+                                <label for="services${serviceCount}">Service:</label>
+                                <input type="text" list="serviceList${serviceCount}" name="services${serviceCount}" autocomplete="off" required placeholder="Enter the service" oninput="filterServices(this)">
+                                <datalist id="serviceList${serviceCount}">
+                                    <% services.forEach(function(service) { %>
+                                    <option value="<%= service.serviceName %>"><%= service.serviceName %> - ₹<%= service.regularPrice %> (Member: ₹<%= service.membershipPrice %>)</option>
+                                    <% }); %>
+                                </datalist>
                             </div>
                             <div class="form-group basis-price">
-                                <label>Price:</label>
+                                <label  for="prices${serviceCount}">Price:</label>
                                 <input type="number" name="prices${serviceCount}" required oninput="updateSubtotal()">
                             </div>
                             <div class="form-group basis-stylist">
-                                <label>Stylist under service:</label>
+                                <label for="stylist${serviceCount}">Stylist under service:</label>
                                 <div class="flex">
                                     <select name="stylist${serviceCount}" required>
                                         <% staffMembers.forEach(function(staff) { %>
@@ -413,11 +417,11 @@
                                 
                             </div>
                             <div class="form-group basis-time">
-                                <label>Start Time:</label>
+                                <label for="startTime${serviceCount}">Start Time:</label>
                                 <input type="time" name="startTime${serviceCount}" required>
                             </div>
                             <div class="form-group basis-time">
-                                <label>End Time:</label>
+                                <label for="endTime${serviceCount}">End Time:</label>
                                 <input type="time" name="endTime${serviceCount}" required>
                             </div>
                         </div>
