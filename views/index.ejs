@@ -28,28 +28,24 @@
     
                 <!-- Customer Name and Contact Number on the same line -->
                 <div class="form-row">
-                    <div class="form-group">
+                    <div class="form-group basis">
                         <label>Customer Name<span style="color: red;">*</span></label>
                         <input type="text" name="customer_name" id="customerName" required placeholder="Enter the customer name" autocomplete="off">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group basis">
                         <label>Contact Number<span style="color: red;">*</span></label>
-                        <input type="text" name="customer_number" id="customerNumber" placeholder="Enter the customer contact number" autocomplete="off" oninput="fetchClientDetails()" maxlength="10" required>
+                        <input type="number" name="customer_number" id="customerNumber" placeholder="Enter the customer contact number" autocomplete="off" oninput="fetchClientDetails()" maxlength="10" required>
                     </div>
-                </div>
-    
-                <!-- Date, Time, and Gender on the same line -->
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Date of billing:</label>
+                    <div class="form-group basis-short">
+                        <label>Date :</label>
                         <input type="date" id="date" name="date" readonly>
                     </div>
-                    <div class="form-group">
-                        <label>Time of billing:</label>
+                    <div class="form-group basis-short">
+                        <label>Time :</label>
                         <input type="time" id="time" name="time" readonly>
                     </div>
-                    <div class="form-group">
-                        <label>Gender:</label>
+                    <div class="form-group basis-short">
+                        <label>Gender :</label>
                         <select name="gender" id="gender" required>
                             <option value="Male">Male</option>
                             <option value="Female">Female</option>
@@ -92,38 +88,36 @@
                 </div>
     
                 <!-- Services Section -->
-                <!-- Services Section -->
                 <div id="service-container">
                     <div class="service-item">
                         <!-- Service, Price, and Stylist on the same line -->
                         <div class="form-row">
-                            <div class="form-group">
+                            <div class="form-group basis-service">
                                 <label>Service:</label>
                                 <input type="text" list="serviceList1" autocomplete="off" name="services1" required placeholder="Enter the service" oninput="filterServices(this)">
                                 <datalist id="serviceList1"></datalist>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group basis-price">
                                 <label>Price:</label>
                                 <input type="number" name="prices1" required oninput="updateSubtotal()">
                             </div>
-                            <div class="form-group">
+                            <div class="form-group basis-stylist">
                                 <label>Stylist under service:</label>
-                                <select name="stylist1" required>
-                                    <% staffMembers.forEach(function(staff) { %>
-                                        <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
-                                    <% }); %>
-                                </select>
-                                <button type="button" onclick="addStylist(event)">Add Stylist</button>
+                                <div class="flex">
+                                    <select name="stylist1" required>
+                                        <% staffMembers.forEach(function(staff) { %>
+                                            <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
+                                        <% }); %>
+                                    </select>
+                                    <button type="button" onclick="addStylist(event)">Add Stylist</button>
+                                </div>
+                                
                             </div>
-                        </div>
-
-                        <!-- Start Time and End Time on the same line -->
-                        <div class="form-row">
-                            <div class="form-group">
+                            <div class="form-group basis-time">
                                 <label>Start Time:</label>
                                 <input type="time" name="startTime1" required>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group basis-time">
                                 <label>End Time:</label>
                                 <input type="time" name="endTime1" required>
                             </div>
@@ -137,28 +131,34 @@
                 </div>
 
                 <!-- Payment Method Section -->
-                <div class="form-group-PM">
-                    <label>Payment Method:</label>
-                    <div>
-                        <input type="radio" id="paymentUPI" name="paymentMethod" value="UPI" required>
-                        <label for="paymentUPI">UPI</label>
-
-                        <input type="radio" id="paymentCard" name="paymentMethod" value="Card">
-                        <label for="paymentCard">Card</label>
-
-                        <input type="radio" id="paymentCash" name="paymentMethod" value="Cash">
-                        <label for="paymentCash">Cash</label>
-                    </div>
-                </div>                
+                <div class="form-row">
+                    
+                    <div class="form-group-PM">
+                        <label>Payment Method:</label>
+                        <div>
+                            <input type="radio" id="paymentUPI" name="paymentMethod" value="UPI" required>
+                            <label for="paymentUPI">UPI</label>
     
-                <div class="form-group">
-                    <label>Subtotal:</label>
-                    <input type="number" name="subtotal" id="subtotal" readonly>
+                            <input type="radio" id="paymentCard" name="paymentMethod" value="Card">
+                            <label for="paymentCard">Card</label>
+    
+                            <input type="radio" id="paymentCash" name="paymentMethod" value="Cash">
+                            <label for="paymentCash">Cash</label>
+                        </div>
+                    </div>   
+                    
+                    <div class="form-group grow">
+                        <label>Subtotal:</label>
+                        <input type="number" name="subtotal" id="subtotal" readonly>
+                    </div>
+
                 </div>
+
+               
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="discountType">Discount Type</label><br>
+                        <label for="discountType">Discount Type</label>
                         <label>
                             <input type="radio" name="discountType" value="percentage" id="discountPercentage" checked onchange="toggleDiscountType()">
                             Percentage
@@ -168,19 +168,23 @@
                             Rupees
                         </label>
                     </div>
+
+                    <!-- Discount in Percentage -->
+                    <div class="form-group" id="percentageDiscountField">
+                        <label>Discount in Percentage (%):</label>
+                        <input type="number" name="discountPercentage" id="discountPercentageInput" oninput="calculateGrandTotal()">
+                    </div>
+
+                    <!-- Discount in Rupees -->
+                    <div class="form-group" id="rupeesDiscountField" style="display: none;">
+                        <label>Discount in Rupees (₹):</label>
+                        <input type="number" name="discountRupees" id="discountRupeesInput" oninput="calculaterupeesGrandTotal()">
+                    </div>
+
+
                 </div>
 
-                <!-- Discount in Percentage -->
-                <div class="form-group" id="percentageDiscountField">
-                    <label>Discount in Percentage (%):</label>
-                    <input type="number" name="discountPercentage" id="discountPercentageInput" oninput="calculateGrandTotal()">
-                </div>
-
-                <!-- Discount in Rupees -->
-                <div class="form-group" id="rupeesDiscountField" style="display: none;">
-                    <label>Discount in Rupees (₹):</label>
-                    <input type="number" name="discountRupees" id="discountRupeesInput" oninput="calculaterupeesGrandTotal()">
-                </div>
+                
 
                 <!-- Grand Total -->
                 <div class="form-group">
@@ -188,7 +192,7 @@
                     <input type="number" name="grandTotal" id="grandTotal" readonly>
                 </div>
 
-                <button type="submit">Generate Bill</button>
+                <button type="submit" class="button-generate">Generate Bill</button>
             </form>
         </div>
     
@@ -382,47 +386,47 @@
             newService.classList.add('service-item');
 
             newService.innerHTML = `
-                
+
+
+
                 <!-- Service, Price, and Stylist on the same line -->
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="services${serviceCount}">Service:</label>
-                        <input type="text" list="serviceList${serviceCount}" name="services${serviceCount}" required placeholder="Enter the service" oninput="filterServices(this)">
-                        <datalist id="serviceList${serviceCount}">
-                            <% services.forEach(function(service) { %>
-                                <option value="<%= service.serviceName %>"><%= service.serviceName %> - ₹<%= service.regularPrice %> (Member: ₹<%= service.membershipPrice %>)</option>
-                            <% }); %>
-                        </datalist>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="prices${serviceCount}">Price:</label>
-                        <input type="number" name="prices${serviceCount}" required oninput="updateSubtotal()">
-                    </div>
+                        <div class="form-row">
+                            <div class="form-group basis-service">
+                                <label for="services${serviceCount}">Service:</label>
+                                <input type="text" list="serviceList${serviceCount}" name="services${serviceCount}" autocomplete="off" required placeholder="Enter the service" oninput="filterServices(this)">
+                                <datalist id="serviceList${serviceCount}">
+                                    <% services.forEach(function(service) { %>
+                                    <option value="<%= service.serviceName %>"><%= service.serviceName %> - ₹<%= service.regularPrice %> (Member: ₹<%= service.membershipPrice %>)</option>
+                                    <% }); %>
+                                </datalist>
+                            </div>
+                            <div class="form-group basis-price">
+                                <label  for="prices${serviceCount}">Price:</label>
+                                <input type="number" name="prices${serviceCount}" required oninput="updateSubtotal()">
+                            </div>
+                            <div class="form-group basis-stylist">
+                                <label for="stylist${serviceCount}">Stylist under service:</label>
+                                <div class="flex">
+                                    <select name="stylist${serviceCount}" required>
+                                        <% staffMembers.forEach(function(staff) { %>
+                                            <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
+                                        <% }); %>
+                                    </select>
+                                    <button type="button" onclick="addStylist(event)">Add Stylist</button>
+                                </div>
+                                
+                            </div>
+                            <div class="form-group basis-time">
+                                <label for="startTime${serviceCount}">Start Time:</label>
+                                <input type="time" name="startTime${serviceCount}" required>
+                            </div>
+                            <div class="form-group basis-time">
+                                <label for="endTime${serviceCount}">End Time:</label>
+                                <input type="time" name="endTime${serviceCount}" required>
+                            </div>
+                        </div>
 
-                    <div class="form-group">
-                        <label for="stylist${serviceCount}">Stylist under service:</label>
-                        <select name="stylist${serviceCount}" required>
-                            <% staffMembers.forEach(function(staff) { %>
-                                <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
-                            <% }); %>
-                        </select>
-                        <button type="button" onclick="addStylist(event)">Add Stylist</button>
-                    </div>
-                </div>
-
-                <!-- Start Time and End Time on the next line -->
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="startTime${serviceCount}">Start Time:</label>
-                        <input type="time" name="startTime${serviceCount}" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="endTime${serviceCount}">End Time:</label>
-                        <input type="time" name="endTime${serviceCount}" required>
-                    </div>
-                </div>
+               
 
                 <span class="delete-btn" onclick="removeService(this)">&#128465;</span>
                 
