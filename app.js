@@ -76,37 +76,35 @@ app.post("/bill", async (req, res) => {
         const currentMonth = new Date().toLocaleString('default', { month: 'short' });
         const currentYear = new Date().getFullYear();
         if (membership) {
-        
-
-        // Determine eligibility for discounts
-        
-        if (applyBirthdayDiscount && birthdayDate) {
-            const customerBirthMonth = new Date(membership.birthDate).toLocaleString('default', { month: 'short' });
-            if (currentMonth === customerBirthMonth) {
-                birthdayDiscountApplied = true;
+            // Determine eligibility for discounts
+            if (applyBirthdayDiscount && birthdayDate) {
+                const customerBirthMonth = new Date(membership.birthDate).toLocaleString('default', { month: 'short' });
+                if (currentMonth === customerBirthMonth) {
+                    birthdayDiscountApplied = true;
+                }
             }
-        }
-        if (applyAnniversaryDiscount && anniversaryDate) {
-            const customerAnniversaryMonth = new Date(membership.anniversaryDate).toLocaleString('default', { month: 'short' });
-            if (currentMonth === customerAnniversaryMonth) {
-                anniversaryDiscountApplied = true;
+            if (applyAnniversaryDiscount && anniversaryDate) {
+                const customerAnniversaryMonth = new Date(membership.anniversaryDate).toLocaleString('default', { month: 'short' });
+                if (currentMonth === customerAnniversaryMonth) {
+                    anniversaryDiscountApplied = true;
+                }
             }
+
+            // Check and update yearly usage
+            let yearlyUsage = membership.yearlyUsage.find(usage => usage.year === currentYear);
+            if (!yearlyUsage) {
+                yearlyUsage = { year: currentYear, usedBirthdayOffer: false, usedAnniversaryOffer: false };
+                membership.yearlyUsage.push(yearlyUsage);
+            }
+            if (birthdayDiscountApplied && !yearlyUsage.usedBirthdayOffer) {
+                yearlyUsage.usedBirthdayOffer = true;
+            }
+            if (anniversaryDiscountApplied && !yearlyUsage.usedAnniversaryOffer) {
+                yearlyUsage.usedAnniversaryOffer = true;
+            }
+            await membership.save();
         }
 
-        // Check and update yearly usage
-        let yearlyUsage = membership.yearlyUsage.find(usage => usage.year === currentYear);
-        if (!yearlyUsage) {
-            yearlyUsage = { year: currentYear, usedBirthdayOffer: false, usedAnniversaryOffer: false };
-            membership.yearlyUsage.push(yearlyUsage);
-        }
-        if (birthdayDiscountApplied && !yearlyUsage.usedBirthdayOffer) {
-            yearlyUsage.usedBirthdayOffer = true;
-        }
-        if (anniversaryDiscountApplied && !yearlyUsage.usedAnniversaryOffer) {
-            yearlyUsage.usedAnniversaryOffer = true;
-        }
-        await membership.save();
-    }
         // Ensure the grandTotal is a valid number
         let finalGrandTotal = parseFloat(grandTotal);
         if (isNaN(finalGrandTotal)) {
@@ -116,11 +114,9 @@ app.post("/bill", async (req, res) => {
         let finalDiscount = 0;
 
         if (discountType === "percentage") {
-             finalDiscount = parseFloat(discountPercentage) || 0;
-        //     finalGrandTotal -= finalGrandTotal * (finalDiscount / 100);
+            finalDiscount = parseFloat(discountPercentage) || 0;
         } else if (discountType === "rupees") {
-             finalDiscount = parseFloat(discountRupees) || 0;
-        //     finalGrandTotal -= finalDiscount;
+            finalDiscount = parseFloat(discountRupees) || 0;
         }
 
         // Apply discount if any
@@ -130,22 +126,21 @@ app.post("/bill", async (req, res) => {
         }
 
         finalGrandTotal = Math.max(finalGrandTotal, 0);
+
         // Process services and bill
         let services = [];
         let index = 1;
         while (req.body[`services${index}`]) {
-            console.log(req.body[`services${index}`]);
-            
             const stylistId = req.body[`stylist${index}`];
             const stylist2Id = req.body[`stylist2`]; // This is the optional second stylist
-            
+
             const stylist = await Staff.findById(stylistId);
             let stylist2;
-            
+
             if (!stylist) {
                 return res.status(400).send(`Stylist with ID ${stylistId} not found`);
             }
-            
+
             // Prepare the service object with second stylist if provided
             let serviceObj = {
                 name: req.body[`services${index}`],
@@ -154,7 +149,7 @@ app.post("/bill", async (req, res) => {
                 startTime: req.body[`startTime${index}`],
                 endTime: req.body[`endTime${index}`]
             };
-            
+
             // If second stylist is provided, add to the service object
             if (stylist2Id) {
                 stylist2 = await Staff.findById(stylist2Id);
@@ -163,8 +158,6 @@ app.post("/bill", async (req, res) => {
                 }
             }
 
-            console.log(`stylist 1: ${stylist.name}\nstylist 2: ${stylist2.name}`);
-            
             services.push(serviceObj);
             index++;
         }
