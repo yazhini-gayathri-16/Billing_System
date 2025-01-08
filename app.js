@@ -65,7 +65,8 @@ app.post("/bill", async (req, res) => {
             applyAnniversaryDiscount,
             birthdayDate,
             anniversaryDate,
-            paymentMethod
+            paymentMethod,
+            billType
         } = req.body;
 
         // Fetch membership details
@@ -132,16 +133,13 @@ app.post("/bill", async (req, res) => {
         let index = 1;
         while (req.body[`services${index}`]) {
             const stylistId = req.body[`stylist${index}`];
-            const stylist2Id = req.body[`stylist2`]; // This is the optional second stylist
-
+            const stylist2Id = req.body[`stylist2${index}`]; // Changed to use indexed version
             const stylist = await Staff.findById(stylistId);
-            let stylist2;
-
+            
             if (!stylist) {
                 return res.status(400).send(`Stylist with ID ${stylistId} not found`);
             }
 
-            // Prepare the service object with second stylist if provided
             let serviceObj = {
                 name: req.body[`services${index}`],
                 price: parseFloat(req.body[`prices${index}`]),
@@ -150,9 +148,8 @@ app.post("/bill", async (req, res) => {
                 endTime: req.body[`endTime${index}`]
             };
 
-            // If second stylist is provided, add to the service object
             if (stylist2Id) {
-                stylist2 = await Staff.findById(stylist2Id);
+                const stylist2 = await Staff.findById(stylist2Id);
                 if (stylist2) {
                     serviceObj.stylist2 = stylist2.name;
                 }
@@ -175,7 +172,166 @@ app.post("/bill", async (req, res) => {
             discountType,  
             grandTotal: finalGrandTotal,
             paymentMethod,
-            services
+            services,
+            billType
+        });
+
+        if (user) {
+            // Update or create monthly data
+            const monthlyData = await MonthlyData.findOneAndUpdate(
+                { month: currentMonth, year: currentYear },
+                { $inc: { achieved: 1 } },
+                { upsert: true, new: true }
+            );
+            res.status(200).redirect('/');
+        } else {
+            res.status(400).send("Failed to create receipt");
+        }
+    } catch (err) {
+        console.error("Error creating bill:", err);
+        res.status(500).send(err.message);
+    }
+});
+
+app.get("/packageBilling", async (req, res) => {
+    try {
+        // Fetch all staff members and packages from the database
+        const staffMembers = await Staff.find({});
+        const packages = await Package.find({}); // Fetch packages from the Package collection
+        
+        // Pass staff members and packages to the EJS template
+        res.render("packagebill", { staffMembers, packages });
+    } catch (error) {
+        console.error("Failed to fetch data:", error);
+        res.status(500).send("Error loading the package billing page.");
+    }
+});
+
+app.post("/packageBill", async (req, res) => {
+    try {
+        const {
+            customer_name,
+            customer_number,
+            date,
+            time,
+            gender,
+            membershipID,
+            subtotal, 
+            discountPercentage,  // Discount Percentage
+            discountRupees,       // Discount in Rupees
+            discountType, 
+            grandTotal,
+            applyBirthdayDiscount,
+            applyAnniversaryDiscount,
+            birthdayDate,
+            anniversaryDate,
+            paymentMethod
+        } = req.body;
+
+        // Fetch membership details
+        const membership = await Membership.findOne({ membershipID });
+        let birthdayDiscountApplied = false;
+        let anniversaryDiscountApplied = false;
+        // Get current month and year
+        const currentMonth = new Date().toLocaleString('default', { month: 'short' });
+        const currentYear = new Date().getFullYear();
+        if (membership) {
+            // Determine eligibility for discounts
+            if (applyBirthdayDiscount && birthdayDate) {
+                const customerBirthMonth = new Date(membership.birthDate).toLocaleString('default', { month: 'short' });
+                if (currentMonth === customerBirthMonth) {
+                    birthdayDiscountApplied = true;
+                }
+            }
+            if (applyAnniversaryDiscount && anniversaryDate) {
+                const customerAnniversaryMonth = new Date(membership.anniversaryDate).toLocaleString('default', { month: 'short' });
+                if (currentMonth === customerAnniversaryMonth) {
+                    anniversaryDiscountApplied = true;
+                }
+            }
+
+            // Check and update yearly usage
+            let yearlyUsage = membership.yearlyUsage.find(usage => usage.year === currentYear);
+            if (!yearlyUsage) {
+                yearlyUsage = { year: currentYear, usedBirthdayOffer: false, usedAnniversaryOffer: false };
+                membership.yearlyUsage.push(yearlyUsage);
+            }
+            if (birthdayDiscountApplied && !yearlyUsage.usedBirthdayOffer) {
+                yearlyUsage.usedBirthdayOffer = true;
+            }
+            if (anniversaryDiscountApplied && !yearlyUsage.usedAnniversaryOffer) {
+                yearlyUsage.usedAnniversaryOffer = true;
+            }
+            await membership.save();
+        }
+
+        // Ensure the grandTotal is a valid number
+        let finalGrandTotal = parseFloat(grandTotal);
+        if (isNaN(finalGrandTotal)) {
+            return res.status(400).send("Invalid grand total value.");
+        }
+
+        let finalDiscount = 0;
+
+        if (discountType === "percentage") {
+            finalDiscount = parseFloat(discountPercentage) || 0;
+        } else if (discountType === "rupees") {
+            finalDiscount = parseFloat(discountRupees) || 0;
+        }
+
+        // Apply discount if any
+        if (birthdayDiscountApplied || anniversaryDiscountApplied) {
+            const discountToApply = 0.20; // 20% discount
+            finalGrandTotal *= (1 - discountToApply);
+        }
+
+        finalGrandTotal = Math.max(finalGrandTotal, 0);
+
+        // Process packages and bill
+        let packages = [];
+        let index = 1;
+        while (req.body[`packages${index}`]) {
+            const stylistId = req.body[`stylist${index}`];
+            const stylist2Id = req.body[`stylist2${index}`]; // Changed to use indexed version
+            const stylist = await Staff.findById(stylistId);
+            
+            if (!stylist) {
+                return res.status(400).send(`Stylist with ID ${stylistId} not found`);
+            }
+
+            let packageObj = {
+                name: req.body[`packages${index}`],
+                price: parseFloat(req.body[`prices${index}`]),
+                stylist: stylist.name,
+                startTime: req.body[`startTime${index}`],
+                endTime: req.body[`endTime${index}`]
+            };
+
+            if (stylist2Id) {
+                const stylist2 = await Staff.findById(stylist2Id);
+                if (stylist2) {
+                    packageObj.stylist2 = stylist2.name;
+                }
+            }
+
+            packages.push(packageObj);
+            index++;
+        }
+
+        // Create bill record in Fetch collection
+        const user = await Fetch.create({
+            customer_name,
+            customer_number,
+            date,
+            time,
+            gender,
+            membershipID,
+            subtotal: parseFloat(subtotal),
+            discount: finalDiscount,  // Store the calculated discount
+            discountType,  
+            grandTotal: finalGrandTotal,
+            paymentMethod,
+            packages
         });
 
         if (user) {
@@ -381,12 +537,34 @@ app.get('/sales', async (req, res) => {
 
         // Sum of income specifically from services for the current month, assuming services have a specific type or category
         const serviceIncome = await Fetch.aggregate([
-            { 
-                $match: { 
-                    date: { $gte: currentMonthStart, $lte: currentMonthEnd }
-                } 
+            {
+                $match: {
+                    date: { $gte: currentMonthStart, $lte: currentMonthEnd },
+                    billType: "service" // Added filter for billType
+                }
             },
-            { $group: { _id: null, total: { $sum: "$grandTotal" } } }
+            {
+                $group: {
+                    _id: null,
+                    total: { $sum: "$grandTotal" }
+                }
+            }
+        ]);
+        
+        // Sum of income specifically from packages for the current month, assuming packages have a specific type or category
+        const packageIncome = await Fetch.aggregate([
+            {
+                $match: {
+                    date: { $gte: currentMonthStart, $lte: currentMonthEnd },
+                    billType: "package" // Added filter for billType
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    total: { $sum: "$grandTotal" }
+                }
+            }
         ]);
 
         // Sum of membership fees collected this month
@@ -399,7 +577,8 @@ app.get('/sales', async (req, res) => {
             { 
                 $match: { 
                     date: { $gte: currentMonthStart, $lte: currentMonthEnd },
-                    paymentMethod: "UPI" // Ensuring only UPI payments are considered
+                    paymentMethod: "UPI", // Ensuring only UPI payments are considered
+                    billType: "service" 
                 }
             },
             { 
@@ -414,7 +593,8 @@ app.get('/sales', async (req, res) => {
             { 
                 $match: { 
                     date: { $gte: currentMonthStart, $lte: currentMonthEnd },
-                    paymentMethod: "Card" // Ensuring only UPI payments are considered
+                    paymentMethod: "Card", // Ensuring only UPI payments are considered
+                    billType: "service" 
                 }
             },
             { 
@@ -429,7 +609,56 @@ app.get('/sales', async (req, res) => {
             { 
                 $match: { 
                     date: { $gte: currentMonthStart, $lte: currentMonthEnd },
-                    paymentMethod: "Cash" // Ensuring only UPI payments are considered
+                    paymentMethod: "Cash", // Ensuring only UPI payments are considered
+                    billType: "service" 
+                }
+            },
+            { 
+                $group: { 
+                    _id: null, 
+                    total: { $sum: "$grandTotal" } // Summing up grandTotal for UPI payments
+                }
+            }
+        ]);
+
+        const totalIncomeUPIP = await Fetch.aggregate([
+            { 
+                $match: { 
+                    date: { $gte: currentMonthStart, $lte: currentMonthEnd },
+                    paymentMethod: "UPI", // Ensuring only UPI payments are considered
+                    billType: "package" 
+                }
+            },
+            { 
+                $group: { 
+                    _id: null, 
+                    total: { $sum: "$grandTotal" } // Summing up grandTotal for UPI payments
+                }
+            }
+        ]);
+
+        const totalIncomeCardP = await Fetch.aggregate([
+            { 
+                $match: { 
+                    date: { $gte: currentMonthStart, $lte: currentMonthEnd },
+                    paymentMethod: "Card", // Ensuring only UPI payments are considered
+                    billType: "package" 
+                }
+            },
+            { 
+                $group: { 
+                    _id: null, 
+                    total: { $sum: "$grandTotal" } // Summing up grandTotal for UPI payments
+                }
+            }
+        ]);
+
+        const totalIncomeCashP = await Fetch.aggregate([
+            { 
+                $match: { 
+                    date: { $gte: currentMonthStart, $lte: currentMonthEnd },
+                    paymentMethod: "Cash", // Ensuring only UPI payments are considered
+                    billType: "package" 
                 }
             },
             { 
@@ -495,6 +724,10 @@ app.get('/sales', async (req, res) => {
         const totalCardM = totalIncomeCardM.length > 0 ? totalIncomeCardM[0].total : 0;
         const totalCashM = totalIncomeCashM.length > 0 ? totalIncomeCashM[0].total : 0;
 
+        const totalUPIP = totalIncomeUPIP.length > 0 ? totalIncomeUPIP[0].total : 0;
+        const totalCardP = totalIncomeCardP.length > 0 ? totalIncomeCardP[0].total : 0;
+        const totalCashP = totalIncomeCashP.length > 0 ? totalIncomeCashP[0].total : 0;
+
 
         const totUPI = totalUPI + totalUPIM;
         const totCard = totalCard + totalCardM;
@@ -506,10 +739,14 @@ app.get('/sales', async (req, res) => {
             totalIncome: finalTotal,
             totalExpenses: totalExpenses[0] ? totalExpenses[0].total : 0,
             serviceIncome: serviceIncome[0] ? serviceIncome[0].total : 0,
+            packageIncome: packageIncome[0] ? packageIncome[0].total : 0,
             membershipIncome: membershipIncome[0] ? membershipIncome[0].total : 0,
             totalUPI,
             totalCard,
             totalCash,
+            totalUPIP,
+            totalCardP,
+            totalCashP,
             totalUPIM,
             totalCardM,
             totalCashM,
@@ -883,6 +1120,14 @@ app.get("/api/services", async (req, res) => {
     }
 });
 
+app.get("/api/packages", async (req, res) => {
+    try {
+        const packages = await Package.find({}, 'packageName packagePrice -_id');
+        res.json(packages);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
 
 
 // In your app.js or a specific routes file

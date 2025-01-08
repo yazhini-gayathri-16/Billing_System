@@ -25,6 +25,7 @@
         <div class="billing-form">
             <h1>Generate new receipt</h1>
             <form action="/bill" method="post">
+                <input type="text" value="service" name="billType" hidden>
     
                 <!-- Customer Name and Contact Number on the same line -->
                 <div class="form-row">
@@ -136,7 +137,7 @@
                     <div class="form-group-PM">
                         <label>Payment Method:</label>
                         <div>
-                            <input type="radio" id="paymentUPI" name="paymentMethod" value="UPI" required>
+                            <input type="radio" id="paymentUPI" name="paymentMethod" value="UPI" checked="checked" required>
                             <label for="paymentUPI">UPI</label>
     
                             <input type="radio" id="paymentCard" name="paymentMethod" value="Card">
@@ -199,14 +200,40 @@
         <!-- Client 360 Section -->
         <div class="client-details">
             <h3>Client 360°</h3>
-            <p>Customer Name: <span id="cust_name">-</span></p>
-            <p>Customer Type: <span id="customerType">-</span></p>
-            <p>Last Visit: <span id="lastVisit">-</span></p>
-            <p>Total Visits: <span id="totalVisits">-</span></p>
-            <p>Total Spendings: <span id="totalSpendings">-</span> INR</p>
-            <p>Membership: <span id="membershipStatus">-</span></p>
-            <p>Birthday Offer Used: <span id="birthdayOfferStatus">-</span></p>
-            <p>Anniversary Offer Used: <span id="anniversaryOfferStatus">-</span></p>
+            <div class="specific-section">
+                <div class="form-group">
+                    <label>Customer Name</label>
+                    <span id="cust_name">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Customer Type</label>
+                    <span id="customerType">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Last Visit</label>
+                    <span id="lastVisit">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Total Visits</label>
+                    <span id="totalVisits">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Total Spendings</label>
+                    <span id="totalSpendings">-</span> INR
+                </div>
+                <div class="form-group">
+                    <label>Membership</label>
+                    <span id="membershipStatus">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Birthday Offer Used</label>
+                    <span id="birthdayOfferStatus">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Anniversary Offer Used</label>
+                    <span id="anniversaryOfferStatus">-</span>
+                </div>
+            </div>             
         </div>
     </div>
     
@@ -341,18 +368,15 @@
 
         // Function to add a second stylist
         function addStylist(event) {
-            // Prevent default form action if needed
             event.preventDefault();
-
-            // Find the parent service item container of the clicked button
             const serviceItem = event.target.closest('.service-item');
-
-            // Check if a second stylist select box already exists to prevent multiple additions
-            if (!serviceItem.querySelector('#stylist2-container')) {
+            const serviceIndex = serviceItem.querySelector('[name^="services"]').name.match(/\d+/)[0];
+            
+            if (!serviceItem.querySelector(`[name="stylist2${serviceIndex}"]`)) {
                 const stylist2Html = `
                     <div class="form-group" id="stylist2-container">
-                        <label for="stylist2">Second Stylist:</label>
-                        <select name="stylist2" id="stylist2">
+                        <label>Second Stylist:</label>
+                        <select name="stylist2${serviceIndex}" required>
                             <% staffMembers.forEach(function(staff) { %>
                                 <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
                             <% }); %>
@@ -363,7 +387,7 @@
                 serviceItem.insertAdjacentHTML('beforeend', stylist2Html);
             }
         }
-
+        
         function removeStylist(event) {
             // Prevent default form action if needed
             event.preventDefault();
@@ -440,7 +464,12 @@
 
 
         function removeService(element) {
-            element.parentNode.remove();
+            const serviceItem = element.closest('.service-item');
+            const stylist2Container = serviceItem.querySelector('#stylist2-container');
+            if (stylist2Container) {
+                stylist2Container.remove();
+            }
+            serviceItem.remove();
             updateSubtotal();
         }
 
@@ -541,10 +570,10 @@
             document.getElementById('grandTotal').value = grandTotal.toFixed(2);
         }
 
-        function calculaterupeesGrandTotal(){
+        function calculaterupeesGrandTotal() {
             const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;
-            const discount = parseFloat(document.getElementById('discountrupees').value) || 0;
-            const grandTotal = subtotal - (discount);
+            const discount = parseFloat(document.getElementById('discountRupeesInput').value) || 0;
+            const grandTotal = subtotal - discount;
             document.getElementById('grandTotal').value = grandTotal.toFixed(2);
         }
 

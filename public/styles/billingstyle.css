@@ -100,6 +100,31 @@ h1, h3 {
     margin-bottom: 10px;
 }
 
+.specific-section .form-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 10px; /* Optional spacing between rows */
+}
+.specific-section .form-group label {
+    width: 200px; /* Adjust as needed */
+    margin-right: 10px;
+    font-weight: bold;
+}
+.specific-section .form-group span {
+    flex: 1;
+}
+
+.specific-section .form-group span {
+    display: inline-block;
+    padding: 6px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    width: 100%; /* Make it fill the container */
+    box-sizing: border-box;
+    background-color: #f9f9f9; /* Optional: Add a background to make it look more like an input */
+}
+
 label {
     font-weight: bold;
     margin-bottom: 5px;
