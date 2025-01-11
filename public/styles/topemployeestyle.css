@@ -13,31 +13,35 @@ h1 {
 
 .cards {
     display: flex;
-    justify-content: space-around;
-    padding: 20px;
+    justify-content: center; /* Center the cards horizontally */
+    padding: 10px; /* Reduce padding */
+    flex-wrap: wrap;
+    gap: 10px; /* Reduce gap between cards */
+    margin-bottom: 20px; /* Add margin to separate from the table */
 }
 
 .card {
     background: #F0F8E2;
-    padding: 20px;
+    padding: 15px;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    width: 30%;
+    width: 250px;
     text-align: center;
 }
 
 .card h2 {
     color: #333;
+    font-size: 18px;
 }
 
 .card p {
-    font-size: 16px;
+    font-size: 14px;
     color: #666;
 }
 
 table {
-    width: 80%;
-    margin: 20px auto;
+    width: 90%;
+    margin: 0 auto 20px auto; /* Center the table and add margin at the bottom */
     border-collapse: collapse;
 }
 
@@ -48,7 +52,7 @@ table, th, td {
 th, td {
     padding: 8px;
     text-align: left;
-    font-size: 16px;
+    font-size: 14px;
 }
 
 th {

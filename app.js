@@ -11,6 +11,7 @@ const MonthlyData = require('./models/monthlydata');
 const Product = require('./models/inventory');
 const Expense = require('./models/expenseschema'); 
 const Package = require('./models/packages');
+const EmployeeTarget = require('./models/employeeTarget'); // Add this line to import the new model
 const multer = require('multer');
 
 
@@ -521,7 +522,7 @@ app.post('/delete-package', async (req, res) => {
 app.get('/sales', async (req, res) => {
     try {
         const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-        const currentMonthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
+        const currentMonthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59);
 
         // Total income from all sources
         const totalIncome = await Fetch.aggregate([
@@ -540,7 +541,7 @@ app.get('/sales', async (req, res) => {
             {
                 $match: {
                     date: { $gte: currentMonthStart, $lte: currentMonthEnd },
-                    billType: "service" // Added filter for billType
+                    billType: "service"
                 }
             },
             {
@@ -550,13 +551,13 @@ app.get('/sales', async (req, res) => {
                 }
             }
         ]);
-        
+
         // Sum of income specifically from packages for the current month, assuming packages have a specific type or category
         const packageIncome = await Fetch.aggregate([
             {
                 $match: {
                     date: { $gte: currentMonthStart, $lte: currentMonthEnd },
-                    billType: "package" // Added filter for billType
+                    billType: "package"
                 }
             },
             {
@@ -577,14 +578,13 @@ app.get('/sales', async (req, res) => {
             { 
                 $match: { 
                     date: { $gte: currentMonthStart, $lte: currentMonthEnd },
-                    paymentMethod: "UPI", // Ensuring only UPI payments are considered
-                    billType: "service" 
+                    paymentMethod: "UPI", billType: "service" 
                 }
             },
             { 
                 $group: { 
                     _id: null, 
-                    total: { $sum: "$grandTotal" } // Summing up grandTotal for UPI payments
+                    total: { $sum: "$grandTotal" } 
                 }
             }
         ]);
@@ -593,14 +593,13 @@ app.get('/sales', async (req, res) => {
             { 
                 $match: { 
                     date: { $gte: currentMonthStart, $lte: currentMonthEnd },
-                    paymentMethod: "Card", // Ensuring only UPI payments are considered
-                    billType: "service" 
+                    paymentMethod: "Card", billType: "service" 
                 }
             },
             { 
                 $group: { 
                     _id: null, 
-                    total: { $sum: "$grandTotal" } // Summing up grandTotal for UPI payments
+                    total: { $sum: "$grandTotal" } 
                 }
             }
         ]);
@@ -609,14 +608,13 @@ app.get('/sales', async (req, res) => {
             { 
                 $match: { 
                     date: { $gte: currentMonthStart, $lte: currentMonthEnd },
-                    paymentMethod: "Cash", // Ensuring only UPI payments are considered
-                    billType: "service" 
+                    paymentMethod: "Cash", billType: "service" 
                 }
             },
             { 
                 $group: { 
                     _id: null, 
-                    total: { $sum: "$grandTotal" } // Summing up grandTotal for UPI payments
+                    total: { $sum: "$grandTotal" } 
                 }
             }
         ]);
@@ -625,14 +623,13 @@ app.get('/sales', async (req, res) => {
             { 
                 $match: { 
                     date: { $gte: currentMonthStart, $lte: currentMonthEnd },
-                    paymentMethod: "UPI", // Ensuring only UPI payments are considered
-                    billType: "package" 
+                    paymentMethod: "UPI", billType: "package" 
                 }
             },
             { 
                 $group: { 
                     _id: null, 
-                    total: { $sum: "$grandTotal" } // Summing up grandTotal for UPI payments
+                    total: { $sum: "$grandTotal" } 
                 }
             }
         ]);
@@ -641,14 +638,13 @@ app.get('/sales', async (req, res) => {
             { 
                 $match: { 
                     date: { $gte: currentMonthStart, $lte: currentMonthEnd },
-                    paymentMethod: "Card", // Ensuring only UPI payments are considered
-                    billType: "package" 
+                    paymentMethod: "Card", billType: "package" 
                 }
             },
             { 
                 $group: { 
                     _id: null, 
-                    total: { $sum: "$grandTotal" } // Summing up grandTotal for UPI payments
+                    total: { $sum: "$grandTotal" } 
                 }
             }
         ]);
@@ -657,14 +653,13 @@ app.get('/sales', async (req, res) => {
             { 
                 $match: { 
                     date: { $gte: currentMonthStart, $lte: currentMonthEnd },
-                    paymentMethod: "Cash", // Ensuring only UPI payments are considered
-                    billType: "package" 
+                    paymentMethod: "Cash", billType: "package" 
                 }
             },
             { 
                 $group: { 
                     _id: null, 
-                    total: { $sum: "$grandTotal" } // Summing up grandTotal for UPI payments
+                    total: { $sum: "$grandTotal" } 
                 }
             }
         ]);
@@ -673,13 +668,13 @@ app.get('/sales', async (req, res) => {
             { 
                 $match: { 
                     registeredDate: { $gte: currentMonthStart, $lte: currentMonthEnd },
-                    mempaymentMethod: "UPI" // Corrected field for payment method
+                    mempaymentMethod: "UPI" 
                 }
             },
             { 
                 $group: { 
                     _id: null, 
-                    total: { $sum: "$memprice" } // Summing membership price for UPI payments
+                    total: { $sum: "$memprice" } 
                 }
             }
         ]);
@@ -688,13 +683,13 @@ app.get('/sales', async (req, res) => {
             { 
                 $match: { 
                     registeredDate: { $gte: currentMonthStart, $lte: currentMonthEnd },
-                    mempaymentMethod: "Card" // Corrected field for payment method
+                    mempaymentMethod: "Card" 
                 }
             },
             { 
                 $group: { 
                     _id: null, 
-                    total: { $sum: "$memprice" } // Summing membership price for Card payments
+                    total: { $sum: "$memprice" } 
                 }
             }
         ]);
@@ -703,17 +698,16 @@ app.get('/sales', async (req, res) => {
             { 
                 $match: { 
                     registeredDate: { $gte: currentMonthStart, $lte: currentMonthEnd },
-                    mempaymentMethod: "Cash" // Corrected field for payment method
+                    mempaymentMethod: "Cash" 
                 }
             },
             { 
                 $group: { 
                     _id: null, 
-                    total: { $sum: "$memprice" } // Summing membership price for Cash payments
+                    total: { $sum: "$memprice" } 
                 }
             }
         ]);
-        
 
         // Safe accessing of aggregation results
         const totalUPI = totalIncomeUPI.length > 0 ? totalIncomeUPI[0].total : 0;
@@ -727,7 +721,6 @@ app.get('/sales', async (req, res) => {
         const totalUPIP = totalIncomeUPIP.length > 0 ? totalIncomeUPIP[0].total : 0;
         const totalCardP = totalIncomeCardP.length > 0 ? totalIncomeCardP[0].total : 0;
         const totalCashP = totalIncomeCashP.length > 0 ? totalIncomeCashP[0].total : 0;
-
 
         const totUPI = totalUPI + totalUPIM;
         const totCard = totalCard + totalCardM;
@@ -1346,6 +1339,296 @@ app.post("/do-signin",async (req,res)=>{
     }
 
 })
+
+
+
+// Route to render the employee targets page
+app.get('/employee-targets', async (req, res) => {
+    try {
+        const staffMembers = await Staff.find({});
+        const currentMonth = new Date().toLocaleString('default', { month: 'short' });
+        const currentYear = new Date().getFullYear();
+        
+        // First update achievements before displaying
+        const startDate = new Date(currentYear, new Date().getMonth(), 1);
+        const endDate = new Date(currentYear, new Date().getMonth() + 1, 0);
+
+        // Aggregate achievements for primary stylist
+        const achievements = await Fetch.aggregate([
+            {
+                $match: {
+                    date: {
+                        $gte: startDate,
+                        $lte: endDate
+                    }
+                }
+            },
+            { $unwind: "$services" },
+            {
+                $group: {
+                    _id: "$services.stylist",
+                    totalAchieved: { $sum: { 
+                        $cond: [
+                            { $eq: ["$services.stylist2", null] },
+                            "$services.price",
+                            { $multiply: ["$services.price", 0.7] } // 70% for primary stylist
+                        ]
+                    }}
+                }
+            }
+        ]);
+
+        // Aggregate achievements for secondary stylist
+        const secondaryAchievements = await Fetch.aggregate([
+            {
+                $match: {
+                    date: {
+                        $gte: startDate,
+                        $lte: endDate
+                    }
+                }
+            },
+            { $unwind: "$services" },
+            {
+                $match: {
+                    "services.stylist2": { $ne: null }
+                }
+            },
+            {
+                $group: {
+                    _id: "$services.stylist2",
+                    totalAchieved: { $sum: { $multiply: ["$services.price", 0.3] } } // 30% for secondary stylist
+                }
+            }
+        ]);
+
+        // Combine achievements
+        const combinedAchievements = new Map();
+        achievements.forEach(ach => {
+            combinedAchievements.set(ach._id, ach.totalAchieved);
+        });
+
+        secondaryAchievements.forEach(ach => {
+            const currentTotal = combinedAchievements.get(ach._id) || 0;
+            combinedAchievements.set(ach._id, currentTotal + ach.totalAchieved);
+        });
+
+        // Update achievements in EmployeeTarget collection
+        for (const [stylistName, totalAchieved] of combinedAchievements) {
+            const staff = await Staff.findOne({ name: stylistName });
+            if (staff) {
+                await EmployeeTarget.findOneAndUpdate(
+                    {
+                        employeeId: staff._id,
+                        month: currentMonth,
+                        year: currentYear
+                    },
+                    {
+                        $set: { achieved: Math.round(totalAchieved) }
+                    },
+                    { upsert: true }
+                );
+            }
+        }
+
+        // Fetch the updated employee targets
+        const employeeTargets = await EmployeeTarget.find({
+            month: currentMonth,
+            year: currentYear
+        }).populate('employeeId');
+
+        res.render('employeeTargets', { staffMembers, employeeTargets });
+    } catch (error) {
+        console.error('Error fetching employee targets:', error);
+        res.status(500).send('Error loading the employee targets page.');
+    }
+});
+
+// Route to set employee target
+app.post('/set-employee-target', async (req, res) => {
+    try {
+        const { employeeId, target } = req.body;
+        const currentMonth = new Date().toLocaleString('default', { month: 'short' });
+        const currentYear = new Date().getFullYear();
+
+        let employeeTarget = await EmployeeTarget.findOne({
+            employeeId,
+            month: currentMonth,
+            year: currentYear
+        });
+
+        if (employeeTarget) {
+            employeeTarget.target = target;
+            await employeeTarget.save();
+        } else {
+            // For new targets, get current month's achievement
+            const startDate = new Date(currentYear, new Date().getMonth(), 1);
+            const endDate = new Date(currentYear, new Date().getMonth() + 1, 0);
+
+            const staff = await Staff.findById(employeeId);
+            if (!staff) {
+                throw new Error('Staff member not found');
+            }
+
+            // Calculate primary stylist achievements
+            const primaryAchievement = await Fetch.aggregate([
+                {
+                    $match: {
+                        date: { $gte: startDate, $lte: endDate },
+                        "services.stylist": staff.name
+                    }
+                },
+                { $unwind: "$services" },
+                {
+                    $match: {
+                        "services.stylist": staff.name
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        totalAchieved: { $sum: { 
+                            $cond: [
+                                { $eq: ["$services.stylist2", null] },
+                                "$services.price",
+                                { $multiply: ["$services.price", 0.7] }
+                            ]
+                        }}
+                    }
+                }
+            ]);
+
+            // Calculate secondary stylist achievements
+            const secondaryAchievement = await Fetch.aggregate([
+                {
+                    $match: {
+                        date: { $gte: startDate, $lte: endDate },
+                        "services.stylist2": staff.name
+                    }
+                },
+                { $unwind: "$services" },
+                {
+                    $match: {
+                        "services.stylist2": staff.name
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        totalAchieved: { $sum: { $multiply: ["$services.price", 0.3] } }
+                    }
+                }
+            ]);
+
+            const totalAchieved = Math.round(
+                (primaryAchievement[0]?.totalAchieved || 0) +
+                (secondaryAchievement[0]?.totalAchieved || 0)
+            );
+
+            employeeTarget = new EmployeeTarget({
+                employeeId,
+                month: currentMonth,
+                year: currentYear,
+                target,
+                achieved: totalAchieved
+            });
+            await employeeTarget.save();
+        }
+
+        res.status(200).json({ message: 'Employee target set successfully' });
+    } catch (error) {
+        console.error('Error setting employee target:', error);
+        res.status(500).json({ message: 'Error setting employee target' });
+    }
+});
+
+// Route to update employee achievements
+app.post('/update-employee-achievements', async (req, res) => {
+    try {
+        const currentMonth = new Date().toLocaleString('default', { month: 'short' });
+        const currentYear = new Date().getFullYear();
+        const startDate = new Date(currentYear, new Date().getMonth(), 1);
+        const endDate = new Date(currentYear, new Date().getMonth() + 1, 0);
+
+        // Get all staff members
+        const staffMembers = await Staff.find({});
+        
+        for (const staff of staffMembers) {
+            // Calculate primary stylist achievements
+            const primaryAchievement = await Fetch.aggregate([
+                {
+                    $match: {
+                        date: { $gte: startDate, $lte: endDate },
+                        "services.stylist": staff.name
+                    }
+                },
+                { $unwind: "$services" },
+                {
+                    $match: {
+                        "services.stylist": staff.name
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        totalAchieved: { $sum: { 
+                            $cond: [
+                                { $eq: ["$services.stylist2", null] },
+                                "$services.price",
+                                { $multiply: ["$services.price", 0.7] }
+                            ]
+                        }}
+                    }
+                }
+            ]);
+
+            // Calculate secondary stylist achievements
+            const secondaryAchievement = await Fetch.aggregate([
+                {
+                    $match: {
+                        date: { $gte: startDate, $lte: endDate },
+                        "services.stylist2": staff.name
+                    }
+                },
+                { $unwind: "$services" },
+                {
+                    $match: {
+                        "services.stylist2": staff.name
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        totalAchieved: { $sum: { $multiply: ["$services.price", 0.3] } }
+                    }
+                }
+            ]);
+
+            const totalAchieved = Math.round(
+                (primaryAchievement[0]?.totalAchieved || 0) +
+                (secondaryAchievement[0]?.totalAchieved || 0)
+            );
+
+            // Update or create employee target
+            await EmployeeTarget.findOneAndUpdate(
+                {
+                    employeeId: staff._id,
+                    month: currentMonth,
+                    year: currentYear
+                },
+                {
+                    $set: { achieved: totalAchieved }
+                },
+                { upsert: true }
+            );
+        }
+
+        res.status(200).json({ message: 'Employee achievements updated successfully' });
+    } catch (error) {
+        console.error('Error updating employee achievements:', error);
+        res.status(500).json({ message: 'Error updating employee achievements' });
+    }
+});
 
 // Route to fetch all staff members
 app.get('/staff', async (req, res) => {
