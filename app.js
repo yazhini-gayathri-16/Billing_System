@@ -357,10 +357,10 @@ app.post('/search-customer', async (req, res) => {
     try {
         const { customerNumber } = req.body;
         
-        
         const customerData = await Fetch.find({
             customer_number: customerNumber
         });
+
         if (customerData.length > 0) {
             const cust_name = customerData[0].customer_name;
             const totalSpent = customerData.reduce(
@@ -371,9 +371,7 @@ app.post('/search-customer', async (req, res) => {
             const services = customerData.flatMap(record => record.services.map(service => service.name));
             const uniqueServices = [...new Set(services)];
             const lastVisit = customerData[customerData.length - 1].date.toISOString().split('T')[0];
-            const membershipID = customerData[0].membershipID || null;
-            const membershipStatus = membershipID ? 'Active' : '----';
-
+            
             // Determine Customer Type
             let customerType = 'New';
             const visits = customerData.length;
@@ -386,18 +384,40 @@ app.post('/search-customer', async (req, res) => {
                 customerType = 'Dormant';
             }
 
-            // Fetch membership details to check discount usage (birthday/anniversary)
+            // Initialize membership variables
+            let membershipStatus = '----';
             let usedBirthdayOffer = false;
             let usedAnniversaryOffer = false;
+            let membership = null;
 
-            if (membershipID) {
-                const membership = await Membership.findOne({ membershipID });
+            // First try to get membership from the last Fetch record
+            let membershipID = customerData[0].membershipID;
+
+            // If no membershipID in Fetch, try to find membership using phone number
+            if (!membershipID) {
+                membership = await Membership.findOne({ phoneNumber: customerNumber });
+                if (membership) {
+                    membershipID = membership.membershipID;
+                }
+            } else {
+                membership = await Membership.findOne({ membershipID });
+            }
+
+            // Process membership details if found
+            if (membership) {
+                membershipStatus = 'Active';
                 const currentYear = new Date().getFullYear();
                 const yearlyUsage = membership.yearlyUsage.find(usage => usage.year === currentYear);
 
                 if (yearlyUsage) {
                     usedBirthdayOffer = yearlyUsage.usedBirthdayOffer;
                     usedAnniversaryOffer = yearlyUsage.usedAnniversaryOffer;
+                }
+
+                // Check if membership is expired
+                const today = new Date();
+                if (membership.validTillDate < today) {
+                    membershipStatus = 'Expired';
                 }
             }
 
@@ -421,6 +441,7 @@ app.post('/search-customer', async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 });
+
 
 app.get('/dashboard', async (req, res) => {
     res.render("analytics");
