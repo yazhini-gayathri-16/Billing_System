@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Targets</title>
+    <link rel="icon" href="/images/logo 3-square.png" type="image/x-icon">
+    <style>
+        body {
+            font-family: 'Gowun Batang', serif;
+            background-color: #D3E4CD;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1, h2 {
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group select, .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table th, table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        table th {
+            background-color: #f1f1f1;
+            font-weight: bold;
+        }
+
+        .edit-btn {
+            background-color: #2196F3;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        
+        .save-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            display: none;
+        }
+
+        .target-input {
+            width: 100px;
+            display: none;
+        }
+
+        .achievement-cell {
+            background-color: #e8f5e9;
+        }
+
+        .flexbox, .form-group {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+    <%- include('partials/second_navbar') %>
+    <div class="container">
+        <h1>Employee Targets</h1>
+        <form id="targetForm" class="flexbox">
+            <div class="form-group">
+                <label for="employeeSelect">Select Employee:</label>
+                <select id="employeeSelect" name="employeeId" required>
+                    <% staffMembers.forEach(function(staff) { %>
+                        <option value="<%= staff._id %>"><%= staff.name %></option>
+                    <% }); %>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="targetAmount">Target Amount (₹):</label>
+                <input type="number" id="targetAmount" name="target" required>
+            </div>
+            <button type="submit">Set Target</button>
+        </form>
+
+        <h2>Current Month Achievements</h2>
+        <button id="refreshAchievements" class="edit-btn">Refresh Achievements</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>Employee Name</th>
+                    <th>Target (₹)</th>
+                    <th>Achieved (₹)</th>
+                    <th>Progress (%)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% employeeTargets.forEach(function(target) { %>
+                    <tr data-employee-id="<%= target.employeeId._id %>">
+                        <td><%= target.employeeId.name %></td>
+                        <td>
+                            <span class="target-value"><%= target.target %></span>
+                            <input type="number" class="target-input" value="<%= target.target %>">
+                        </td>
+                        <td class="achievement-cell"><%= target.achieved || 0 %></td>
+                        <td class="achievement-cell">
+                            <%= target.achieved ? Math.round((target.achieved / target.target) * 100) : 0 %>%
+                        </td>
+                        <td>
+                            <button class="edit-btn">Edit</button>
+                            <button class="save-btn">Save</button>
+                        </td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Handle new target submission
+        document.getElementById('targetForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/set-employee-target', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    alert(result.message);
+                    location.reload();
+                } else {
+                    alert(result.message || 'Failed to set target.');
+                }
+            } catch (error) {
+                console.error('Error setting target:', error);
+                alert('Error setting target. Please try again.');
+            }
+        });
+
+        // Handle edit buttons
+        document.querySelectorAll('.edit-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const row = this.closest('tr');
+                const targetValue = row.querySelector('.target-value');
+                const targetInput = row.querySelector('.target-input');
+                const saveBtn = row.querySelector('.save-btn');
+
+                targetValue.style.display = 'none';
+                targetInput.style.display = 'inline';
+                this.style.display = 'none';
+                saveBtn.style.display = 'inline';
+            });
+        });
+
+        // Handle save buttons
+        document.querySelectorAll('.save-btn').forEach(button => {
+            button.addEventListener('click', async function() {
+                const row = this.closest('tr');
+                const employeeId = row.dataset.employeeId;
+                const targetInput = row.querySelector('.target-input');
+                const targetValue = row.querySelector('.target-value');
+                const editBtn = row.querySelector('.edit-btn');
+
+                try {
+                    const response = await fetch('/set-employee-target', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            employeeId: employeeId,
+                            target: targetInput.value
+                        })
+                    });
+
+                    const result = await response.json();
+                    if (response.ok) {
+                        targetValue.textContent = targetInput.value;
+                        targetValue.style.display = 'inline';
+                        targetInput.style.display = 'none';
+                        this.style.display = 'none';
+                        editBtn.style.display = 'inline';
+                        alert(result.message);
+                    } else {
+                        alert(result.message || 'Failed to update target.');
+                    }
+                } catch (error) {
+                    console.error('Error updating target:', error);
+                    alert('Error updating target. Please try again.');
+                }
+            });
+        });
+
+        // Handle refresh achievements button
+        document.getElementById('refreshAchievements').addEventListener('click', async function() {
+            try {
+                const response = await fetch('/update-employee-achievements', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    alert(result.message);
+                    location.reload();
+                } else {
+                    alert(result.message || 'Failed to refresh achievements.');
+                }
+            } catch (error) {
+                console.error('Error refreshing achievements:', error);
+                alert('Error refreshing achievements. Please try again.');
+            }
+        });
+    </script>
+</body>
+</html>

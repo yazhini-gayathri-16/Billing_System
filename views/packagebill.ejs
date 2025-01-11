@@ -3,136 +3,417 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Package Billing</title>
+    <title>Noble Evergreen</title>
     <link rel="icon" href="/images/logo 3-square.png" type="image/x-icon">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles/billingstyle.css">
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css"> -->
+     <link rel="stylesheet" href="/styles/billingstyle.css">
+    <style>
+        .delete-btn {
+            color: red;
+            cursor: pointer;
+            font-size: 16px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Package Billing</h1>
-
-    <form id="packageBillingForm">
-        <div id="package-container">
-            <div class="package-item">
+    <%- include('partials/navbar') %>
+    <div class="container">
+        <!-- Generate Bill Section -->
+        <div class="billing-form">
+            <h1>Generate new receipt</h1>
+            <form action="/bill" method="post">
+                <input type="text" value="package" name="billType" hidden>
+    
+                <!-- Customer Name and Contact Number on the same line -->
                 <div class="form-row">
-                    <!-- Package Selection -->
-                    <div class="form-group basis-package">
-                        <label for="packages1">Package:</label>
-                        <input type="text" list="packageList1" name="packages1" autocomplete="off" required placeholder="Enter the package" oninput="filterPackages(this)">
-                        <datalist id="packageList1">
-                            <% packages.forEach(function(package) { %>
-                                <option value="<%= package.packageName %>">
-                                    <%= package.packageName %> - ₹<%= package.packagePrice %>
-                                </option>
-                            <% }); %>
-                        </datalist>
+                    <div class="form-group basis">
+                        <label>Customer Name<span style="color: red;">*</span></label>
+                        <input type="text" name="customer_name" id="customerName" required placeholder="Enter the customer name" autocomplete="off">
                     </div>
-
-                    <!-- Package Price -->
-                    <div class="form-group basis-price">
-                        <label for="packagePrices1">Price:</label>
-                        <input type="number" name="packagePrices1" readonly required>
+                    <div class="form-group basis">
+                        <label>Contact Number<span style="color: red;">*</span></label>
+                        <input type="number" name="customer_number" id="customerNumber" placeholder="Enter the customer contact number" autocomplete="off" oninput="fetchClientDetails()" maxlength="10" required>
                     </div>
+                    <div class="form-group basis-short">
+                        <label>Date :</label>
+                        <input type="date" id="date" name="date" readonly>
+                    </div>
+                    <div class="form-group basis-short">
+                        <label>Time :</label>
+                        <input type="time" id="time" name="time" readonly>
+                    </div>
+                    <div class="form-group basis-short">
+                        <label>Gender :</label>
+                        <select name="gender" id="gender" required>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Membership Checkbox and Membership ID on the same line -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Do you have a membership?</label>
+                        <input type="checkbox" id="hasMembership" name="hasMembership" onchange="toggleMembershipIDField()">
+                    </div>
+                    <div class="form-group" id="membershipIDField" style="display: none;">
+                        <label>Membership ID:</label>
+                        <input type="text" id="membershipID" autocomplete="off" name="membershipID" placeholder="Enter your membership ID" onblur="validateMembershipID()">
+                    </div>
+                    <div id="membershipMessage"></div>
 
-                    <!-- Stylist Selection -->
-                    <div class="form-group basis-stylist">
-                        <label for="stylist1">Stylist under package:</label>
-                        <div class="flex">
-                            <select name="stylist1" required>
-                                <% staffMembers.forEach(function(staff) { %>
-                                    <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
-                                <% }); %>
-                            </select>
-                            <button type="button" onclick="addStylist(event)">Add Stylist</button>
+                    <div id="membershipDiscountOptions" style="display: none;">
+                        <div class="form-group">
+                            <label>Apply Birthday Discount</label>
+                            <input type="checkbox" id="applyBirthdayDiscount" name="applyBirthdayDiscount" onchange="toggleBirthdayDateField()">
+                        </div>
+                        <div class="form-group" id="birthdayDateField" style="display: none;">
+                            <label>Enter your Birthday:</label>
+                            <input type="date" id="birthdayDate" name="birthdayDate">
+                        </div>
+                
+                        <div class="form-group">
+                            <label>Apply Anniversary Discount</label>
+                            <input type="checkbox" id="applyAnniversaryDiscount" name="applyAnniversaryDiscount" onchange="toggleAnniversaryDateField()">
+                        </div>
+                        <div class="form-group" id="anniversaryDateField" style="display: none;">
+                            <label>Enter your Anniversary Date:</label>
+                            <input type="date" id="anniversaryDate" name="anniversaryDate">
                         </div>
                     </div>
-
-                    <!-- Start and End Time -->
-                    <div class="form-group basis-time">
-                        <label for="startTime1">Start Time:</label>
-                        <input type="time" name="startTime1" required>
-                    </div>
-                    <div class="form-group basis-time">
-                        <label for="endTime1">End Time:</label>
-                        <input type="time" name="endTime1" required>
+                </div>
+    
+                <!-- Services Section -->
+                <!-- Services Section -->
+                <div id="service-container">
+                    <div class="service-item">
+                        <div class="form-row">
+                            <div class="form-group basis-service">
+                                <label>Package:</label>
+                                <input type="text" list="serviceList1" autocomplete="off" name="services1" required placeholder="Enter the package" oninput="filterPackages(this)">
+                                <datalist id="serviceList1"></datalist>
+                            </div>
+                            <div class="form-group basis-price">
+                                <label>Price:</label>
+                                <input type="number" name="prices1" required oninput="updateSubtotal()">
+                            </div>
+                            <div class="form-group basis-stylist">
+                                <label>Stylist under package:</label>
+                                <div class="flex">
+                                    <select name="stylist1" required>
+                                        <% staffMembers.forEach(function(staff) { %>
+                                            <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
+                                        <% }); %>
+                                    </select>
+                                    <button type="button" onclick="addStylist(event)">Add Stylist</button>
+                                </div>
+                            </div>
+                            <div class="form-group basis-time">
+                                <label>Start Time:</label>
+                                <input type="time" name="startTime1" required>
+                            </div>
+                            <div class="form-group basis-time">
+                                <label>End Time:</label>
+                                <input type="time" name="endTime1" required>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <span class="delete-btn" onclick="removePackage(this)">&#128465;</span>
-            </div>
-        </div>
 
-        <button type="button" onclick="addMorePackages()">Add More Packages</button>
-        
-        <!-- Subtotal and Grand Total -->
-        <div>
-            <label for="subtotal">Subtotal:</label>
-            <input type="number" id="subtotal" readonly>
-        </div>
-        <div>
-            <label for="grandTotal">Grand Total:</label>
-            <input type="number" id="grandTotal" readonly>
-        </div>
+                <!-- Add More Button aligned to the right -->
+                <div class="add-more-button">
+                    <button type="button" onclick="addMore()">Add More</button>
+                </div>
 
-        <button type="submit">Generate Bill</button>
-    </form>
+                <!-- Payment Method Section -->
+                <div class="form-row">
+                    
+                    <div class="form-group-PM">
+                        <label>Payment Method:</label>
+                        <div>
+                            <input type="radio" id="paymentUPI" name="paymentMethod" value="UPI" checked="checked" required>
+                            <label for="paymentUPI">UPI</label>
+    
+                            <input type="radio" id="paymentCard" name="paymentMethod" value="Card">
+                            <label for="paymentCard">Card</label>
+    
+                            <input type="radio" id="paymentCash" name="paymentMethod" value="Cash">
+                            <label for="paymentCash">Cash</label>
+                        </div>
+                    </div>   
+                    
+                    <div class="form-group grow">
+                        <label>Subtotal:</label>
+                        <input type="number" name="subtotal" id="subtotal" readonly>
+                    </div>
 
+                </div>
+
+               
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="discountType">Discount Type</label>
+                        <label>
+                            <input type="radio" name="discountType" value="percentage" id="discountPercentage" checked onchange="toggleDiscountType()">
+                            Percentage
+                        </label>
+                        <label>
+                            <input type="radio" name="discountType" value="rupees" id="discountRupees" onchange="toggleDiscountType()">
+                            Rupees
+                        </label>
+                    </div>
+
+                    <!-- Discount in Percentage -->
+                    <div class="form-group" id="percentageDiscountField">
+                        <label>Discount in Percentage (%):</label>
+                        <input type="number" name="discountPercentage" id="discountPercentageInput" oninput="calculateGrandTotal()">
+                    </div>
+
+                    <!-- Discount in Rupees -->
+                    <div class="form-group" id="rupeesDiscountField" style="display: none;">
+                        <label>Discount in Rupees (₹):</label>
+                        <input type="number" name="discountRupees" id="discountRupeesInput" oninput="calculaterupeesGrandTotal()">
+                    </div>
+
+
+                </div>
+
+                
+
+                <!-- Grand Total -->
+                <div class="form-group">
+                    <label>Grand Total:</label>
+                    <input type="number" name="grandTotal" id="grandTotal" readonly>
+                </div>
+
+                <button type="submit" class="button-generate">Generate Bill</button>
+            </form>
+        </div>
+    
+        <!-- Client 360 Section -->
+        <div class="client-details">
+            <h3>Client 360°</h3>
+            <p>Customer Name: <span id="cust_name">-</span></p>
+            <p>Customer Type: <span id="customerType">-</span></p>
+            <p>Last Visit: <span id="lastVisit">-</span></p>
+            <p>Total Visits: <span id="totalVisits">-</span></p>
+            <p>Total Spendings: <span id="totalSpendings">-</span> INR</p>
+            <p>Membership: <span id="membershipStatus">-</span></p>
+            <p>Birthday Offer Used: <span id="birthdayOfferStatus">-</span></p>
+            <p>Anniversary Offer Used: <span id="anniversaryOfferStatus">-</span></p>
+        </div>
+    </div>
+    
     <script>
         let packages = [];
-        let packageCount = 1;
+        let serviceCount = 1;
 
-        window.onload = function () {
+        window.onload = function() {
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+            toggleDiscountType();
+            setupEventListeners();
+
+            // Fetch package data from the server
             fetch("/api/packages")
                 .then(response => response.json())
-                .then(data => { packages = data; })
+                .then(data => { 
+                    packages = data.map(pkg => ({
+                        serviceName: pkg.packageName,
+                        regularPrice: pkg.packagePrice,
+                        membershipPrice: pkg.packagePrice * 0.9 // Assuming 10% discount for members
+                    }));
+                })
                 .catch(error => console.error('Error fetching packages:', error));
-
-            //updateDateTime();
-           //setInterval(updateDateTime, 1000);
-            //setupEventListeners();
         };
 
+        function setupEventListeners() {
+            const container = document.getElementById('service-container');
+            const isMember = document.getElementById('hasMembership').checked;
+
+            container.addEventListener('input', function(e) {
+                if (e.target.name.startsWith('services')) {
+                    const index = e.target.name.match(/\d+/)[0];
+                    const priceInput = document.querySelector(`[name='prices${index}']`);
+
+                    const selectedPackage = packages.find(pkg => 
+                        pkg.serviceName.toLowerCase() === e.target.value.toLowerCase()
+                    );
+
+                    if (selectedPackage) {
+                        priceInput.value = isMember ? selectedPackage.membershipPrice : selectedPackage.regularPrice;
+                        updateSubtotal();
+                    } else {
+                        priceInput.value = '';
+                    }
+                }
+            });
+
+
+            const discountPercentageInput = document.getElementById('discountPercentageInput');
+            const discountRupeesInput = document.getElementById('discountRupeesInput');
+
+            discountPercentageInput.addEventListener('input', function() {
+                if (document.getElementById('discountPercentage').checked) {
+                    calculateGrandTotal();
+                }
+            });
+
+            discountRupeesInput.addEventListener('input', function() {
+                if (document.getElementById('discountRupees').checked) {
+                    calculateGrandTotal();
+                }
+            });
+        }
+
         function filterPackages(input) {
+            setupEventListeners();
             const index = input.name.match(/\d+/)[0];
-            const listId = `packageList${index}`;
+            const listId = `serviceList${index}`;
             const datalist = document.getElementById(listId);
             
-            datalist.innerHTML = ''; // Clear existing options
+            datalist.innerHTML = '';
             const searchText = input.value.toLowerCase();
 
             packages.forEach(pkg => {
-                if (pkg.packageName.toLowerCase().includes(searchText)) {
+                if (pkg.serviceName.toLowerCase().includes(searchText)) {
                     const option = document.createElement('option');
-                    option.value = pkg.packageName;
-                    option.textContent = `${pkg.packageName} - ₹${pkg.packagePrice}`;
+                    option.value = pkg.serviceName;
+                    option.textContent = `${pkg.serviceName} - ₹${pkg.regularPrice}`;
                     datalist.appendChild(option);
                 }
             });
         }
 
-        function addMorePackages() {
-            const container = document.getElementById('package-container');
-            packageCount++;
+        function updateDateTime() {
+            const today = new Date();
+            const date = today.getFullYear() + '-' + (today.getMonth() + 1).toString().padStart(2, '0') + '-' + today.getDate().toString().padStart(2, '0');
+            const time = today.getHours().toString().padStart(2, '0') + ':' + today.getMinutes().toString().padStart(2, '0');
+            document.getElementById('date').value = date;
+            document.getElementById('time').value = time;
+        }
 
-            const newPackage = document.createElement('div');
-            newPackage.classList.add('package-item');
-            newPackage.innerHTML = `
+        function toggleMembershipIDField() {
+            const checkbox = document.getElementById('hasMembership');
+            const membershipField = document.getElementById('membershipIDField');
+            const membershipmessagefield = document.getElementById('membershipMessage');
+            membershipmessagefield.style.display = checkbox.checked ? 'block' : 'none';
+            membershipField.style.display = checkbox.checked ? 'block' : 'none';
+            const membershipOptions = document.getElementById('membershipDiscountOptions');
+            membershipOptions.style.display = checkbox.checked ? 'block' : 'none';
+
+        }
+
+
+        function toggleBirthdayDateField() {
+            const birthdayField = document.getElementById('birthdayDateField');
+            birthdayField.style.display = document.getElementById('applyBirthdayDiscount').checked ? 'block' : 'none';
+        }
+
+        function toggleAnniversaryDateField() {
+            const anniversaryField = document.getElementById('anniversaryDateField');
+            anniversaryField.style.display = document.getElementById('applyAnniversaryDiscount').checked ? 'block' : 'none';
+        }
+
+
+
+        function toggleDiscountType() {
+            const discountType = document.querySelector('input[name="discountType"]:checked').value;
+
+            const percentageField = document.getElementById('percentageDiscountField');
+            const rupeesField = document.getElementById('rupeesDiscountField');
+
+            if (discountType === 'percentage') {
+                percentageField.style.display = 'block';
+                rupeesField.style.display = 'none';
+                calculateGrandTotal();
+            } else {
+                percentageField.style.display = 'none';
+                rupeesField.style.display = 'block';
+                calculateGrandTotal();
+            }
+        }
+
+        // Initialize the toggle
+        toggleDiscountType();
+
+        // Function to add a second stylist
+        // Function to add a second stylist
+        function addStylist(event) {
+            event.preventDefault();
+            const serviceItem = event.target.closest('.service-item');
+            const serviceIndex = serviceItem.querySelector('[name^="services"]').name.match(/\d+/)[0];
+            
+            if (!serviceItem.querySelector(`[name="stylist2${serviceIndex}"]`)) {
+                const stylist2Html = `
+                    <div class="form-group" id="stylist2-container">
+                        <label>Second Stylist:</label>
+                        <select name="stylist2${serviceIndex}" required>
+                            <% staffMembers.forEach(function(staff) { %>
+                                <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
+                            <% }); %>
+                        </select>
+                        <span class="delete-btn" onclick="removeStylist(event)">&#128465;</span>
+                    </div>
+                `;
+                serviceItem.insertAdjacentHTML('beforeend', stylist2Html);
+            }
+        }
+
+        function validateStylists(select, firstStylistId) {
+            if (select.value === firstStylistId) {
+                alert('Second stylist cannot be the same as the first stylist');
+                select.value = '';
+            }
+        }
+
+        function removeStylist(event) {
+            // Prevent default form action if needed
+            event.preventDefault();
+
+            // Find and remove the stylist2-container within the same service item
+            const stylistContainer = event.target.closest('#stylist2-container');
+            if (stylistContainer) {
+                stylistContainer.remove();
+            }
+        }
+
+
+
+
+        function addMore() {
+            const container = document.getElementById('service-container');
+            serviceCount++;
+
+            const newService = document.createElement('div');
+            newService.classList.add('service-item');
+
+            newService.innerHTML = `
                 <div class="form-row">
-                    <div class="form-group basis-package">
-                        <label for="packages${packageCount}">Package:</label>
-                        <input type="text" list="packageList${packageCount}" name="packages${packageCount}" autocomplete="off" required placeholder="Enter the package" oninput="filterPackages(this)">
-                        <datalist id="packageList${packageCount}"></datalist>
+                    <div class="form-group basis-service">
+                        <label for="services${serviceCount}">Package:</label>
+                        <input type="text" list="serviceList${serviceCount}" name="services${serviceCount}" autocomplete="off" required placeholder="Enter the package" oninput="filterPackages(this)">
+                        <datalist id="serviceList${serviceCount}">
+                            <% packages.forEach(function(package) { %>
+                                <option value="<%= package.packageName %>"><%= package.packageName %> - ₹<%= package.packagePrice %></option>
+                            <% }); %>
+                        </datalist>
                     </div>
                     <div class="form-group basis-price">
-                        <label for="packagePrices${packageCount}">Price:</label>
-                        <input type="number" name="packagePrices${packageCount}" readonly required>
+                        <label for="prices${serviceCount}">Price:</label>
+                        <input type="number" name="prices${serviceCount}" required oninput="updateSubtotal()">
                     </div>
                     <div class="form-group basis-stylist">
-                        <label for="stylist${packageCount}">Stylist under package:</label>
+                        <label for="stylist${serviceCount}">Stylist under package:</label>
                         <div class="flex">
-                            <select name="stylist${packageCount}" required>
+                            <select name="stylist${serviceCount}" required>
                                 <% staffMembers.forEach(function(staff) { %>
                                     <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
                                 <% }); %>
@@ -141,23 +422,147 @@
                         </div>
                     </div>
                     <div class="form-group basis-time">
-                        <label for="startTime${packageCount}">Start Time:</label>
-                        <input type="time" name="startTime${packageCount}" required>
+                        <label for="startTime${serviceCount}">Start Time:</label>
+                        <input type="time" name="startTime${serviceCount}" required>
                     </div>
                     <div class="form-group basis-time">
-                        <label for="endTime${packageCount}">End Time:</label>
-                        <input type="time" name="endTime${packageCount}" required>
+                        <label for="endTime${serviceCount}">End Time:</label>
+                        <input type="time" name="endTime${serviceCount}" required>
                     </div>
                 </div>
-                <span class="delete-btn" onclick="removePackage(this)">&#128465;</span>
+                <span class="delete-btn" onclick="removeService(this)">&#128465;</span>
             `;
-            container.appendChild(newPackage);
+
+            container.appendChild(newService);
+
+            // Attach event listeners to the new elements
+            setupEventListeners();
         }
 
-        function removePackage(element) {
-            element.parentNode.remove();
+
+        function removeService(element) {
+            const serviceItem = element.closest('.service-item');
+            const stylist2Container = serviceItem.querySelector('#stylist2-container');
+            if (stylist2Container) {
+                stylist2Container.remove();
+            }
+            serviceItem.remove();
             updateSubtotal();
         }
+
+        function updateSubtotal() {
+            const priceInputs = document.querySelectorAll('[name^="prices"]');
+            const subtotal = Array.from(priceInputs).reduce((total, input) => {
+                return total + (parseFloat(input.value) || 0);
+            }, 0);
+            document.getElementById('subtotal').value = subtotal.toFixed(2);
+            calculateGrandTotal();
+        }
+
+        function validateMembershipID() {
+            const membershipID = document.getElementById('membershipID').value;
+            const messageDisplay = document.getElementById('membershipMessage');
+
+            fetch('/validate-membership', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ membershipID })
+            })
+            .then(response => response.json())
+            .then(data => {
+                messageDisplay.textContent = data.message;                
+                messageDisplay.style.color = data.message === 'Valid membership ID' ? 'green' : 'red';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                messageDisplay.textContent = 'Error checking membership ID';
+                messageDisplay.style.color = 'red';
+            });
+        }
+
+        document.getElementById('membershipID').addEventListener('blur', validateMembershipID);
+
+            
+        async function fetchClientDetails() {
+            // const name = document.getElementById('customerName').value;
+            const number = document.getElementById('customerNumber').value;
+            if (number) {
+                try {
+                    const response = await fetch('/search-customer', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ customerNumber: number })
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        document.getElementById('cust_name').textContent = data.cust_name || '-';
+                        document.getElementById('customerType').textContent = data.customerType || '-';
+                        document.getElementById('lastVisit').textContent = data.lastVisit || '-';
+                        document.getElementById('totalVisits').textContent = data.visits || '-';
+                        document.getElementById('totalSpendings').textContent = data.totalSpent || '-';
+                        document.getElementById('membershipStatus').textContent = data.membership || '-';
+
+                        // Show discount usage statuses
+                        document.getElementById('birthdayOfferStatus').textContent = data.usedBirthdayOffer ? 'Yes' : 'No';
+                        document.getElementById('anniversaryOfferStatus').textContent = data.usedAnniversaryOffer ? 'Yes' : 'No';
+                    } else {
+                        resetClientDetails();
+                    }
+                } catch (error) {
+                    console.error('Error fetching client details:', error);
+                    resetClientDetails();
+                }
+            } else {
+                resetClientDetails();
+            }
+        }
+
+        function resetClientDetails() {
+            document.getElementById('customerType').textContent = '-';
+            document.getElementById('lastVisit').textContent = '-';
+            document.getElementById('totalVisits').textContent = '-';
+            document.getElementById('totalSpendings').textContent = '-';
+            document.getElementById('membershipStatus').textContent = '-';
+            document.getElementById('birthdayOfferStatus').textContent = '-';
+            document.getElementById('anniversaryOfferStatus').textContent = '-';
+        }
+
+
+        function calculateGrandTotal() {
+            const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;
+            let grandTotal = subtotal;
+            const discountType = document.querySelector('input[name="discountType"]:checked').value;
+
+            if (discountType === 'percentage') {
+                const discountPercent = parseFloat(document.getElementById('discountPercentageInput').value) || 0;
+                grandTotal = subtotal - subtotal * (discountPercent / 100);
+            } else {
+                const discountRupees = parseFloat(document.getElementById('discountRupeesInput').value) || 0;
+                grandTotal = subtotal - discountRupees;
+            }
+
+            console.log(grandTotal);
+
+            document.getElementById('grandTotal').value = grandTotal.toFixed(2);
+        }
+
+        function calculaterupeesGrandTotal() {
+            const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;
+            const discount = parseFloat(document.getElementById('discountRupeesInput').value) || 0;
+            const grandTotal = subtotal - discount;
+            document.getElementById('grandTotal').value = grandTotal.toFixed(2);
+        }
+
+        function updateSubtotal() {
+            const priceInputs = document.querySelectorAll('[name^="prices"]');
+            const subtotal = Array.from(priceInputs).reduce((total, input) => {
+                return total + (parseFloat(input.value) || 0);
+            }, 0);
+            document.getElementById('subtotal').value = subtotal.toFixed(2);
+            calculateGrandTotal(); // Recalculate the grand total when subtotal changes
+        }
+
     </script>
 </body>
 </html>

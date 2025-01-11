@@ -58,7 +58,11 @@ const customer_id_schema = new mongoose.Schema({
         type: Number,
         required: true
     },
-    services: [serviceSchema]
+    services: [serviceSchema],
+    billType:{
+        type : String,
+        required : true,
+    }
 });
 
 
