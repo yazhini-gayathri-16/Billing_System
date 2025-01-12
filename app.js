@@ -57,110 +57,82 @@ app.post("/bill", async (req, res) => {
             time,
             gender,
             membershipID,
-            subtotal, 
-            discountPercentage,  // Discount Percentage
-            discountRupees,       // Discount in Rupees
-            discountType, 
+            subtotal,
+            discountPercentage,
+            discountRupees,
+            discountType,
             grandTotal,
-            applyBirthdayDiscount,
-            applyAnniversaryDiscount,
-            birthdayDate,
-            anniversaryDate,
             paymentMethod,
             billType
         } = req.body;
 
-        // Fetch membership details
-        const membership = await Membership.findOne({ membershipID });
+        // Initialize discount variables
+        let finalGrandTotal = parseFloat(grandTotal);
+        let finalDiscount = 0;
         let birthdayDiscountApplied = false;
         let anniversaryDiscountApplied = false;
-        // Get current month and year
-        const currentMonth = new Date().toLocaleString('default', { month: 'short' });
-        const currentYear = new Date().getFullYear();
-        if (membership) {
-            // Determine eligibility for discounts
-            if (applyBirthdayDiscount && birthdayDate) {
-                const customerBirthMonth = new Date(membership.birthDate).toLocaleString('default', { month: 'short' });
-                if (currentMonth === customerBirthMonth) {
+
+        // Handle regular discounts
+        if (discountType === "percentage" && discountPercentage) {
+            finalDiscount = (parseFloat(subtotal) * parseFloat(discountPercentage)) / 100;
+        } else if (discountType === "rupees" && discountRupees) {
+            finalDiscount = parseFloat(discountRupees);
+        }
+
+        // Handle membership discounts
+        if (membershipID) {
+            const membership = await Membership.findOne({ membershipID });
+            if (membership) {
+                const today = new Date();
+                const currentMonth = today.getMonth();
+                const currentYear = today.getFullYear();
+                
+                let yearlyUsage = membership.yearlyUsage.find(u => u.year === currentYear);
+                if (!yearlyUsage) {
+                    yearlyUsage = {
+                        year: currentYear,
+                        usedBirthdayOffer: false,
+                        usedAnniversaryOffer: false
+                    };
+                    membership.yearlyUsage.push(yearlyUsage);
+                }
+
+                // Check birthday discount
+                const birthMonth = new Date(membership.birthDate).getMonth();
+                if (currentMonth === birthMonth && !yearlyUsage.usedBirthdayOffer) {
+                    finalDiscount += finalGrandTotal * 0.2; // 20% birthday discount
                     birthdayDiscountApplied = true;
+                    yearlyUsage.usedBirthdayOffer = true;
+                }
+
+                // Check anniversary discount
+                if (membership.anniversaryDate) {
+                    const anniversaryMonth = new Date(membership.anniversaryDate).getMonth();
+                    if (currentMonth === anniversaryMonth && !yearlyUsage.usedAnniversaryOffer) {
+                        finalDiscount += finalGrandTotal * 0.2; // 20% anniversary discount
+                        anniversaryDiscountApplied = true;
+                        yearlyUsage.usedAnniversaryOffer = true;
+                    }
+                }
+
+                if (birthdayDiscountApplied || anniversaryDiscountApplied) {
+                    await membership.save();
                 }
             }
-            if (applyAnniversaryDiscount && anniversaryDate) {
-                const customerAnniversaryMonth = new Date(membership.anniversaryDate).toLocaleString('default', { month: 'short' });
-                if (currentMonth === customerAnniversaryMonth) {
-                    anniversaryDiscountApplied = true;
-                }
-            }
-
-            // Check and update yearly usage
-            let yearlyUsage = membership.yearlyUsage.find(usage => usage.year === currentYear);
-            if (!yearlyUsage) {
-                yearlyUsage = { year: currentYear, usedBirthdayOffer: false, usedAnniversaryOffer: false };
-                membership.yearlyUsage.push(yearlyUsage);
-            }
-            if (birthdayDiscountApplied && !yearlyUsage.usedBirthdayOffer) {
-                yearlyUsage.usedBirthdayOffer = true;
-            }
-            if (anniversaryDiscountApplied && !yearlyUsage.usedAnniversaryOffer) {
-                yearlyUsage.usedAnniversaryOffer = true;
-            }
-            await membership.save();
         }
 
-        // Ensure the grandTotal is a valid number
-        let finalGrandTotal = parseFloat(grandTotal);
-        if (isNaN(finalGrandTotal)) {
-            return res.status(400).send("Invalid grand total value.");
-        }
+        // Calculate final total after all discounts
+        finalGrandTotal = Math.max(parseFloat(subtotal) - finalDiscount, 0);
 
-        let finalDiscount = 0;
-
-        if (discountType === "percentage") {
-            finalDiscount = parseFloat(discountPercentage) || 0;
-        } else if (discountType === "rupees") {
-            finalDiscount = parseFloat(discountRupees) || 0;
-        }
-
-        // Apply discount if any
-        if (birthdayDiscountApplied || anniversaryDiscountApplied) {
-            const discountToApply = 0.20; // 20% discount
-            finalGrandTotal *= (1 - discountToApply);
-        }
-
-        finalGrandTotal = Math.max(finalGrandTotal, 0);
-
-        // Process services and bill
+        // Process services array creation
         let services = [];
         let index = 1;
         while (req.body[`services${index}`]) {
-            const stylistId = req.body[`stylist${index}`];
-            const stylist2Id = req.body[`stylist2${index}`]; // Changed to use indexed version
-            const stylist = await Staff.findById(stylistId);
-            
-            if (!stylist) {
-                return res.status(400).send(`Stylist with ID ${stylistId} not found`);
-            }
-
-            let serviceObj = {
-                name: req.body[`services${index}`],
-                price: parseFloat(req.body[`prices${index}`]),
-                stylist: stylist.name,
-                startTime: req.body[`startTime${index}`],
-                endTime: req.body[`endTime${index}`]
-            };
-
-            if (stylist2Id) {
-                const stylist2 = await Staff.findById(stylist2Id);
-                if (stylist2) {
-                    serviceObj.stylist2 = stylist2.name;
-                }
-            }
-
-            services.push(serviceObj);
+            // ...existing service processing code...
             index++;
         }
 
-        // Create bill record in Fetch collection
+        // Create bill record
         const user = await Fetch.create({
             customer_name,
             customer_number,
@@ -169,24 +141,27 @@ app.post("/bill", async (req, res) => {
             gender,
             membershipID,
             subtotal: parseFloat(subtotal),
-            discount: finalDiscount,  // Store the calculated discount
-            discountType,  
+            discount: finalDiscount,
+            discountType,
             grandTotal: finalGrandTotal,
             paymentMethod,
             services,
-            billType
+            billType,
+            birthdayDiscountApplied,
+            anniversaryDiscountApplied
         });
 
         if (user) {
-            // Update or create monthly data
-            const monthlyData = await MonthlyData.findOneAndUpdate(
-                { month: currentMonth, year: currentYear },
-                { $inc: { achieved: 1 } },
-                { upsert: true, new: true }
-            );
-            res.status(200).redirect('/');
+            res.json({
+                success: true,
+                message: 'Bill generated successfully',
+                billData: user
+            });
         } else {
-            res.status(400).send("Failed to create receipt");
+            res.json({
+                success: false,
+                message: 'Failed to create receipt'
+            });
         }
     } catch (err) {
         console.error("Error creating bill:", err);
@@ -217,87 +192,86 @@ app.post("/packageBill", async (req, res) => {
             time,
             gender,
             membershipID,
-            subtotal, 
-            discountPercentage,  // Discount Percentage
-            discountRupees,       // Discount in Rupees
-            discountType, 
+            subtotal,
+            discountPercentage,
+            discountRupees,
+            discountType,
             grandTotal,
-            applyBirthdayDiscount,
-            applyAnniversaryDiscount,
-            birthdayDate,
-            anniversaryDate,
-            paymentMethod
+            paymentMethod,
+            billType
         } = req.body;
 
-        // Fetch membership details
-        const membership = await Membership.findOne({ membershipID });
+        // Initialize discount variables
+        let finalGrandTotal = parseFloat(grandTotal);
+        let finalDiscount = 0;
         let birthdayDiscountApplied = false;
         let anniversaryDiscountApplied = false;
-        // Get current month and year
-        const currentMonth = new Date().toLocaleString('default', { month: 'short' });
-        const currentYear = new Date().getFullYear();
-        if (membership) {
-            // Determine eligibility for discounts
-            if (applyBirthdayDiscount && birthdayDate) {
-                const customerBirthMonth = new Date(membership.birthDate).toLocaleString('default', { month: 'short' });
-                if (currentMonth === customerBirthMonth) {
+
+        // Handle regular discounts
+        if (discountType === "percentage" && discountPercentage) {
+            finalDiscount = (parseFloat(subtotal) * parseFloat(discountPercentage)) / 100;
+        } else if (discountType === "rupees" && discountRupees) {
+            finalDiscount = parseFloat(discountRupees);
+        }
+
+        // Handle membership discounts
+        if (membershipID) {
+            const membership = await Membership.findOne({ membershipID });
+            if (membership) {
+                const today = new Date();
+                const currentMonth = today.getMonth();
+                const currentYear = today.getFullYear();
+                
+                let yearlyUsage = membership.yearlyUsage.find(u => u.year === currentYear);
+                if (!yearlyUsage) {
+                    yearlyUsage = {
+                        year: currentYear,
+                        usedBirthdayOffer: false,
+                        usedAnniversaryOffer: false
+                    };
+                    membership.yearlyUsage.push(yearlyUsage);
+                }
+
+                // Check birthday discount
+                const birthMonth = new Date(membership.birthDate).getMonth();
+                if (currentMonth === birthMonth && !yearlyUsage.usedBirthdayOffer) {
+                    finalDiscount += finalGrandTotal * 0.2;
                     birthdayDiscountApplied = true;
+                    yearlyUsage.usedBirthdayOffer = true;
+                }
+
+                // Check anniversary discount
+                if (membership.anniversaryDate) {
+                    const anniversaryMonth = new Date(membership.anniversaryDate).getMonth();
+                    if (currentMonth === anniversaryMonth && !yearlyUsage.usedAnniversaryOffer) {
+                        finalDiscount += finalGrandTotal * 0.2;
+                        anniversaryDiscountApplied = true;
+                        yearlyUsage.usedAnniversaryOffer = true;
+                    }
+                }
+
+                if (birthdayDiscountApplied || anniversaryDiscountApplied) {
+                    await membership.save();
                 }
             }
-            if (applyAnniversaryDiscount && anniversaryDate) {
-                const customerAnniversaryMonth = new Date(membership.anniversaryDate).toLocaleString('default', { month: 'short' });
-                if (currentMonth === customerAnniversaryMonth) {
-                    anniversaryDiscountApplied = true;
-                }
-            }
-
-            // Check and update yearly usage
-            let yearlyUsage = membership.yearlyUsage.find(usage => usage.year === currentYear);
-            if (!yearlyUsage) {
-                yearlyUsage = { year: currentYear, usedBirthdayOffer: false, usedAnniversaryOffer: false };
-                membership.yearlyUsage.push(yearlyUsage);
-            }
-            if (birthdayDiscountApplied && !yearlyUsage.usedBirthdayOffer) {
-                yearlyUsage.usedBirthdayOffer = true;
-            }
-            if (anniversaryDiscountApplied && !yearlyUsage.usedAnniversaryOffer) {
-                yearlyUsage.usedAnniversaryOffer = true;
-            }
-            await membership.save();
         }
 
-        // Ensure the grandTotal is a valid number
-        let finalGrandTotal = parseFloat(grandTotal);
-        if (isNaN(finalGrandTotal)) {
-            return res.status(400).send("Invalid grand total value.");
-        }
+        // Calculate final total after all discounts
+        finalGrandTotal = Math.max(parseFloat(subtotal) - finalDiscount, 0);
 
-        let finalDiscount = 0;
-
-        if (discountType === "percentage") {
-            finalDiscount = parseFloat(discountPercentage) || 0;
-        } else if (discountType === "rupees") {
-            finalDiscount = parseFloat(discountRupees) || 0;
-        }
-
-        // Apply discount if any
-        if (birthdayDiscountApplied || anniversaryDiscountApplied) {
-            const discountToApply = 0.20; // 20% discount
-            finalGrandTotal *= (1 - discountToApply);
-        }
-
-        finalGrandTotal = Math.max(finalGrandTotal, 0);
-
-        // Process packages and bill
+        // Process packages array creation
         let packages = [];
         let index = 1;
         while (req.body[`packages${index}`]) {
             const stylistId = req.body[`stylist${index}`];
-            const stylist2Id = req.body[`stylist2${index}`]; // Changed to use indexed version
+            const stylist2Id = req.body[`stylist2${index}`];
             const stylist = await Staff.findById(stylistId);
             
             if (!stylist) {
-                return res.status(400).send(`Stylist with ID ${stylistId} not found`);
+                return res.json({
+                    success: false,
+                    message: `Stylist with ID ${stylistId} not found`
+                });
             }
 
             let packageObj = {
@@ -319,7 +293,7 @@ app.post("/packageBill", async (req, res) => {
             index++;
         }
 
-        // Create bill record in Fetch collection
+        // Create bill record
         const user = await Fetch.create({
             customer_name,
             customer_number,
@@ -328,30 +302,36 @@ app.post("/packageBill", async (req, res) => {
             gender,
             membershipID,
             subtotal: parseFloat(subtotal),
-            discount: finalDiscount,  // Store the calculated discount
-            discountType,  
+            discount: finalDiscount,
+            discountType,
             grandTotal: finalGrandTotal,
             paymentMethod,
-            packages
+            packages,
+            billType,
+            birthdayDiscountApplied,
+            anniversaryDiscountApplied
         });
 
         if (user) {
-            // Update or create monthly data
-            const monthlyData = await MonthlyData.findOneAndUpdate(
-                { month: currentMonth, year: currentYear },
-                { $inc: { achieved: 1 } },
-                { upsert: true, new: true }
-            );
-            res.status(200).redirect('/');
+            res.json({
+                success: true,
+                message: 'Bill generated successfully',
+                billData: user
+            });
         } else {
-            res.status(400).send("Failed to create receipt");
+            res.json({
+                success: false,
+                message: 'Failed to create receipt'
+            });
         }
     } catch (err) {
         console.error("Error creating bill:", err);
-        res.status(500).send(err.message);
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
     }
 });
-
 
 app.post('/search-customer', async (req, res) => {
     try {
@@ -372,7 +352,6 @@ app.post('/search-customer', async (req, res) => {
             const uniqueServices = [...new Set(services)];
             const lastVisit = customerData[customerData.length - 1].date.toISOString().split('T')[0];
             
-            // Determine Customer Type
             let customerType = 'New';
             const visits = customerData.length;
             const lastVisitDate = new Date(customerData[customerData.length - 1].date);
@@ -386,38 +365,36 @@ app.post('/search-customer', async (req, res) => {
 
             // Initialize membership variables
             let membershipStatus = '----';
-            let usedBirthdayOffer = false;
-            let usedAnniversaryOffer = false;
-            let membership = null;
+            let membershipID = null;
+            let canUseBirthdayOffer = false;
+            let canUseAnniversaryOffer = false;
 
-            // First try to get membership from the last Fetch record
-            let membershipID = customerData[0].membershipID;
-
-            // If no membershipID in Fetch, try to find membership using phone number
-            if (!membershipID) {
-                membership = await Membership.findOne({ phoneNumber: customerNumber });
-                if (membership) {
-                    membershipID = membership.membershipID;
-                }
-            } else {
-                membership = await Membership.findOne({ membershipID });
-            }
-
-            // Process membership details if found
+            // Find membership using phone number
+            const membership = await Membership.findOne({ phoneNumber: customerNumber });
+            
             if (membership) {
+                membershipID = membership.membershipID;
                 membershipStatus = 'Active';
-                const currentYear = new Date().getFullYear();
-                const yearlyUsage = membership.yearlyUsage.find(usage => usage.year === currentYear);
-
-                if (yearlyUsage) {
-                    usedBirthdayOffer = yearlyUsage.usedBirthdayOffer;
-                    usedAnniversaryOffer = yearlyUsage.usedAnniversaryOffer;
-                }
-
+                
                 // Check if membership is expired
                 const today = new Date();
                 if (membership.validTillDate < today) {
                     membershipStatus = 'Expired';
+                } else {
+                    // Check for birthday and anniversary offers
+                    const currentMonth = today.getMonth();
+                    const birthMonth = new Date(membership.birthDate).getMonth();
+                    const anniversaryMonth = membership.anniversaryDate ? new Date(membership.anniversaryDate).getMonth() : -1;
+                    const currentYear = today.getFullYear();
+                    const yearlyUsage = membership.yearlyUsage.find(usage => usage.year === currentYear);
+
+                    if (currentMonth === birthMonth && (!yearlyUsage || !yearlyUsage.usedBirthdayOffer)) {
+                        canUseBirthdayOffer = true;
+                    }
+
+                    if (currentMonth === anniversaryMonth && (!yearlyUsage || !yearlyUsage.usedAnniversaryOffer)) {
+                        canUseAnniversaryOffer = true;
+                    }
                 }
             }
 
@@ -430,8 +407,9 @@ app.post('/search-customer', async (req, res) => {
                 totalSpent,
                 services: uniqueServices,
                 membership: membershipStatus,
-                usedBirthdayOffer,
-                usedAnniversaryOffer
+                membershipID,
+                canUseBirthdayOffer,
+                canUseAnniversaryOffer
             });
         } else {
             res.json({ success: false });

@@ -24,7 +24,8 @@
         <!-- Generate Bill Section -->
         <div class="billing-form">
             <h1>Generate new receipt</h1>
-            <form action="/bill" method="post">
+            <!-- Add the onsubmit handler to the form in the HTML -->
+            <form onsubmit="submitBillForm(event)" id="billForm">
                 <input type="text" value="service" name="billType" hidden>
     
                 <!-- Customer Name and Contact Number on the same line -->
@@ -55,37 +56,19 @@
                     </div>
                 </div>
                 
-                <!-- Membership Checkbox and Membership ID on the same line -->
+                <!-- Replace the existing membership section with this -->
                 <div class="form-row">
                     <div class="form-group">
                         <label>Do you have a membership?</label>
                         <input type="checkbox" id="hasMembership" name="hasMembership" onchange="toggleMembershipIDField()">
                     </div>
-                    <div class="form-group" id="membershipIDField" style="display: none;">
-                        <label>Membership ID:</label>
-                        <input type="text" id="membershipID" autocomplete="off" name="membershipID" placeholder="Enter your membership ID" onblur="validateMembershipID()">
-                    </div>
+                    <!-- Hidden field to store membership ID -->
+                    <input type="hidden" id="membershipID" name="membershipID">
                     <div id="membershipMessage"></div>
 
-                    <div id="membershipDiscountOptions" style="display: none;">
-                        <div class="form-group">
-                            <label>Apply Birthday Discount</label>
-                            <input type="checkbox" id="applyBirthdayDiscount" name="applyBirthdayDiscount" onchange="toggleBirthdayDateField()">
-                        </div>
-                        <div class="form-group" id="birthdayDateField" style="display: none;">
-                            <label>Enter your Birthday:</label>
-                            <input type="date" id="birthdayDate" name="birthdayDate">
-                        </div>
-                
-                        <div class="form-group">
-                            <label>Apply Anniversary Discount</label>
-                            <input type="checkbox" id="applyAnniversaryDiscount" name="applyAnniversaryDiscount" onchange="toggleAnniversaryDateField()">
-                        </div>
-                        <div class="form-group" id="anniversaryDateField" style="display: none;">
-                            <label>Enter your Anniversary Date:</label>
-                            <input type="date" id="anniversaryDate" name="anniversaryDate">
-                        </div>
-                    </div>
+                    <!-- Hidden fields for discounts -->
+                    <input type="hidden" id="applyBirthdayDiscount" name="applyBirthdayDiscount" value="false">
+                    <input type="hidden" id="applyAnniversaryDiscount" name="applyAnniversaryDiscount" value="false">
                 </div>
     
                 <!-- Services Section -->
@@ -322,16 +305,22 @@
             document.getElementById('time').value = time;
         }
 
+        // Replace the existing toggleMembershipIDField function
         function toggleMembershipIDField() {
             const checkbox = document.getElementById('hasMembership');
-            const membershipField = document.getElementById('membershipIDField');
-            const membershipmessagefield = document.getElementById('membershipMessage');
-            membershipmessagefield.style.display = checkbox.checked ? 'block' : 'none';
-            membershipField.style.display = checkbox.checked ? 'block' : 'none';
-            const membershipOptions = document.getElementById('membershipDiscountOptions');
-            membershipOptions.style.display = checkbox.checked ? 'block' : 'none';
-
+            const membershipMessage = document.getElementById('membershipMessage');
+            membershipMessage.style.display = checkbox.checked ? 'block' : 'none';
+            
+            if (checkbox.checked) {
+                fetchClientDetails(); // Re-fetch details when membership checkbox is toggled
+            } else {
+                document.getElementById('membershipID').value = '';
+                document.getElementById('applyBirthdayDiscount').value = 'false';
+                document.getElementById('applyAnniversaryDiscount').value = 'false';
+                resetClientDetails();
+            }
         }
+
 
 
         function toggleBirthdayDateField() {
@@ -506,8 +495,8 @@
         document.getElementById('membershipID').addEventListener('blur', validateMembershipID);
 
             
+        // Modify fetchClientDetails function
         async function fetchClientDetails() {
-            // const name = document.getElementById('customerName').value;
             const number = document.getElementById('customerNumber').value;
             if (number) {
                 try {
@@ -525,10 +514,15 @@
                         document.getElementById('totalVisits').textContent = data.visits || '-';
                         document.getElementById('totalSpendings').textContent = data.totalSpent || '-';
                         document.getElementById('membershipStatus').textContent = data.membership || '-';
+                        document.getElementById('birthdayOfferStatus').textContent = data.canUseBirthdayOffer ? 'Available' : 'Not Available';
+                        document.getElementById('anniversaryOfferStatus').textContent = data.canUseAnniversaryOffer ? 'Available' : 'Not Available';
 
-                        // Show discount usage statuses
-                        document.getElementById('birthdayOfferStatus').textContent = data.usedBirthdayOffer ? 'Yes' : 'No';
-                        document.getElementById('anniversaryOfferStatus').textContent = data.usedAnniversaryOffer ? 'Yes' : 'No';
+                        // Update hidden fields
+                        if (document.getElementById('hasMembership').checked) {
+                            document.getElementById('membershipID').value = data.membershipID || '';
+                            document.getElementById('applyBirthdayDiscount').value = data.canUseBirthdayOffer;
+                            document.getElementById('applyAnniversaryDiscount').value = data.canUseAnniversaryOffer;
+                        }
                     } else {
                         resetClientDetails();
                     }
@@ -541,7 +535,9 @@
             }
         }
 
+
         function resetClientDetails() {
+            document.getElementById('cust_name').textContent = '-';
             document.getElementById('customerType').textContent = '-';
             document.getElementById('lastVisit').textContent = '-';
             document.getElementById('totalVisits').textContent = '-';
@@ -584,6 +580,38 @@
             }, 0);
             document.getElementById('subtotal').value = subtotal.toFixed(2);
             calculateGrandTotal(); // Recalculate the grand total when subtotal changes
+        }
+
+        // Add this function in the script section of index.ejs
+        function submitBillForm(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            fetch('/bill', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Bill generated successfully!');
+                    form.reset();
+                    resetClientDetails();
+                    document.getElementById('hasMembership').checked = false;
+                    document.getElementById('membershipMessage').style.display = 'none';
+                } else {
+                    alert(data.message || 'Failed to generate bill');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error generating bill');
+            });
         }
 
     </script>
