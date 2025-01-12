@@ -1289,6 +1289,9 @@ app.post('/find-membership', async (req, res) => {
     }
 });
 
+app.get("/signup", (req, res) => {
+    res.render("signup");
+});
 
 app.post("/add-signup", async (req, res) => {
     try {
@@ -1316,13 +1319,10 @@ app.post("/do-signin",async (req,res)=>{
 
     try {
        const {mail, password}= req.body;
-       console.log(mail,password);
        
        const Username = await Signup.findOne({mail});
-       console.log(Username);
        
         if(Username){
-            console.log(password,Username.password);
             if(password === Username.password){
                 res.redirect('/');
             }

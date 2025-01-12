@@ -39,7 +39,7 @@ body {
 
 .navbar-lower nav {
     display: flex;
-    gap: 50px; /* Space between menu items */
+    gap: 25px; /* Space between menu items */
     align-items: center;
     justify-content: center;
     text-align: center;
