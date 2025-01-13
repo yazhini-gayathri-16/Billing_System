@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noble Evergreen - Product Billing</title>
+    <link rel="icon" href="/images/logo 3-square.png" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/billingstyle.css">
+</head>
+<body>
+    <%- include('partials/navbar') %>
+    <%- include('partials/billing_nav') %>
+    <div class="container">
+        <div class="billing-form">
+            <h1>Generate Product Bill</h1>
+            <form onsubmit="submitBillForm(event)" id="billForm">
+                <input type="text" value="product" name="billType" hidden>
+    
+                <!-- Customer Details -->
+                <div class="form-row">
+                    <div class="form-group basis">
+                        <label>Customer Name<span style="color: red;">*</span></label>
+                        <input type="text" name="customer_name" id="customerName" required placeholder="Enter customer name">
+                    </div>
+                    <div class="form-group basis">
+                        <label>Contact Number<span style="color: red;">*</span></label>
+                        <input type="number" name="customer_number" id="customerNumber" required placeholder="Enter contact number" oninput="fetchClientDetails()">
+                    </div>
+                    <div class="form-group basis-short">
+                        <label>Date</label>
+                        <input type="date" id="date" name="date" readonly>
+                    </div>
+                    <div class="form-group basis-short">
+                        <label>Time</label>
+                        <input type="time" id="time" name="time" readonly>
+                    </div>
+                    <div class="form-group basis-short">
+                        <label>Gender :</label>
+                        <select name="gender" id="gender" required>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Do you have a membership?</label>
+                    <input type="checkbox" id="hasMembership" name="hasMembership">
+                </div>
+                <input type="hidden" id="membershipID" name="membershipID">
+
+                <!-- Products Section -->
+                <div id="product-container">
+                    <div class="product-item">
+                        <div class="form-row">
+                            <div class="form-group basis-service">
+                                <label>Product</label>
+                                <input type="text" list="productList1" name="products1" required placeholder="Enter product" oninput="filterProducts(this)">
+                                <datalist id="productList1"></datalist>
+                            </div>
+                            <div class="form-group basis-price">
+                                <label>Price</label>
+                                <input type="number" name="prices1" required readonly>
+                            </div>
+                            <div class="form-group basis-quantity">
+                                <label>Quantity</label>
+                                <input type="number" name="quantities1" required min="1" value="1" oninput="updateSubtotal()">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="add-more-button">
+                    <button type="button" onclick="addMore()">Add More</button>
+                </div>
+
+                <!-- Payment Section -->
+                <div class="form-row">
+                    <div class="form-group-PM">
+                        <label>Payment Method:</label>
+                        <div>
+                            <input type="radio" id="paymentUPI" name="paymentMethod" value="UPI" checked required>
+                            <label for="paymentUPI">UPI</label>
+                            <input type="radio" id="paymentCard" name="paymentMethod" value="Card">
+                            <label for="paymentCard">Card</label>
+                            <input type="radio" id="paymentCash" name="paymentMethod" value="Cash">
+                            <label for="paymentCash">Cash</label>
+                        </div>
+                    </div>
+                    <div class="form-group grow">
+                        <label>Subtotal:</label>
+                        <input type="number" name="subtotal" id="subtotal" readonly>
+                    </div>
+                </div>
+
+                <!-- Discount Section -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Discount Type</label>
+                        <label>
+                            <input type="radio" name="discountType" value="percentage" checked onchange="toggleDiscountType()">
+                            Percentage
+                        </label>
+                        <label>
+                            <input type="radio" name="discountType" value="rupees" onchange="toggleDiscountType()">
+                            Rupees
+                        </label>
+                    </div>
+                    <div class="form-group" id="percentageDiscountField">
+                        <label>Discount (%)</label>
+                        <input type="number" name="discountPercentage" oninput="calculateGrandTotal()">
+                    </div>
+                    <div class="form-group" id="rupeesDiscountField" style="display:none">
+                        <label>Discount (₹)</label>
+                        <input type="number" name="discountRupees" oninput="calculateGrandTotal()">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Grand Total:</label>
+                    <input type="number" name="grandTotal" id="grandTotal" readonly>
+                </div>
+
+                <button type="submit" class="button-generate">Generate Bill</button>
+            </form>
+        </div>
+
+        <!-- Client 360 Section -->
+        <div class="client-details">
+            <h3>Client 360°</h3>
+            <div class="specific-section">
+                <div class="form-group">
+                    <label>Customer Name</label>
+                    <span id="cust_name">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Customer Type</label>
+                    <span id="customerType">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Last Visit</label>
+                    <span id="lastVisit">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Total Visits</label>
+                    <span id="totalVisits">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Total Spendings</label>
+                    <span id="totalSpendings">-</span> INR
+                </div>
+                <div class="form-group">
+                    <label>Membership</label>
+                    <span id="membershipStatus">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Birthday Offer Used</label>
+                    <span id="birthdayOfferStatus">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Anniversary Offer Used</label>
+                    <span id="anniversaryOfferStatus">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let products = [];
+        let productCount = 1;
+
+        window.onload = function() {
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+            setupEventListeners();
+
+            fetch("/api/products")
+                .then(response => response.json())
+                .then(data => { products = data; })
+                .catch(error => console.error('Error:', error));
+        };
+
+        // Add all the required functions similar to index.ejs but modified for products
+        // Include: updateDateTime, filterProducts, addMore, removeProduct, updateSubtotal, 
+        // calculateGrandTotal, submitBillForm, etc.
+        function updateDateTime() {
+            const today = new Date();
+            const date = today.getFullYear() + '-' + (today.getMonth() + 1).toString().padStart(2, '0') + '-' + today.getDate().toString().padStart(2, '0');
+            const time = today.getHours().toString().padStart(2, '0') + ':' + today.getMinutes().toString().padStart(2, '0');
+            document.getElementById('date').value = date;
+            document.getElementById('time').value = time;
+        }
+
+        async function fetchClientDetails() {
+            const customerNumber = document.getElementById('customerNumber').value;
+            console.log('Customer number:', customerNumber); // Debug log
+            
+            if (customerNumber.length === 10) {
+                try {
+                    console.log('Fetching customer details...'); // Debug log
+                    const response = await fetch('/search-customer', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ customerNumber })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('Customer data:', data); // Debug log
+                    
+                    if (data.success) {
+                        // Update customer name
+                        document.getElementById('customerName').value = data.cust_name;
+                        document.getElementById('cust_name').textContent = data.cust_name;
+                        
+                        // Update customer details
+                        document.getElementById('customerType').textContent = data.customerType;
+                        document.getElementById('lastVisit').textContent = new Date(data.lastVisit).toLocaleDateString();
+                        document.getElementById('totalVisits').textContent = data.visits;
+                        document.getElementById('totalSpendings').textContent = data.totalSpent;
+                        document.getElementById('membershipStatus').textContent = data.membership;
+                        
+                        // Update membership status
+                        document.getElementById('hasMembership').checked = data.membership === 'Active';
+                        if (data.membershipID) {
+                            document.getElementById('membershipID').value = data.membershipID;
+                        }
+                        
+                        // Update offer status
+                        document.getElementById('birthdayOfferStatus').textContent = data.canUseBirthdayOffer ? 'Available' : 'Not Available';
+                        document.getElementById('anniversaryOfferStatus').textContent = data.canUseAnniversaryOffer ? 'Available' : 'Not Available';
+                    
+                    } else {
+                        console.log('No customer found'); // Debug log
+                        resetClientDetails();
+                    }
+                } catch (error) {
+                    console.error('Error fetching client details:', error);
+                    resetClientDetails();
+                }
+            } else {
+                console.log('Invalid number length'); // Debug log
+                resetClientDetails();
+            }
+        }
+
+
+        function resetClientDetails() {
+            document.getElementById('cust_name').textContent = '-';
+            document.getElementById('customerType').textContent = '-';
+            document.getElementById('lastVisit').textContent = '-';
+            document.getElementById('totalVisits').textContent = '-';
+            document.getElementById('totalSpendings').textContent = '-';
+            document.getElementById('membershipStatus').textContent = '-';
+            document.getElementById('birthdayOfferStatus').textContent = '-';
+            document.getElementById('anniversaryOfferStatus').textContent = '-';
+        }
+
+        function setupEventListeners() {
+            const container = document.getElementById('product-container');
+            
+            container.addEventListener('input', function(e) {
+                if (e.target.name.startsWith('products')) {
+                    const index = e.target.name.match(/\d+/)[0];
+                    const priceInput = document.querySelector(`[name='prices${index}']`);
+                    const selectedProduct = products.find(product => 
+                        product.productName.toLowerCase() === e.target.value.toLowerCase()
+                    );
+                    
+                    if (selectedProduct) {
+                        priceInput.value = selectedProduct.productPrice;
+                        updateSubtotal();
+                    }
+                }
+            });
+        }
+
+        function filterProducts(input) {
+            const index = input.name.match(/\d+/)[0];
+            const listId = `productList${index}`;
+            const datalist = document.getElementById(listId);
+            datalist.innerHTML = '';
+            
+            const searchText = input.value.toLowerCase();
+            products.forEach(product => {
+                if (product.productName.toLowerCase().includes(searchText)) {
+                    const option = document.createElement('option');
+                    option.value = product.productName;
+                    option.textContent = `${product.productName} - ₹${product.productPrice}`;
+                    datalist.appendChild(option);
+                }
+            });
+        }
+
+        function addMore() {
+            productCount++;
+            const container = document.getElementById('product-container');
+            const newProduct = document.createElement('div');
+            newProduct.classList.add('product-item');
+            
+            newProduct.innerHTML = `
+                <div class="form-row">
+                    <div class="form-group basis-service">
+                        <label>Product:</label>
+                        <input type="text" list="productList${productCount}" name="products${productCount}" required placeholder="Enter product" oninput="filterProducts(this)">
+                        <datalist id="productList${productCount}"></datalist>
+                    </div>
+                    <div class="form-group basis-price">
+                        <label>Price:</label>
+                        <input type="number" name="prices${productCount}" required readonly>
+                    </div>
+                    <div class="form-group basis-quantity">
+                        <label>Quantity:</label>
+                        <input type="number" name="quantities${productCount}" required min="1" value="1" oninput="updateSubtotal()">
+                    </div>
+                    <span class="delete-btn" onclick="removeProduct(this)">&#128465;</span>
+                </div>
+            `;
+            
+            container.appendChild(newProduct);
+        }
+
+        function removeProduct(element) {
+            element.closest('.product-item').remove();
+            updateSubtotal();
+        }
+
+        function updateSubtotal() {
+            const priceInputs = document.querySelectorAll('[name^="prices"]');
+            const quantityInputs = document.querySelectorAll('[name^="quantities"]');
+            let subtotal = 0;
+            
+            for(let i = 0; i < priceInputs.length; i++) {
+                const price = parseFloat(priceInputs[i].value) || 0;
+                const quantity = parseInt(quantityInputs[i].value) || 0;
+                subtotal += price * quantity;
+            }
+            
+            document.getElementById('subtotal').value = subtotal.toFixed(2);
+            calculateGrandTotal();
+        }
+
+        function toggleDiscountType() {
+            const percentageField = document.getElementById('percentageDiscountField');
+            const rupeesField = document.getElementById('rupeesDiscountField');
+            const discountType = document.querySelector('input[name="discountType"]:checked').value;
+            
+            if (discountType === 'percentage') {
+                percentageField.style.display = 'block';
+                rupeesField.style.display = 'none';
+                document.querySelector('input[name="discountRupees"]').value = '';
+            } else {
+                percentageField.style.display = 'none';
+                rupeesField.style.display = 'block';
+                document.querySelector('input[name="discountPercentage"]').value = '';
+            }
+            calculateGrandTotal();
+        }
+
+        function calculateGrandTotal() {
+            const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;
+            const discountType = document.querySelector('input[name="discountType"]:checked').value;
+            let discount = 0;
+            
+            if (discountType === 'percentage') {
+                const percentage = parseFloat(document.querySelector('input[name="discountPercentage"]').value) || 0;
+                discount = (subtotal * percentage) / 100;
+            } else {
+                discount = parseFloat(document.querySelector('input[name="discountRupees"]').value) || 0;
+            }
+            
+            const grandTotal = subtotal - discount;
+            document.getElementById('grandTotal').value = grandTotal.toFixed(2);
+        }
+
+        async function submitBillForm(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const formObject = {};
+            
+            formData.forEach((value, key) => {
+                formObject[key] = value;
+            });
+            
+            try {
+                const response = await fetch('/productbill', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formObject)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Bill generated successfully!');
+                    window.location.reload();
+                } else {
+                    alert('Error : ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error generating bill');
+            }
+        }
+
+    </script>
+</body>
+</html>

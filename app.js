@@ -12,6 +12,7 @@ const Product = require('./models/inventory');
 const Expense = require('./models/expenseschema'); 
 const Package = require('./models/packages');
 const EmployeeTarget = require('./models/employeeTarget'); // Add this line to import the new model
+const ProductBill = require('./models/productBill');
 const multer = require('multer');
 
 
@@ -1779,9 +1780,14 @@ app.get('/topemployees', async (req, res) => {
         const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
         const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
 
-        // Adjust these to fit how your week and month should start
-        const startOfWeek = new Date(today - today.getDay() * 24*60*60*1000); 
-        const endOfWeek = new Date(startOfWeek.getTime() + 7 * 24*60*60*1000);
+        // Fixed week calculation
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1)); // Start from Monday
+        startOfWeek.setHours(0, 0, 0, 0);
+        
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 7);
+
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
@@ -1809,7 +1815,6 @@ app.get('/topemployees', async (req, res) => {
             { $limit: 1 }
         ]);
 
-        // Render the EJS template and pass the results
         res.render('topemployees', { topOfDay, topOfWeek, topOfMonth });
     } catch (error) {
         console.error('Error fetching top employees:', error);
@@ -1818,7 +1823,7 @@ app.get('/topemployees', async (req, res) => {
 });
 
 app.get('/top-stylists', async (req, res) => {
-    const { period } = req.query; // Expect 'day', 'week', or 'month' as a query parameter
+    const { period } = req.query;
     const today = new Date();
     let start, end;
 
@@ -1828,8 +1833,11 @@ app.get('/top-stylists', async (req, res) => {
             end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
             break;
         case 'week':
-            start = new Date(today - today.getDay() * 24 * 60 * 60 * 1000);
-            end = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
+            start = new Date(today);
+            start.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1)); // Start from Monday
+            start.setHours(0, 0, 0, 0);
+            end = new Date(start);
+            end.setDate(start.getDate() + 7);
             break;
         case 'month':
             start = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -1856,6 +1864,128 @@ app.get('/top-stylists', async (req, res) => {
 });
 
 
+// Get product billing page
+app.get("/productbill", async (req, res) => {
+    try {
+        const products = await Product.find({});
+        res.render("productbill", { products });
+    } catch (error) {
+        res.status(500).send("Error loading product billing page");
+    }
+});
+
+// API endpoint to get all products
+app.get("/api/products", async (req, res) => {
+    try {
+        const products = await Product.find({}, 'productName productPrice');
+        res.json(products);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Handle product bill submission
+app.post("/productbill", async (req, res) => {
+    try {
+        const {
+            customer_name,
+            customer_number,
+            date,
+            gender,
+            subtotal,
+            discountPercentage,
+            discountRupees,
+            discountType,
+            grandTotal,
+            paymentMethod
+        } = req.body;
+
+        // Process products and calculate total items
+        let products = [];
+        let totalItems = 0;
+        let index = 1;
+
+        while (req.body[`products${index}`]) {
+            const quantity = parseInt(req.body[`quantities${index}`]);
+            const price = parseFloat(req.body[`prices${index}`]);
+            
+            // Validate inventory
+            const product = await Product.findOne({ productName: req.body[`products${index}`] });
+            if (!product || product.stocksInInventory < quantity) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Insufficient stock for ${req.body[`products${index}`]}`
+                });
+            }
+
+            products.push({
+                name: req.body[`products${index}`],
+                price: price,
+                quantity: quantity,
+                total: price * quantity
+            });
+            
+            // Update inventory
+            await Product.findOneAndUpdate(
+                { productName: req.body[`products${index}`] },
+                { $inc: { stocksInInventory: -quantity } }
+            );
+            
+            totalItems += quantity;
+            index++;
+        }
+
+        // Create bill with total item count
+        const bill = await ProductBill.create({
+            customer_name,
+            customer_number,
+            date: new Date(date),
+            gender,
+            products,
+            subtotal: parseFloat(subtotal),
+            discountType,
+            discount: discountType === 'percentage' ? parseFloat(discountPercentage) : parseFloat(discountRupees),
+            grandTotal: parseFloat(grandTotal),
+            paymentMethod
+        });
+
+        res.json({ 
+            success: true, 
+            message: "Bill generated successfully", 
+            billId: bill._id,
+            itemCount: totalItems
+        });
+
+    } catch (error) {
+        console.error('Error creating bill:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Get product bill details
+app.get("/api/product-bill/:id", async (req, res) => {
+    try {
+        const bill = await ProductBill.findById(req.params.id);
+        if (!bill) {
+            return res.status(404).json({ message: "Bill not found" });
+        }
+        res.json(bill);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Get all product bills
+app.get("/api/product-bills", async (req, res) => {
+    try {
+        const bills = await ProductBill.find({})
+            .sort({ createdAt: -1 })
+            .select('customer_name date itemCount grandTotal');
+        res.json(bills);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
 
 app.listen(port, () => {
     console.log(`Server is running on ${port}`);
