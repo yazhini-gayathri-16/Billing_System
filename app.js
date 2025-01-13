@@ -479,6 +479,15 @@ app.get('/packages', async (req, res) => {
     }
 });
 
+app.get('/packages-display', async (req, res) => {
+    try {
+        const packages = await Package.find();
+        res.render('packagesview', { packages });
+    } catch (error) {
+        res.status(500).send('Error accessing package management page');
+    }
+});
+
 
 // Route to add a new package
 app.post('/add-package', async (req, res) => {

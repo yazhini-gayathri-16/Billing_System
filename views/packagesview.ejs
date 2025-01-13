@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Package Management</title>
+    <link rel="icon" href="/images/logo 3-square.png" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/menustyle.css">
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <div class="container">
+        <h1>Packages</h1>
+        <div class="service-container">
+            <% packages.forEach(function(package) { %>
+                <div class="service-card">
+                        <p><strong>Package Name:</strong> <span class="package-name"><%= package.packageName %></span></p>
+                        <p><strong>Price:</strong> ₹<span class="package-price"><%= package.packagePrice %></span></p>
+                        <p><strong>Services:</strong> <span class="included-services"><%= package.includedServices.join(", ") %></span></p>
+                        <p><strong>Gender:</strong> <span class="package-gender"><%= package.gender %></span></p>
+                    </form>
+                </div>
+            <% }); %>
+        </div>
+    </div>
+
+</body>
+</html>
