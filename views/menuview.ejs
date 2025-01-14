@@ -8,20 +8,24 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
     <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css"> -->
+    <link rel="stylesheet" href="/styles/menuview.css">
 </head>
 <body>
     <%- include('partials/navbar') %>
-    <h1>Service Menu</h1>
-
-    <ul>
-        <% services.forEach(function(service) { %>
-            <li>
-                <span><strong>Service:</strong> <%= service.serviceName %></span><br>
-                <span><strong>Regular Price:</strong> $<%= service.regularPrice.toFixed(2) %></span><br>
-                <span><strong>Membership Price:</strong> $<%= service.membershipPrice.toFixed(2) %></span>
-            </li>
-        <% }); %>
-    </ul>
-
+    <div class="container">
+        <h1>Service Menu</h1>
+    
+        <div class="menu-container">
+            <% services.forEach(function(service) { %>
+                <div class="menu-card">        
+                            <p><strong>Service:</strong> <span class="menu-item"></span><%= service.serviceName %></span></p>
+                            <p><strong>Regular Price:</strong> ₹<span class="item-price"></span><%= service.regularPrice.toFixed(2) %></span></p>
+                            <p><strong>Membership Price:</strong> ₹<span class="membership-price"></span><%= service.membershipPrice.toFixed(2) %></span></p>
+                        
+                    
+                </div>    
+            <% }); %>    
+        </div>
+    </div>
 </body>
 </html>
