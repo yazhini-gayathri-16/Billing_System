@@ -78,7 +78,7 @@
                         <div class="form-row">
                             <div class="form-group basis-service">
                                 <label>Package:</label>
-                                <input type="text" list="serviceList1" autocomplete="off" name="services1" required placeholder="Enter the package" oninput="filterPackages(this)">
+                                <input type="text" list="serviceList1" autocomplete="off" name="packages1" required placeholder="Enter the package" oninput="filterPackages(this)">
                                 <datalist id="serviceList1"></datalist>
                             </div>
                             <div class="form-group basis-price">
@@ -254,7 +254,7 @@
             const isMember = document.getElementById('hasMembership').checked;
 
             container.addEventListener('input', function(e) {
-                if (e.target.name.startsWith('services')) {
+                if (e.target.name.startsWith('packages')) {
                     const index = e.target.name.match(/\d+/)[0];
                     const priceInput = document.querySelector(`[name='prices${index}']`);
 
@@ -413,8 +413,8 @@
             newService.innerHTML = `
                 <div class="form-row">
                     <div class="form-group basis-service">
-                        <label for="services${serviceCount}">Package:</label>
-                        <input type="text" list="serviceList${serviceCount}" name="services${serviceCount}" autocomplete="off" required placeholder="Enter the package" oninput="filterPackages(this)">
+                        <label for="packages${serviceCount}">Package:</label>
+                        <input type="text" list="serviceList${serviceCount}" name="packages${serviceCount}" autocomplete="off" required placeholder="Enter the package" oninput="filterPackages(this)">
                         <datalist id="serviceList${serviceCount}">
                             <% packages.forEach(function(package) { %>
                                 <option value="<%= package.packageName %>"><%= package.packageName %> - ₹<%= package.packagePrice %></option>
