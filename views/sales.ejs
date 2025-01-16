@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sales Dashboard</title>
     <link rel="icon" href="/images/logo 3-square.png" type="image/x-icon">
-    <link rel="stylesheet" href="/styles/main.css"> <!-- Ensure you have this CSS file for styling -->
     <style>
         body {
             font-family: 'Gowun Batang', serif; /* Updated font family */
@@ -20,7 +19,7 @@
             align-items: center; /* Ensures vertical alignment */
             padding: 20px;
             flex-wrap: nowrap; /* Prevents wrapping to ensure one line */
-            max-width: 1200px; /* Adjust width as necessary */
+            max-width: 100%; /* Adjust width as necessary */
             margin: auto; /* Center the container */
         }
 
@@ -119,6 +118,10 @@
             <p>₹<%= packageIncome.toFixed(2) %></p>
         </div>
         <div class="dashboard-box">
+            <h2>Income from Products</h2>
+            <p>₹<%= totalIncomeProIncome.toFixed(2) %></p>
+        </div>
+        <div class="dashboard-box">
             <h2>Income from Memberships</h2>
             <p>₹<%= membershipIncome.toFixed(2) %></p>
         </div>
@@ -150,6 +153,13 @@
                     <td>₹ <%= totalCashP %></td>
                     <td>₹ <%= totalCardP %></td>
                     <td>₹ <%= packageIncome.toFixed(2) %></td>
+                </tr>
+                <tr>
+                    <td>Products</td>
+                    <td>₹ <%= totalUPIPro %></td>
+                    <td>₹ <%= totalCashPro %></td>
+                    <td>₹ <%= totalCardPro %></td>
+                    <td>₹ <%= totalIncomeProIncome.toFixed(2) %></td>
                 </tr>
                 <tr>
                     <td>Memberships</td>

@@ -78,7 +78,7 @@
                         <div class="form-row">
                             <div class="form-group basis-service">
                                 <label>Package:</label>
-                                <input type="text" list="serviceList1" autocomplete="off" name="services1" required placeholder="Enter the package" oninput="filterPackages(this)">
+                                <input type="text" list="serviceList1" autocomplete="off" name="packages1" required placeholder="Enter the package" oninput="filterPackages(this)">
                                 <datalist id="serviceList1"></datalist>
                             </div>
                             <div class="form-group basis-price">
@@ -183,14 +183,40 @@
         <!-- Client 360 Section -->
         <div class="client-details">
             <h3>Client 360°</h3>
-            <p>Customer Name: <span id="cust_name">-</span></p>
-            <p>Customer Type: <span id="customerType">-</span></p>
-            <p>Last Visit: <span id="lastVisit">-</span></p>
-            <p>Total Visits: <span id="totalVisits">-</span></p>
-            <p>Total Spendings: <span id="totalSpendings">-</span> INR</p>
-            <p>Membership: <span id="membershipStatus">-</span></p>
-            <p>Birthday Offer Used: <span id="birthdayOfferStatus">-</span></p>
-            <p>Anniversary Offer Used: <span id="anniversaryOfferStatus">-</span></p>
+            <div class="specific-section">
+                <div class="form-group">
+                    <label>Customer Name</label>
+                    <span id="cust_name">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Customer Type</label>
+                    <span id="customerType">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Last Visit</label>
+                    <span id="lastVisit">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Total Visits</label>
+                    <span id="totalVisits">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Total Spendings</label>
+                    <span id="totalSpendings">-</span> INR
+                </div>
+                <div class="form-group">
+                    <label>Membership</label>
+                    <span id="membershipStatus">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Birthday Offer Used</label>
+                    <span id="birthdayOfferStatus">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Anniversary Offer Used</label>
+                    <span id="anniversaryOfferStatus">-</span>
+                </div>
+            </div>             
         </div>
     </div>
     
@@ -254,7 +280,7 @@
             const isMember = document.getElementById('hasMembership').checked;
 
             container.addEventListener('input', function(e) {
-                if (e.target.name.startsWith('services')) {
+                if (e.target.name.startsWith('packages')) {
                     const index = e.target.name.match(/\d+/)[0];
                     const priceInput = document.querySelector(`[name='prices${index}']`);
 
@@ -317,13 +343,17 @@
 
         function toggleMembershipIDField() {
             const checkbox = document.getElementById('hasMembership');
-            const membershipField = document.getElementById('membershipIDField');
-            const membershipmessagefield = document.getElementById('membershipMessage');
-            membershipmessagefield.style.display = checkbox.checked ? 'block' : 'none';
-            membershipField.style.display = checkbox.checked ? 'block' : 'none';
-            const membershipOptions = document.getElementById('membershipDiscountOptions');
-            membershipOptions.style.display = checkbox.checked ? 'block' : 'none';
-
+            const membershipMessage = document.getElementById('membershipMessage');
+            membershipMessage.style.display = checkbox.checked ? 'block' : 'none';
+            
+            if (checkbox.checked) {
+                fetchClientDetails(); // Re-fetch details when membership checkbox is toggled
+            } else {
+                document.getElementById('membershipID').value = '';
+                document.getElementById('applyBirthdayDiscount').value = 'false';
+                document.getElementById('applyAnniversaryDiscount').value = 'false';
+                resetClientDetails();
+            }
         }
 
 
@@ -413,8 +443,8 @@
             newService.innerHTML = `
                 <div class="form-row">
                     <div class="form-group basis-service">
-                        <label for="services${serviceCount}">Package:</label>
-                        <input type="text" list="serviceList${serviceCount}" name="services${serviceCount}" autocomplete="off" required placeholder="Enter the package" oninput="filterPackages(this)">
+                        <label for="packages${serviceCount}">Package:</label>
+                        <input type="text" list="serviceList${serviceCount}" name="packages${serviceCount}" autocomplete="off" required placeholder="Enter the package" oninput="filterPackages(this)">
                         <datalist id="serviceList${serviceCount}">
                             <% packages.forEach(function(package) { %>
                                 <option value="<%= package.packageName %>"><%= package.packageName %> - ₹<%= package.packagePrice %></option>
@@ -498,8 +528,8 @@
         document.getElementById('membershipID').addEventListener('blur', validateMembershipID);
 
             
+        // Modify fetchClientDetails function
         async function fetchClientDetails() {
-            // const name = document.getElementById('customerName').value;
             const number = document.getElementById('customerNumber').value;
             if (number) {
                 try {
@@ -517,10 +547,21 @@
                         document.getElementById('totalVisits').textContent = data.visits || '-';
                         document.getElementById('totalSpendings').textContent = data.totalSpent || '-';
                         document.getElementById('membershipStatus').textContent = data.membership || '-';
+                        document.getElementById('birthdayOfferStatus').textContent = data.canUseBirthdayOffer ? 'Available' : 'Not Available';
+                        document.getElementById('anniversaryOfferStatus').textContent = data.canUseAnniversaryOffer ? 'Available' : 'Not Available';
 
-                        // Show discount usage statuses
-                        document.getElementById('birthdayOfferStatus').textContent = data.usedBirthdayOffer ? 'Yes' : 'No';
-                        document.getElementById('anniversaryOfferStatus').textContent = data.usedAnniversaryOffer ? 'Yes' : 'No';
+                        // Update hidden fields
+                        if (document.getElementById('hasMembership').checked) {
+                            document.getElementById('membershipID').value = data.membershipID || '';
+                            document.getElementById('applyBirthdayDiscount').value = data.canUseBirthdayOffer;
+                            document.getElementById('applyAnniversaryDiscount').value = data.canUseAnniversaryOffer;
+                        }
+
+                        // Always update membershipID if available
+                        if (data.membershipID) {
+                            document.getElementById('membershipID').value = data.membershipID;
+                        }
+                        
                     } else {
                         resetClientDetails();
                     }
@@ -534,6 +575,7 @@
         }
 
         function resetClientDetails() {
+            document.getElementById('cust_name').textContent = '-';
             document.getElementById('customerType').textContent = '-';
             document.getElementById('lastVisit').textContent = '-';
             document.getElementById('totalVisits').textContent = '-';

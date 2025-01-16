@@ -88,6 +88,7 @@ app.post("/bill", async (req, res) => {
                 const currentMonth = today.getMonth();
                 const currentYear = today.getFullYear();
                 
+                // Find or create yearly usage record
                 let yearlyUsage = membership.yearlyUsage.find(u => u.year === currentYear);
                 if (!yearlyUsage) {
                     yearlyUsage = {
@@ -97,31 +98,38 @@ app.post("/bill", async (req, res) => {
                     };
                     membership.yearlyUsage.push(yearlyUsage);
                 }
-
+        
+                // Calculate discount (20%)
+                const maxDiscount = 20;
+                let discountApplied = false;
+        
                 // Check birthday discount
                 const birthMonth = new Date(membership.birthDate).getMonth();
                 if (currentMonth === birthMonth && !yearlyUsage.usedBirthdayOffer) {
-                    finalDiscount += finalGrandTotal * 0.2; // 20% birthday discount
+                    finalDiscount += finalGrandTotal * (maxDiscount / 100);
                     birthdayDiscountApplied = true;
                     yearlyUsage.usedBirthdayOffer = true;
+                    discountApplied = true;
                 }
-
-                // Check anniversary discount
-                if (membership.anniversaryDate) {
+                
+                // Only check anniversary if birthday discount wasn't applied
+                if (!discountApplied && membership.anniversaryDate) {
                     const anniversaryMonth = new Date(membership.anniversaryDate).getMonth();
                     if (currentMonth === anniversaryMonth && !yearlyUsage.usedAnniversaryOffer) {
-                        finalDiscount += finalGrandTotal * 0.2; // 20% anniversary discount
+                        finalDiscount += finalGrandTotal * (maxDiscount / 100);
                         anniversaryDiscountApplied = true;
                         yearlyUsage.usedAnniversaryOffer = true;
                     }
                 }
-
+        
+                // Save membership changes
                 if (birthdayDiscountApplied || anniversaryDiscountApplied) {
                     await membership.save();
                 }
             }
         }
 
+        
         // Calculate final total after all discounts
         finalGrandTotal = Math.max(parseFloat(subtotal) - finalDiscount, 0);
 
@@ -129,7 +137,30 @@ app.post("/bill", async (req, res) => {
         let services = [];
         let index = 1;
         while (req.body[`services${index}`]) {
-            // ...existing service processing code...
+            const stylistId = req.body[`stylist${index}`];
+            const stylist2Id = req.body[`stylist2${index}`]; // Changed to use indexed version
+            const stylist = await Staff.findById(stylistId);
+            
+            if (!stylist) {
+                return res.status(400).send(`Stylist with ID ${stylistId} not found`);
+            }
+
+            let serviceObj = {
+                name: req.body[`services${index}`],
+                price: parseFloat(req.body[`prices${index}`]),
+                stylist: stylist.name,
+                startTime: req.body[`startTime${index}`],
+                endTime: req.body[`endTime${index}`]
+            };
+
+            if (stylist2Id) {
+                const stylist2 = await Staff.findById(stylist2Id);
+                if (stylist2) {
+                    serviceObj.stylist2 = stylist2.name;
+                }
+            }
+
+            services.push(serviceObj);
             index++;
         }
 
@@ -202,6 +233,8 @@ app.post("/packageBill", async (req, res) => {
             billType
         } = req.body;
 
+        
+
         // Initialize discount variables
         let finalGrandTotal = parseFloat(grandTotal);
         let finalDiscount = 0;
@@ -261,7 +294,7 @@ app.post("/packageBill", async (req, res) => {
         finalGrandTotal = Math.max(parseFloat(subtotal) - finalDiscount, 0);
 
         // Process packages array creation
-        let packages = [];
+        let services = [];
         let index = 1;
         while (req.body[`packages${index}`]) {
             const stylistId = req.body[`stylist${index}`];
@@ -290,7 +323,7 @@ app.post("/packageBill", async (req, res) => {
                 }
             }
 
-            packages.push(packageObj);
+            services.push(packageObj);
             index++;
         }
 
@@ -307,7 +340,7 @@ app.post("/packageBill", async (req, res) => {
             discountType,
             grandTotal: finalGrandTotal,
             paymentMethod,
-            packages,
+            services,
             billType,
             birthdayDiscountApplied,
             anniversaryDiscountApplied
@@ -539,6 +572,11 @@ app.get('/sales', async (req, res) => {
             { $group: { _id: null, total: { $sum: "$grandTotal" } } }
         ]);
 
+        const totalIncomePro = await ProductBill.aggregate([
+            { $match: { date: { $gte: currentMonthStart, $lte: currentMonthEnd } } },
+            { $group: { _id: null, total: { $sum: "$grandTotal" } } }
+        ]);
+
         // Total expenses for the current month
         const totalExpenses = await Expense.aggregate([
             { $match: { date: { $gte: currentMonthStart, $lte: currentMonthEnd } } },
@@ -718,6 +756,51 @@ app.get('/sales', async (req, res) => {
             }
         ]);
 
+        const totalIncomeUPIPro = await ProductBill.aggregate([
+            { 
+                $match: { 
+                    date: { $gte: currentMonthStart, $lte: currentMonthEnd },
+                    paymentMethod: "UPI" 
+                }
+            },
+            { 
+                $group: { 
+                    _id: null, 
+                    total: { $sum: "$grandTotal" } 
+                }
+            }
+        ]);
+
+        const totalIncomeCardPro = await ProductBill.aggregate([
+            { 
+                $match: { 
+                    date: { $gte: currentMonthStart, $lte: currentMonthEnd },
+                    paymentMethod: "Card"
+                }
+            },
+            { 
+                $group: { 
+                    _id: null, 
+                    total: { $sum: "$grandTotal" } 
+                }
+            }
+        ]);
+
+        const totalIncomeCashPro = await ProductBill.aggregate([
+            { 
+                $match: { 
+                    date: { $gte: currentMonthStart, $lte: currentMonthEnd },
+                    paymentMethod: "Cash"
+                }
+            },
+            { 
+                $group: { 
+                    _id: null, 
+                    total: { $sum: "$grandTotal" } 
+                }
+            }
+        ]);
+
         // Safe accessing of aggregation results
         const totalUPI = totalIncomeUPI.length > 0 ? totalIncomeUPI[0].total : 0;
         const totalCard = totalIncomeCard.length > 0 ? totalIncomeCard[0].total : 0;
@@ -731,24 +814,33 @@ app.get('/sales', async (req, res) => {
         const totalCardP = totalIncomeCardP.length > 0 ? totalIncomeCardP[0].total : 0;
         const totalCashP = totalIncomeCashP.length > 0 ? totalIncomeCashP[0].total : 0;
 
-        const totUPI = totalUPI + totalUPIM;
-        const totCard = totalCard + totalCardM;
-        const totCash = totalCash + totalCashM;
+        const totalUPIPro = totalIncomeUPIPro.length > 0 ? totalIncomeUPIPro[0].total : 0;
+        const totalCardPro = totalIncomeCardPro.length > 0 ? totalIncomeCardPro[0].total : 0;
+        const totalCashPro = totalIncomeCashPro.length > 0 ? totalIncomeCashPro[0].total : 0;
+        
 
-        const finalTotal = (totalIncome[0] ? totalIncome[0].total : 0) + (membershipIncome[0] ? membershipIncome[0].total : 0);
+        const totUPI = totalUPI + totalUPIM + totalUPIP + totalUPIPro;
+        const totCard = totalCard + totalCardM + totalCardP + totalCardPro;
+        const totCash = totalCash + totalCashM + totalCashP + totalCashPro;
 
+        const finalTotal = (totalIncome[0] ? totalIncome[0].total : 0) + (membershipIncome[0] ? membershipIncome[0].total : 0) + (totalIncomePro[0] ? totalIncomePro[0].total : 0);
+        
         res.render('sales', {
             totalIncome: finalTotal,
             totalExpenses: totalExpenses[0] ? totalExpenses[0].total : 0,
             serviceIncome: serviceIncome[0] ? serviceIncome[0].total : 0,
             packageIncome: packageIncome[0] ? packageIncome[0].total : 0,
             membershipIncome: membershipIncome[0] ? membershipIncome[0].total : 0,
+            totalIncomeProIncome : totalIncomePro[0] ? totalIncomePro[0].total : 0,
             totalUPI,
             totalCard,
             totalCash,
             totalUPIP,
             totalCardP,
             totalCashP,
+            totalUPIPro,
+            totalCardPro,
+            totalCashPro,
             totalUPIM,
             totalCardM,
             totalCashM,
@@ -1253,7 +1345,7 @@ app.get("/client", (req, res) => {
 
 app.post('/add-membership', async (req, res) => {
     try {
-        const { customername, membershipID, phoneNumber, birthDate, anniversaryDate, registeredDate, validTillDate, memprice, mempaymentMethod } = req.body;
+        const currentYear = new Date().getFullYear();
         const newMembership = new Membership({
             customername,
             membershipID,
@@ -1263,7 +1355,12 @@ app.post('/add-membership', async (req, res) => {
             registeredDate,
             validTillDate,
             memprice,             
-            mempaymentMethod
+            mempaymentMethod,
+            yearlyUsage: [{
+                year: currentYear,
+                usedBirthdayOffer: false,
+                usedAnniversaryOffer: false
+            }]
         });
         await newMembership.save();
         res.json({ success: true, message: 'Membership added successfully!' });
@@ -1807,6 +1904,7 @@ app.get('/topemployees', async (req, res) => {
             { $sort: { count: -1 } },
             { $limit: 1 }
         ]);
+
 
         const topOfWeek = await Fetch.aggregate([
             { $match: { date: { $gte: startOfWeek, $lt: endOfWeek } } },
