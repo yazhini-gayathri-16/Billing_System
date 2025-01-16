@@ -556,6 +556,12 @@
                             document.getElementById('applyBirthdayDiscount').value = data.canUseBirthdayOffer;
                             document.getElementById('applyAnniversaryDiscount').value = data.canUseAnniversaryOffer;
                         }
+
+                        // Always update membershipID if available
+                        if (data.membershipID) {
+                            document.getElementById('membershipID').value = data.membershipID;
+                        }
+                        
                     } else {
                         resetClientDetails();
                     }

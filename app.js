@@ -88,6 +88,7 @@ app.post("/bill", async (req, res) => {
                 const currentMonth = today.getMonth();
                 const currentYear = today.getFullYear();
                 
+                // Find or create yearly usage record
                 let yearlyUsage = membership.yearlyUsage.find(u => u.year === currentYear);
                 if (!yearlyUsage) {
                     yearlyUsage = {
@@ -97,31 +98,38 @@ app.post("/bill", async (req, res) => {
                     };
                     membership.yearlyUsage.push(yearlyUsage);
                 }
-
+        
+                // Calculate discount (20%)
+                const maxDiscount = 20;
+                let discountApplied = false;
+        
                 // Check birthday discount
                 const birthMonth = new Date(membership.birthDate).getMonth();
                 if (currentMonth === birthMonth && !yearlyUsage.usedBirthdayOffer) {
-                    finalDiscount += finalGrandTotal * 0.2; // 20% birthday discount
+                    finalDiscount += finalGrandTotal * (maxDiscount / 100);
                     birthdayDiscountApplied = true;
                     yearlyUsage.usedBirthdayOffer = true;
+                    discountApplied = true;
                 }
-
-                // Check anniversary discount
-                if (membership.anniversaryDate) {
+                
+                // Only check anniversary if birthday discount wasn't applied
+                if (!discountApplied && membership.anniversaryDate) {
                     const anniversaryMonth = new Date(membership.anniversaryDate).getMonth();
                     if (currentMonth === anniversaryMonth && !yearlyUsage.usedAnniversaryOffer) {
-                        finalDiscount += finalGrandTotal * 0.2; // 20% anniversary discount
+                        finalDiscount += finalGrandTotal * (maxDiscount / 100);
                         anniversaryDiscountApplied = true;
                         yearlyUsage.usedAnniversaryOffer = true;
                     }
                 }
-
+        
+                // Save membership changes
                 if (birthdayDiscountApplied || anniversaryDiscountApplied) {
                     await membership.save();
                 }
             }
         }
 
+        
         // Calculate final total after all discounts
         finalGrandTotal = Math.max(parseFloat(subtotal) - finalDiscount, 0);
 
@@ -1337,7 +1345,7 @@ app.get("/client", (req, res) => {
 
 app.post('/add-membership', async (req, res) => {
     try {
-        const { customername, membershipID, phoneNumber, birthDate, anniversaryDate, registeredDate, validTillDate, memprice, mempaymentMethod } = req.body;
+        const currentYear = new Date().getFullYear();
         const newMembership = new Membership({
             customername,
             membershipID,
@@ -1347,7 +1355,12 @@ app.post('/add-membership', async (req, res) => {
             registeredDate,
             validTillDate,
             memprice,             
-            mempaymentMethod
+            mempaymentMethod,
+            yearlyUsage: [{
+                year: currentYear,
+                usedBirthdayOffer: false,
+                usedAnniversaryOffer: false
+            }]
         });
         await newMembership.save();
         res.json({ success: true, message: 'Membership added successfully!' });
