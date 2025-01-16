@@ -1344,7 +1344,9 @@ app.get("/client", (req, res) => {
 // });
 
 app.post('/add-membership', async (req, res) => {
+
     try {
+        const { customername, membershipID, phoneNumber, birthDate, anniversaryDate, registeredDate, validTillDate, memprice, mempaymentMethod } = req.body;
         const currentYear = new Date().getFullYear();
         const newMembership = new Membership({
             customername,

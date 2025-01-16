@@ -391,6 +391,20 @@
             formData.forEach((value, key) => {
                 formObject[key] = value;
             });
+
+            const discountType = formObject.discountType;
+            if (discountType === 'percentage') {
+                formObject.discount = parseFloat(formObject.discountPercentage) || 0;
+            } else if (discountType === 'rupees') {
+                formObject.discount = parseFloat(formObject.discountRupees) || 0;
+            }
+
+            if (isNaN(formObject.discountRupees)) {
+                formObject.discountRupees = 0;
+            }
+            if (isNaN(formObject.discountPercentage)) {
+                formObject.discountPercentage = 0;
+            }
             
             try {
                 const response = await fetch('/productbill', {

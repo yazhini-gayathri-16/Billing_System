@@ -34,7 +34,8 @@ const productBillSchema = new mongoose.Schema({
     },
     discount: {
         type: Number,
-        default: 0
+        default: 0, 
+        required: false
     },
     grandTotal: {
         type: Number,
