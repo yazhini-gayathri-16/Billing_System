@@ -105,9 +105,7 @@
         // Function to search for a customer
         function searchCustomer() {
             const customerNumber = document.getElementById("customerNumber").value;
-          
             
-
             fetch('/search-customer', {
                 method: 'POST',
                 headers: {
@@ -120,17 +118,81 @@
                 const resultDiv = document.getElementById('result');
                 
                 if (data.success) {
+                    // Format services and products arrays
+                    const servicesDisplay = data.services.length > 0 ? data.services.join(', ') : 'No services';
+                    const productsDisplay = data.products.length > 0 ? data.products.join(', ') : 'No products';
+                    
+                    // Format membership display
+                    const membershipDisplay = data.membership === 'Active' 
+                        ? `${data.membership} (ID: ${data.membershipID})`
+                        : data.membership;
+
+                    // Format currency
+                    const formattedSpent = new Intl.NumberFormat('en-IN', {
+                        style: 'currency',
+                        currency: 'INR'
+                    }).format(data.totalSpent);
+
                     resultDiv.innerHTML = `
-                        <p>Customer Name: <span id="cust_name">${data.cust_name}</span></p>
-                        <p>Customer Type: <span id="customerType">${data.customerType}</span></p>
-                        <p>Last Visit: <span id="lastVisit">${data.lastVisit}</span></p>
-                        <p>Total Visits: <span id="totalVisits">${data.visits}</span></p>
-                        <p>Total Spendings: <span id="totalSpendings">${data.totalSpent}</span> INR</p>
-                        <p>Services: <span id="services">${data.services}</span></p>
-                        <p>Membership: <span id="membershipStatus">${data.membership}</span></p>
-                        <p>Birthday Offer Used: <span id="birthdayOfferStatus">${data.usedBirthdayOffer}</span></p>
-                        <p>Anniversary Offer Used: <span id="anniversaryOfferStatus">${data.usedAnniversaryOffer}</span></p>
-                                `;
+                        <div class="customer-name">${data.cust_name}</div>
+                        <div class="customer-info-grid">
+                            <div class="info-card">
+                                <div class="info-label">Customer Type</div>
+                                <div class="info-value">${data.customerType}</div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <div class="info-label">Last Visit</div>
+                                <div class="info-value">${data.lastVisit}</div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <div class="info-label">Total Visits</div>
+                                <div class="info-value">${data.visits}</div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <div class="info-label">Total Spendings</div>
+                                <div class="info-value">${formattedSpent}</div>
+                            </div>
+                            
+                            <div class="info-card full-width">
+                                <div class="info-label">Previous Services</div>
+                                <div class="info-value">${servicesDisplay}</div>
+                            </div>
+                            
+                            <div class="info-card full-width">
+                                <div class="info-label">Previous Products</div>
+                                <div class="info-value">${productsDisplay}</div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <div class="info-label">Membership Status</div>
+                                <div class="info-value">
+                                    <span class="status-badge ${data.membership === 'Active' ? 'status-active' : 'status-inactive'}">
+                                        ${data.membership}
+                                        ${data.membership === 'Active' ? `(ID: ${data.membershipID})` : ''}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <div class="info-label">Offers Available</div>
+                                <div class="info-value">
+                                    <div>Birthday: 
+                                        <span class="status-badge ${data.canUseBirthdayOffer ? 'status-available' : 'status-unavailable'}">
+                                            ${data.canUseBirthdayOffer ? 'Available' : 'Not Available'}
+                                        </span>
+                                    </div>
+                                    <div style="margin-top: 5px;">Anniversary: 
+                                        <span class="status-badge ${data.canUseAnniversaryOffer ? 'status-available' : 'status-unavailable'}">
+                                            ${data.canUseAnniversaryOffer ? 'Available' : 'Not Available'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
                 } else {
                     resultDiv.innerHTML = `<p>No customer found with that information.</p>`;
                 }
@@ -140,7 +202,6 @@
                 document.getElementById('result').innerHTML = `<p>Error searching for customer.</p>`;
             });
         }
-
     // Toggle the visibility of the Add Membership form
     function toggleMembershipForm() {
         const form = document.getElementById('membershipForm');

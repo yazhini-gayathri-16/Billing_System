@@ -125,3 +125,76 @@ button:hover {
 
     
 }
+
+.result {
+    margin: 20px 0;
+    padding: 20px;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.customer-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.info-card {
+    padding: 15px;
+    background: #e5e6e7;
+    border-radius: 6px;
+    border-left: 4px solid #37c057;
+}
+
+.info-card.full-width {
+    grid-column: 1 / -1;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.status-active {
+    background-color: #28a745;
+    color: white;
+}
+
+.status-inactive {
+    background-color: #dc3545;
+    color: white;
+}
+
+.status-available {
+    background-color: #28a745;
+    color: white;
+}
+
+.status-unavailable {
+    background-color: #6c757d;
+    color: white;
+}
+
+.customer-name {
+    font-size: 1.5em;
+    color: #000000;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #37c057;
+}
+
+.info-label {
+    font-weight: 600;
+    color: #000000;
+    margin-bottom: 5px;
+}
+
+.info-value {
+    color: #000000;
+    font-size: 1.1em;
+}

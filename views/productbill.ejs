@@ -23,11 +23,11 @@
                 <div class="form-row">
                     <div class="form-group basis">
                         <label>Customer Name<span style="color: red;">*</span></label>
-                        <input type="text" name="customer_name" id="customerName" required placeholder="Enter customer name">
+                        <input type="text" name="customer_name" id="customerName" required placeholder="Enter customer name" autocomplete="off">
                     </div>
                     <div class="form-group basis">
                         <label>Contact Number<span style="color: red;">*</span></label>
-                        <input type="number" name="customer_number" id="customerNumber" required placeholder="Enter contact number" oninput="fetchClientDetails()">
+                        <input type="number" name="customer_number" id="customerNumber" autocomplete="off" required placeholder="Enter contact number" oninput="fetchClientDetails()">
                     </div>
                     <div class="form-group basis-short">
                         <label>Date</label>
@@ -102,21 +102,21 @@
                     <div class="form-group">
                         <label>Discount Type</label>
                         <label>
-                            <input type="radio" name="discountType" value="percentage" checked onchange="toggleDiscountType()">
+                            <input type="radio" name="discountType" value="percentage" id="discountPercentage" checked onchange="toggleDiscountType()">
                             Percentage
                         </label>
                         <label>
-                            <input type="radio" name="discountType" value="rupees" onchange="toggleDiscountType()">
+                            <input type="radio" name="discountType" value="rupees" id="discountRupees" onchange="toggleDiscountType()">
                             Rupees
                         </label>
                     </div>
                     <div class="form-group" id="percentageDiscountField">
                         <label>Discount (%)</label>
-                        <input type="number" name="discountPercentage" oninput="calculateGrandTotal()">
+                        <input type="number" name="discountPercentage" id="discountPercentageInput" oninput="calculateGrandTotal()">
                     </div>
                     <div class="form-group" id="rupeesDiscountField" style="display:none">
                         <label>Discount (₹)</label>
-                        <input type="number" name="discountRupees" oninput="calculateGrandTotal()">
+                        <input type="number" name="discountRupees" id="discountRupeesInput" oninput="calculaterupeesGrandTotal()">
                     </div>
                 </div>
 
@@ -154,18 +154,26 @@
                     <span id="totalSpendings">-</span> INR
                 </div>
                 <div class="form-group">
-                    <label>Membership</label>
+                    <label>Previous Services</label>
+                    <span id="previousServices">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Previous Products</label>
+                    <span id="previousProducts">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Membership Status</label>
                     <span id="membershipStatus">-</span>
                 </div>
                 <div class="form-group">
-                    <label>Birthday Offer Used</label>
+                    <label>Birthday Offer</label>
                     <span id="birthdayOfferStatus">-</span>
                 </div>
                 <div class="form-group">
-                    <label>Anniversary Offer Used</label>
+                    <label>Anniversary Offer</label>
                     <span id="anniversaryOfferStatus">-</span>
                 </div>
-            </div>
+            </div>             
         </div>
     </div>
 
@@ -196,51 +204,46 @@
         }
 
         async function fetchClientDetails() {
-            const customerNumber = document.getElementById('customerNumber').value;
-            console.log('Customer number:', customerNumber); // Debug log
-            
-            if (customerNumber.length === 10) {
+            const number = document.getElementById('customerNumber').value;
+            if (number) {
                 try {
-                    console.log('Fetching customer details...'); // Debug log
                     const response = await fetch('/search-customer', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ customerNumber })
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ customerNumber: number })
                     });
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    
                     const data = await response.json();
-                    console.log('Customer data:', data); // Debug log
-                    
+
                     if (data.success) {
-                        // Update customer name
-                        document.getElementById('customerName').value = data.cust_name;
-                        document.getElementById('cust_name').textContent = data.cust_name;
-                        
-                        // Update customer details
-                        document.getElementById('customerType').textContent = data.customerType;
-                        document.getElementById('lastVisit').textContent = new Date(data.lastVisit).toLocaleDateString();
-                        document.getElementById('totalVisits').textContent = data.visits;
-                        document.getElementById('totalSpendings').textContent = data.totalSpent;
-                        document.getElementById('membershipStatus').textContent = data.membership;
-                        
-                        // Update membership status
-                        document.getElementById('hasMembership').checked = data.membership === 'Active';
+                        // Update basic customer info
+                        document.getElementById('cust_name').textContent = data.cust_name || '-';
+                        document.getElementById('customerType').textContent = data.customerType || '-';
+                        document.getElementById('lastVisit').textContent = data.lastVisit || '-';
+                        document.getElementById('totalVisits').textContent = data.visits || '-';
+                        document.getElementById('totalSpendings').textContent = data.totalSpent.toLocaleString('en-IN') || '-';
+                        document.getElementById('membershipStatus').textContent = data.membership || '-';
+
+                        // Update services and products
+                        document.getElementById('previousServices').textContent = 
+                            data.services && data.services.length > 0 ? data.services.join(', ') : '-';
+                        document.getElementById('previousProducts').textContent = 
+                            data.products && data.products.length > 0 ? data.products.join(', ') : '-';
+
+                        // Update offer status
+                        document.getElementById('birthdayOfferStatus').textContent = 
+                            data.canUseBirthdayOffer ? 'Available' : 'Not Available';
+                        document.getElementById('anniversaryOfferStatus').textContent = 
+                            data.canUseAnniversaryOffer ? 'Available' : 'Not Available';
+
+                        // Update membership fields if applicable
+                        if (document.getElementById('hasMembership').checked) {
+                            document.getElementById('membershipID').value = data.membershipID || '';
+                        }
+
                         if (data.membershipID) {
                             document.getElementById('membershipID').value = data.membershipID;
                         }
-                        
-                        // Update offer status
-                        document.getElementById('birthdayOfferStatus').textContent = data.canUseBirthdayOffer ? 'Available' : 'Not Available';
-                        document.getElementById('anniversaryOfferStatus').textContent = data.canUseAnniversaryOffer ? 'Available' : 'Not Available';
-                    
                     } else {
-                        console.log('No customer found'); // Debug log
                         resetClientDetails();
                     }
                 } catch (error) {
@@ -248,12 +251,11 @@
                     resetClientDetails();
                 }
             } else {
-                console.log('Invalid number length'); // Debug log
                 resetClientDetails();
             }
         }
 
-
+        // Update the resetClientDetails function
         function resetClientDetails() {
             document.getElementById('cust_name').textContent = '-';
             document.getElementById('customerType').textContent = '-';
@@ -261,6 +263,8 @@
             document.getElementById('totalVisits').textContent = '-';
             document.getElementById('totalSpendings').textContent = '-';
             document.getElementById('membershipStatus').textContent = '-';
+            document.getElementById('previousServices').textContent = '-';
+            document.getElementById('previousProducts').textContent = '-';
             document.getElementById('birthdayOfferStatus').textContent = '-';
             document.getElementById('anniversaryOfferStatus').textContent = '-';
         }
@@ -334,6 +338,13 @@
             updateSubtotal();
         }
 
+        function calculaterupeesGrandTotal() {
+            const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;
+            const discount = parseFloat(document.getElementById('discountRupeesInput').value) || 0;
+            const grandTotal = subtotal - discount;
+            document.getElementById('grandTotal').value = grandTotal.toFixed(2);
+        }
+
         function updateSubtotal() {
             const priceInputs = document.querySelectorAll('[name^="prices"]');
             const quantityInputs = document.querySelectorAll('[name^="quantities"]');
@@ -370,65 +381,83 @@
             const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;
             const discountType = document.querySelector('input[name="discountType"]:checked').value;
             let discount = 0;
-            
+
             if (discountType === 'percentage') {
-                const percentage = parseFloat(document.querySelector('input[name="discountPercentage"]').value) || 0;
+                const percentageInput = document.querySelector('input[name="discountPercentage"]');
+                let percentage = parseFloat(percentageInput.value) || 0;
+                if (percentage > 100) percentage = 100;
+                if (percentage < 0) percentage = 0;
                 discount = (subtotal * percentage) / 100;
             } else {
-                discount = parseFloat(document.querySelector('input[name="discountRupees"]').value) || 0;
+                const rupeesInput = document.querySelector('input[name="discountRupees"]');
+                let rupees = parseFloat(rupeesInput.value) || 0;
+                if (rupees > subtotal) rupees = subtotal;
+                if (rupees < 0) rupees = 0;
+                discount = rupees;
             }
-            
-            const grandTotal = subtotal - discount;
+
+            if (isNaN(discount)) {
+                discount = 0;
+            }
+
+            const grandTotal = Math.max(0, subtotal - discount);
             document.getElementById('grandTotal').value = grandTotal.toFixed(2);
         }
 
         async function submitBillForm(event) {
-            event.preventDefault();
-            
-            const formData = new FormData(event.target);
-            const formObject = {};
-            
-            formData.forEach((value, key) => {
-                formObject[key] = value;
-            });
+    event.preventDefault();
 
-            const discountType = formObject.discountType;
-            if (discountType === 'percentage') {
-                formObject.discount = parseFloat(formObject.discountPercentage) || 0;
-            } else if (discountType === 'rupees') {
-                formObject.discount = parseFloat(formObject.discountRupees) || 0;
-            }
+    const formData = new FormData(event.target);
+    const formObject = {};
 
-            if (isNaN(formObject.discountRupees)) {
-                formObject.discountRupees = 0;
-            }
-            if (isNaN(formObject.discountPercentage)) {
-                formObject.discountPercentage = 0;
-            }
-            
-            try {
-                const response = await fetch('/productbill', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formObject)
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert('Bill generated successfully!');
-                    window.location.reload();
-                } else {
-                    alert('Error : ' + result.message);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error generating bill');
-            }
+    formData.forEach((value, key) => {
+        formObject[key] = value;
+    });
+
+    const discountType = formObject.discountType;
+    const subtotal = parseFloat(formObject.subtotal) || 0;
+
+    if (discountType === 'percentage') {
+        const percentage = parseFloat(formObject.discountPercentage) || 0;
+        formObject.discount = (subtotal * percentage) / 100;
+    } else {
+        formObject.discount = parseFloat(formObject.discountRupees) || 0;
+    }
+
+    formObject.discount = parseFloat(formObject.discount.toFixed(2));
+
+    if (isNaN(formObject.discount)) {
+        formObject.discount = 0;
+    }
+
+    formObject.grandTotal = parseFloat((subtotal - formObject.discount).toFixed(2));
+
+    if (isNaN(formObject.grandTotal)) {
+        formObject.grandTotal = 0;
+    }
+
+    try {
+        const response = await fetch('/productbill', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formObject)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert('Bill generated successfully!');
+            window.location.reload();
+        } else {
+            alert('Error : ' + result.message);
         }
-
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error generating bill');
+    }
+}
     </script>
 </body>
 </html>

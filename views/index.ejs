@@ -206,15 +206,23 @@
                     <span id="totalSpendings">-</span> INR
                 </div>
                 <div class="form-group">
-                    <label>Membership</label>
+                    <label>Previous Services</label>
+                    <span id="previousServices">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Previous Products</label>
+                    <span id="previousProducts">-</span>
+                </div>
+                <div class="form-group">
+                    <label>Membership Status</label>
                     <span id="membershipStatus">-</span>
                 </div>
                 <div class="form-group">
-                    <label>Birthday Offer Used</label>
+                    <label>Birthday Offer</label>
                     <span id="birthdayOfferStatus">-</span>
                 </div>
                 <div class="form-group">
-                    <label>Anniversary Offer Used</label>
+                    <label>Anniversary Offer</label>
                     <span id="anniversaryOfferStatus">-</span>
                 </div>
             </div>             
@@ -509,27 +517,34 @@
                     const data = await response.json();
 
                     if (data.success) {
+                        // Update basic customer info
                         document.getElementById('cust_name').textContent = data.cust_name || '-';
                         document.getElementById('customerType').textContent = data.customerType || '-';
                         document.getElementById('lastVisit').textContent = data.lastVisit || '-';
                         document.getElementById('totalVisits').textContent = data.visits || '-';
-                        document.getElementById('totalSpendings').textContent = data.totalSpent || '-';
+                        document.getElementById('totalSpendings').textContent = data.totalSpent.toLocaleString('en-IN') || '-';
                         document.getElementById('membershipStatus').textContent = data.membership || '-';
-                        document.getElementById('birthdayOfferStatus').textContent = data.canUseBirthdayOffer ? 'Available' : 'Not Available';
-                        document.getElementById('anniversaryOfferStatus').textContent = data.canUseAnniversaryOffer ? 'Available' : 'Not Available';
 
-                        // Update hidden fields
+                        // Update services and products
+                        document.getElementById('previousServices').textContent = 
+                            data.services && data.services.length > 0 ? data.services.join(', ') : '-';
+                        document.getElementById('previousProducts').textContent = 
+                            data.products && data.products.length > 0 ? data.products.join(', ') : '-';
+
+                        // Update offer status
+                        document.getElementById('birthdayOfferStatus').textContent = 
+                            data.canUseBirthdayOffer ? 'Available' : 'Not Available';
+                        document.getElementById('anniversaryOfferStatus').textContent = 
+                            data.canUseAnniversaryOffer ? 'Available' : 'Not Available';
+
+                        // Update membership fields if applicable
                         if (document.getElementById('hasMembership').checked) {
                             document.getElementById('membershipID').value = data.membershipID || '';
-                            document.getElementById('applyBirthdayDiscount').value = data.canUseBirthdayOffer;
-                            document.getElementById('applyAnniversaryDiscount').value = data.canUseAnniversaryOffer;
                         }
 
                         if (data.membershipID) {
                             document.getElementById('membershipID').value = data.membershipID;
                         }
-                        //document.getElementById('hasMembership').checked = data.membership === 'Active';
-                
                     } else {
                         resetClientDetails();
                     }
@@ -542,7 +557,7 @@
             }
         }
 
-
+        // Update the resetClientDetails function
         function resetClientDetails() {
             document.getElementById('cust_name').textContent = '-';
             document.getElementById('customerType').textContent = '-';
@@ -550,6 +565,8 @@
             document.getElementById('totalVisits').textContent = '-';
             document.getElementById('totalSpendings').textContent = '-';
             document.getElementById('membershipStatus').textContent = '-';
+            document.getElementById('previousServices').textContent = '-';
+            document.getElementById('previousProducts').textContent = '-';
             document.getElementById('birthdayOfferStatus').textContent = '-';
             document.getElementById('anniversaryOfferStatus').textContent = '-';
         }

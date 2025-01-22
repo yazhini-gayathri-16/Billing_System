@@ -370,25 +370,39 @@ app.post("/packageBill", async (req, res) => {
 app.post('/search-customer', async (req, res) => {
     try {
         const { customerNumber } = req.body;
-        
-        const customerData = await Fetch.find({
-            customer_number: customerNumber
-        });
 
-        if (customerData.length > 0) {
-            const cust_name = customerData[0].customer_name;
-            const totalSpent = customerData.reduce(
-                (sum, record) => sum + record.services.reduce((serviceSum, service) => serviceSum + service.price, 0), 
-                0
-            );
+        // Fetch customer data from Fetch model
+        const fetchCustomerData = await Fetch.find({ customer_number: customerNumber });
 
-            const services = customerData.flatMap(record => record.services.map(service => service.name));
+        // Fetch customer data from ProductBill model
+        const productBillCustomerData = await ProductBill.find({ customer_number: customerNumber });
+
+        // Combine data from both models
+        const combinedData = [...fetchCustomerData, ...productBillCustomerData];
+
+        if (combinedData.length > 0) {
+            const totalSpent = combinedData.reduce((sum, record) => {
+                if (record.services) {
+                    return sum + record.services.reduce((serviceSum, service) => serviceSum + service.price, 0);
+                } else if (record.products) {
+                    return sum + record.products.reduce((productSum, product) => productSum + product.total, 0);
+                }
+                return sum;
+            }, 0);
+
+            const visits = combinedData.length;
+            const lastVisit = combinedData.reduce((latest, record) => {
+                const recordDate = new Date(record.date);
+                return recordDate > latest ? recordDate : latest;
+            }, new Date(0)).toISOString().split('T')[0];
+
+            const services = fetchCustomerData.flatMap(record => record.services.map(service => service.name));
+            const products = productBillCustomerData.flatMap(record => record.products.map(product => product.name));
             const uniqueServices = [...new Set(services)];
-            const lastVisit = customerData[customerData.length - 1].date.toISOString().split('T')[0];
-            
+            const uniqueProducts = [...new Set(products)];
+
             let customerType = 'New';
-            const visits = customerData.length;
-            const lastVisitDate = new Date(customerData[customerData.length - 1].date);
+            const lastVisitDate = new Date(lastVisit);
             const daysSinceLastVisit = (new Date() - lastVisitDate) / (1000 * 60 * 60 * 24);
 
             if (visits > 2) {
@@ -405,11 +419,11 @@ app.post('/search-customer', async (req, res) => {
 
             // Find membership using phone number
             const membership = await Membership.findOne({ phoneNumber: customerNumber });
-            
+
             if (membership) {
                 membershipID = membership.membershipID;
                 membershipStatus = 'Active';
-                
+
                 // Check if membership is expired
                 const today = new Date();
                 if (membership.validTillDate < today) {
@@ -434,19 +448,20 @@ app.post('/search-customer', async (req, res) => {
 
             res.json({
                 success: true,
-                cust_name,
+                cust_name: fetchCustomerData[0].customer_name,
                 customerType,
                 lastVisit,
                 visits,
                 totalSpent,
                 services: uniqueServices,
+                products: uniqueProducts,
                 membership: membershipStatus,
                 membershipID,
                 canUseBirthdayOffer,
                 canUseAnniversaryOffer
             });
         } else {
-            res.json({ success: false });
+            res.json({ success: false, message: 'Customer not found' });
         }
     } catch (error) {
         console.error('Error retrieving customer data:', error);
@@ -2009,6 +2024,19 @@ app.post("/productbill", async (req, res) => {
             paymentMethod
         } = req.body;
 
+        let finalGrandTotal = parseFloat(subtotal);
+        let finalDiscount = 0;
+
+        // Handle regular discounts
+        if (discountType === "percentage" && discountPercentage) {
+            finalDiscount = (parseFloat(subtotal) * parseFloat(discountPercentage)) / 100;
+        } else if (discountType === "rupees" && discountRupees) {
+            finalDiscount = parseFloat(discountRupees);
+        }
+
+        // Calculate final total after all discounts
+        finalGrandTotal = Math.max(parseFloat(subtotal) - finalDiscount, 0);
+
         // Process products and calculate total items
         let products = [];
         let totalItems = 0;
@@ -2053,8 +2081,8 @@ app.post("/productbill", async (req, res) => {
             products,
             subtotal: parseFloat(subtotal),
             discountType,
-            discount: discountType === 'percentage' ? parseFloat(discountPercentage) : parseFloat(discountRupees),
-            grandTotal: parseFloat(grandTotal),
+            discount: finalDiscount,
+            grandTotal: finalGrandTotal,
             paymentMethod
         });
 
