@@ -183,7 +183,16 @@ app.post("/bill", async (req, res) => {
             anniversaryDiscountApplied
         });
 
+        const currentMonth = new Date().toLocaleString('default', { month: 'short' });
+        const currentYear = new Date().getFullYear();
+
         if (user) {
+            // Update or create monthly data
+            const monthlyData = await MonthlyData.findOneAndUpdate(
+                { month: currentMonth, year: currentYear },
+                { $inc: { achieved: 1 } },
+                { upsert: true, new: true }
+            );
             res.json({
                 success: true,
                 message: 'Bill generated successfully',
@@ -195,6 +204,7 @@ app.post("/bill", async (req, res) => {
                 message: 'Failed to create receipt'
             });
         }
+
     } catch (err) {
         console.error("Error creating bill:", err);
         res.status(500).send(err.message);
@@ -346,7 +356,16 @@ app.post("/packageBill", async (req, res) => {
             anniversaryDiscountApplied
         });
 
+        const currentMonth = new Date().toLocaleString('default', { month: 'short' });
+        const currentYear = new Date().getFullYear();
+
         if (user) {
+            // Update or create monthly data
+            const monthlyData = await MonthlyData.findOneAndUpdate(
+                { month: currentMonth, year: currentYear },
+                { $inc: { achieved: 1 } },
+                { upsert: true, new: true }
+            );
             res.json({
                 success: true,
                 message: 'Bill generated successfully',
