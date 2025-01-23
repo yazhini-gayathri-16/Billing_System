@@ -19,7 +19,17 @@
     </style>
 </head>
 <body>
-    <%- include('partials/navbar') %>
+    <!-- Add debug output -->
+    <% console.log('User Role:', userRole); %>
+
+    <!-- Update navbar conditional -->
+    <% if (userRole === 'admin') { %>
+        <%- include('partials/navbar') %>
+    <% } else if (userRole === 'staff') { %>
+        <%- include('partials/staffnavbar') %>
+    <% } else { %>
+        <p>No role defined</p>
+    <% } %>
     <%- include('partials/billing_nav') %>
     <div class="container">
         <!-- Generate Bill Section -->

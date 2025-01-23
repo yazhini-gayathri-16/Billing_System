@@ -1,6 +1,8 @@
 const express = require("express");
 const cors = require('cors');
 const cron = require('node-cron');
+const multer = require('multer');
+const session = require('express-session');
 const Signup = require("./models/signup");
 const Fetch = require("./models/fetch"); // Ensure this points to the file where Fetch is defined
 const Menu = require("./models/menu");
@@ -13,7 +15,7 @@ const Expense = require('./models/expenseschema');
 const Package = require('./models/packages');
 const EmployeeTarget = require('./models/employeeTarget'); // Add this line to import the new model
 const ProductBill = require('./models/productBill');
-const multer = require('multer');
+
 
 
 require("./connection");
@@ -28,21 +30,58 @@ const upload = multer({
     limits: { fileSize: 10 * 1024 * 1024 } // for example, 10 MB limit
 });
 
+app.use(session({
+    secret: 'noble-evergreen',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false } // set to true if using https
+}));
+
+// Middleware to check if user is authenticated
+const isAuthenticated = (req, res, next) => {
+    if (!req.session.user) {
+        return res.redirect('/signin');
+    }
+    next();
+};
+
+// Middleware to check if user is admin
+const isAdmin = (req, res, next) => {
+    if (req.session.user && req.session.user.role === 'admin') {
+        next();
+    } else {
+        res.status(403).send('Access denied');
+    }
+};
+
+app.get('/logout', (req, res) => {
+    req.session.destroy();
+    res.redirect('/signin');
+});
+
+// In your route handlers, pass the user role to the templates
+app.use((req, res, next) => {
+    res.locals.userRole = req.session.user ? req.session.user.role : null;
+    next();
+});
 
 
 const port = process.env.PORT || 3000;
 app.set('view engine', 'ejs');
 app.use(express.static("public"));
 
+
 // In your app.js or server.js file
-app.get("/", async (req, res) => {
+app.get("/", isAuthenticated, async (req, res) => {
     try {
-        // Fetch all staff members and services from the database
         const staffMembers = await Staff.find({});
-        const services = await Menu.find({}); // Fetch services from the Menu collection
+        const services = await Menu.find({});
         
-        // Pass staff members and services to the EJS template
-        res.render("index", { staffMembers, services });
+        res.render("index", { 
+            staffMembers, 
+            services,
+            userRole: req.session.user.role // Explicitly pass userRole
+        });
     } catch (error) {
         console.error("Failed to fetch data:", error);
         res.status(500).send("Error loading the page.");
@@ -489,9 +528,12 @@ app.post('/search-customer', async (req, res) => {
 });
 
 
-app.get('/dashboard', async (req, res) => {
+// Apply middleware to routes
+app.get('/dashboard', isAuthenticated, isAdmin, (req, res) => {
     res.render("analytics");
 });
+
+
 
 app.get('/employees',async (req,res)=>{
     try {
@@ -1272,7 +1314,8 @@ app.get("/appointment", async (req, res) => {
     }
 });
 
-app.get('/analytics',(req,res)=>{
+// Protect admin routes
+app.get('/analytics', isAuthenticated, isAdmin, (req, res) => {
     res.render('analytics');
 });
 
@@ -1438,17 +1481,14 @@ app.get("/signup", (req, res) => {
 
 app.post("/add-signup", async (req, res) => {
     try {
-        const mail = req.body.mail;
-        const password = req.body.password;
-
-        const user = await Signup.create({mail, password});
-        if(user){
-            res.status(200).redirect('/');
-        }
-        else{
-            res.status(400);
-        }
+        const { mail, password, role } = req.body;
+        const user = await Signup.create({ mail, password, role });
         
+        if(user) {
+            res.status(200).redirect('/signin');
+        } else {
+            res.status(400).send('Failed to create user');
+        }
     } catch (error) {
         res.status(500).send(error.message);
     }
@@ -1458,30 +1498,39 @@ app.get("/signin", (req, res) => {
     res.render("signin");
 });
 
-app.post("/do-signin",async (req,res)=>{
-
+app.post("/do-signin", async (req, res) => {
     try {
-       const {mail, password}= req.body;
-       
-       const Username = await Signup.findOne({mail});
-       
-        if(Username){
-            if(password === Username.password){
+        const { mail, password } = req.body;
+        const user = await Signup.findOne({ mail });
+        
+        if (user && password === user.password) {
+            req.session.user = {
+                mail: user.mail,
+                role: user.role
+            };
+            console.log("User role set to:", user.role); // Debug log
+            
+            if (user.role === 'admin') {
+                res.redirect('/');
+            } else {
                 res.redirect('/');
             }
-            else{
-                res.status(400).send('Username/ password does not match');
-            }
-        }
-        else{
-            res.status(400).send('User not found');
+        } else {
+            res.status(400).send('Invalid credentials');
         }
     } catch (error) {
         res.status(500).send(error.message);
     }
+});
 
-})
-
+// Staff dashboard route
+app.get('/staff-dashboard', isAuthenticated, (req, res) => {
+    if (req.session.user.role === 'staff') {
+        res.render('staff-dashboard', { user: req.session.user });
+    } else {
+        res.redirect('/dashboard');
+    }
+});
 
 
 // Route to render the employee targets page
