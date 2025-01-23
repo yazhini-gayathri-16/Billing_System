@@ -12,7 +12,6 @@
     <link rel="stylesheet" href="/styles/signinstyle.css">
 </head>
 <body>
-    
     <div class="wrapper">
         <form action="/add-signup" method="post">
             <h1>Signup</h1>
@@ -22,11 +21,15 @@
             </div>
             <div class="input-box">
                 <input type="password" name="password" placeholder="Enter password" required>
-                <i class='bx bxs-lock-alt'></i>
+                <i class='bx bxs-lock-alt'></i>  
             </div>
-
+            <div class="input-box">
+                <select name="role" required>
+                    <option value="admin">Admin</option>
+                    <option value="staff">Staff</option>
+                </select>
+            </div>
             <button type="submit" class="btn">Signup</button>
-
         </form>
     </div>
 </body>

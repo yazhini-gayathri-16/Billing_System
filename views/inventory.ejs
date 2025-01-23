@@ -11,7 +11,11 @@
     <link rel="stylesheet" href="/styles/inventorystyle.css">
 </head>
 <body>
-    <%- include('partials/navbar') %>
+    <% if (userRole === 'admin') { %>
+        <%- include('partials/navbar') %>
+    <% } else { %>
+        <%- include('partials/staffnavbar') %>
+    <% } %>
     
     <div class="container">
         <!-- Form to Add New Inventory Items -->

@@ -10,8 +10,11 @@
     <link rel="stylesheet" href="/styles/menustyle.css">
 </head>
 <body>
-    <%- include('partials/navbar') %>
-    <%- include('partials/second_navbar') %>
+    <% if (userRole === 'admin') { %>
+        <%- include('partials/navbar') %>
+    <% } else { %>
+        <%- include('partials/staffnavbar') %>
+    <% } %>
 
 
     <div class="container">

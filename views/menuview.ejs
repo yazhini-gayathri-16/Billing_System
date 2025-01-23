@@ -11,7 +11,11 @@
     <link rel="stylesheet" href="/styles/menuview.css">
 </head>
 <body>
-    <%- include('partials/navbar') %>
+    <% if (userRole === 'admin') { %>
+        <%- include('partials/navbar') %>
+    <% } else { %>
+        <%- include('partials/staffnavbar') %>
+    <% } %>
     <div class="container">
         <h1>Service Menu</h1>
     
