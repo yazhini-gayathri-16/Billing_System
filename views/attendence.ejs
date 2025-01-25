@@ -67,9 +67,50 @@
         async function getLocation() {
             return new Promise((resolve, reject) => {
                 if (!navigator.geolocation) {
-                    reject('Geolocation not supported');
+                    reject(new Error('Geolocation is not supported by your browser'));
+                    return;
                 }
-                navigator.geolocation.getCurrentPosition(resolve, reject);
+
+                const options = {
+                    enableHighAccuracy: true,
+                    timeout: 10000,  // 10 seconds
+                    maximumAge: 0    // Force fresh location
+                };
+
+                const successCallback = (position) => {
+                    resolve({
+                        coords: {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            accuracy: position.coords.accuracy
+                        },
+                        timestamp: position.timestamp
+                    });
+                };
+
+                const errorCallback = (error) => {
+                    let errorMessage;
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = 'Location permission denied';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = 'Location information unavailable';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = 'Location request timed out';
+                            break;
+                        default:
+                            errorMessage = 'Unknown error occurred getting location';
+                    }
+                    reject(new Error(errorMessage));
+                };
+
+                navigator.geolocation.getCurrentPosition(
+                    successCallback,
+                    errorCallback,
+                    options
+                );
             });
         }
 

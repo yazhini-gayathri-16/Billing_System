@@ -202,8 +202,8 @@ app.post('/attendance/check-in', async (req, res) => {
 
         // Verify location is within salon premises
         const salonLocation = {
-            latitude: 13.0449408,
-            longitude: 80.19968,
+            latitude: 12.9174937,
+            longitude: 80.1733073,
             radius: 100 // meters
         };
 
