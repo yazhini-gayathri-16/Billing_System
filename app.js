@@ -3,6 +3,8 @@ const cors = require('cors');
 const cron = require('node-cron');
 const multer = require('multer');
 const session = require('express-session');
+const crypto = require('crypto');
+const mongoose = require('mongoose');
 const Signup = require("./models/signup");
 const Fetch = require("./models/fetch"); // Ensure this points to the file where Fetch is defined
 const Menu = require("./models/menu");
@@ -15,6 +17,8 @@ const Expense = require('./models/expenseschema');
 const Package = require('./models/packages');
 const EmployeeTarget = require('./models/employeeTarget'); // Add this line to import the new model
 const ProductBill = require('./models/productBill');
+const DailyCode = require('./models/dailycode');
+const Attendance = require('./models/attendance');
 
 
 
@@ -65,6 +69,64 @@ app.use((req, res, next) => {
     next();
 });
 
+function generateRandomCode() {
+    return crypto.randomBytes(3).toString('hex').toUpperCase();
+}
+
+
+function generateQRCode() {
+    return crypto.randomBytes(3).toString('hex').toUpperCase();
+}
+
+app.get('/attendance-report', isAdmin, async (req, res) => {
+    try {
+        const startDate = new Date();
+        startDate.setHours(0,0,0,0);
+        
+        const endDate = new Date();
+        endDate.setHours(23,59,59,999);
+
+        const attendance = await Attendance.find({
+            date: { $gte: startDate, $lte: endDate }
+        }).populate('staffId');
+
+        res.render('attendance-report', { 
+            attendance,
+            userRole: req.session.user ? req.session.user.role : null 
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send(error.message);
+    }
+});
+
+async function isValidQRCode(code) {
+    const validCode = await DailyCode.findOne({
+        code,
+        expiryTime: { $gt: new Date() },
+        used: false
+    });
+    return !!validCode;
+}
+
+
+function isWithinRadius(location, center) {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = location.latitude * Math.PI/180;
+    const φ2 = center.latitude * Math.PI/180;
+    const Δφ = (center.latitude-location.latitude) * Math.PI/180;
+    const Δλ = (center.longitude-location.longitude) * Math.PI/180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c;
+
+    return distance <= center.radius;
+}
+
+
 
 const port = process.env.PORT || 3000;
 app.set('view engine', 'ejs');
@@ -87,6 +149,141 @@ app.get("/", isAuthenticated, async (req, res) => {
         res.status(500).send("Error loading the page.");
     }
 });
+
+app.get('/attendance', isAuthenticated, async (req, res) => {
+    try {
+        if (req.session.user.role === 'admin') {
+            res.render('admin-attendence');
+        } else {
+            const staff = await Staff.findOne({ email: req.session.user.mail });
+            if (!staff) {
+                return res.status(400).send('Staff record not found');
+            }
+            // Explicitly pass staffId and email
+            res.render('attendence', { 
+                staffId: staff._id.toString(),
+                staffEmail: staff.email 
+            });
+        }
+    } catch (error) {
+        console.error('Error loading attendance page:', error);
+        res.status(500).send('Error loading attendance page');
+    }
+});
+
+
+app.post('/attendance/check-in', async (req, res) => {
+    try {
+        const { staffId, location, qrCode } = req.body;
+
+        console.log(location);
+        
+        // Validate staffId
+        if (!staffId || !mongoose.Types.ObjectId.isValid(staffId)) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Invalid staff ID' 
+            });
+        }
+
+        // Verify QR code validity
+        const validCode = await DailyCode.findOne({
+            code: qrCode,
+            expiryTime: { $gt: new Date() },
+            used: false
+        });
+
+        if (!validCode) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Invalid or expired QR code' 
+            });
+        }
+
+        // Verify location is within salon premises
+        const salonLocation = {
+            latitude: 13.0449408,
+            longitude: 80.19968,
+            radius: 100 // meters
+        };
+
+        if (!isWithinRadius(location, salonLocation)) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Must not be at salon premises' 
+            });
+        }
+
+        // Create attendance record
+        const attendance = new Attendance({
+            staffId,
+            date: new Date(),
+            checkIn: new Date(),
+            location,
+            qrCode // Include QR code in record
+        });
+
+        await attendance.save();
+        
+        // Mark QR code as used
+        await DailyCode.findByIdAndUpdate(validCode._id, { used: true });
+
+        res.json({ success: true, message: 'Attendance marked successfully' });
+
+    } catch (error) {
+        console.error('Attendance check-in error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error marking attendance' 
+        });
+    }
+});
+
+
+app.post('/attendance/mark', async (req, res) => {
+
+    const { staffId, code } = req.body;
+    
+    const validCode = await DailyCode.findOne({
+      code,
+      expiryTime: { $gt: new Date() },
+      used: false
+    });
+  
+    if (!validCode) {
+      return res.status(400).json({ message: 'Invalid or expired code' });
+    }
+  
+    // Mark attendance and invalidate code
+    await Promise.all([
+      Attendance.create({
+        staffId,
+        date: new Date()
+      }),
+      DailyCode.findByIdAndUpdate(validCode._id, { used: true })
+    ]);
+  
+    res.json({ success: true });
+});
+
+
+app.post('/attendance/generate-code', isAdmin, async (req, res) => {
+    try {
+        const code = generateRandomCode();
+        const expiryTime = new Date(Date.now() + 5*60*1000); // 5 minutes
+
+        await DailyCode.create({
+            code,
+            expiryTime,
+            used: false
+        });
+
+        res.json({ code });
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+
 
 app.post("/bill", async (req, res) => {
     try {
@@ -1504,17 +1701,20 @@ app.post("/do-signin", async (req, res) => {
         const user = await Signup.findOne({ mail });
         
         if (user && password === user.password) {
+            // If staff user, verify staff record exists
+            if (user.role === 'staff') {
+                const staff = await Staff.findOne({ email: mail });
+                if (!staff) {
+                    return res.status(400).send('Staff record not found');
+                }
+            }
+
             req.session.user = {
                 mail: user.mail,
                 role: user.role
             };
-            console.log("User role set to:", user.role); // Debug log
             
-            if (user.role === 'admin') {
-                res.redirect('/');
-            } else {
-                res.redirect('/');
-            }
+            res.redirect('/');
         } else {
             res.status(400).send('Invalid credentials');
         }
@@ -1834,17 +2034,24 @@ app.get('/staff', async (req, res) => {
 
 // Route to handle adding new staff
 app.post('/add-staff', upload.single('aadhaarPhoto'), async (req, res) => {
-    const { name, birthdate, contactNumber, gender, address, jobTitle, employmentStartDate, aadhaarId } = req.body;
+    const { 
+        name, 
+        email,  // Add email
+        birthdate, 
+        contactNumber, 
+        gender, 
+        address, 
+        jobTitle, 
+        employmentStartDate, 
+        aadhaarId 
+    } = req.body;
+    
     const aadhaarPhoto = req.file ? `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}` : null;
+    
     try {
-
-        // if (! || !) {
-        //     throw new Error("Aadhaar ID and photo are mandatory.");
-        // }
-
-        // Create a new staff document
         const newStaff = new Staff({
             name,
+            email,  // Add email
             birthdate,
             contactNumber,
             gender,
@@ -1854,13 +2061,11 @@ app.post('/add-staff', upload.single('aadhaarPhoto'), async (req, res) => {
             aadhaarId,
             aadhaarPhoto
         });
-        // Save the staff to the database
         await newStaff.save();
         res.redirect("/staff");
-        
     } catch (err) {
         console.log(err);
-        res.status(500).send('Error adding staff members');
+        res.status(500).send('Error adding staff member');
     }
 });
 
