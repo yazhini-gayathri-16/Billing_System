@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Report</title>
+    <link rel="icon" href="/images/logo 3-square.png" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Gowun Batang', serif;
+            background-color: #D3E4CD;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .attendance-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .attendance-table th, 
+        .attendance-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .attendance-table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+
+        .attendance-table tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .status-ontime {
+            background-color: #e6ffe6;
+            color: #006600;
+        }
+
+        .status-late {
+            background-color: #ffe6e6;
+            color: #cc0000;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+    
+    <div class="container">
+        <h1>Today's Attendance Report</h1>
+        
+        <table class="attendance-table">
+            <thead>
+                <tr>
+                    <th>Staff Name</th>
+                    <th>Check In Time</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% attendance.forEach(function(record) { %>
+                    <tr>
+                        <td><%= record.staffId.name %></td>
+                        <td><%= record.checkIn.toLocaleTimeString() %></td>
+                        <td>
+                            Lat: <%= record.location.latitude.toFixed(6) %><br>
+                            Long: <%= record.location.longitude.toFixed(6) %>
+                        </td>
+                        <td>
+                            <% const checkInHour = record.checkIn.getHours() %>
+                            <% const checkInMinutes = record.checkIn.getMinutes() %>
+                            <span class="status <%= (checkInHour < 9 || (checkInHour === 9 && checkInMinutes <= 30)) ? 'status-ontime' : 'status-late' %>">
+                                <%= (checkInHour < 9 || (checkInHour === 9 && checkInMinutes <= 30)) ? 'On Time' : 'Late' %>
+                            </span>
+                        </td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

@@ -182,6 +182,11 @@
 
                 <button type="submit" class="button-generate">Generate Bill</button>
             </form>
+            <div id="staffList" style="display: none;">
+                <% staffMembers.forEach(function(staff) { %>
+                    <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
+                <% }); %>
+            </div>
         </div>
     
         <!-- Client 360 Section -->
@@ -236,11 +241,15 @@
         let packages = [];
         let serviceCount = 1;
 
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDateTime();
+        });
+
         window.onload = function() {
             updateDateTime();
             setInterval(updateDateTime, 1000);
-            toggleDiscountType();
             setupEventListeners();
+            toggleDiscountType();
 
             // Fetch package data from the server
             fetch("/api/packages")
@@ -406,16 +415,17 @@
         function addStylist(event) {
             event.preventDefault();
             const serviceItem = event.target.closest('.service-item');
-            const serviceIndex = serviceItem.querySelector('[name^="services"]').name.match(/\d+/)[0];
+            const serviceIndex = serviceItem.querySelector('[name^="packages"]').name.match(/\d+/)[0];
             
             if (!serviceItem.querySelector(`[name="stylist2${serviceIndex}"]`)) {
+                // Get staff members from a data attribute
+                const staffOptions = document.getElementById('staffList').innerHTML;
+                
                 const stylist2Html = `
                     <div class="form-group" id="stylist2-container">
                         <label>Second Stylist:</label>
                         <select name="stylist2${serviceIndex}" required>
-                            <% staffMembers.forEach(function(staff) { %>
-                                <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
-                            <% }); %>
+                            ${staffOptions}
                         </select>
                         <span class="delete-btn" onclick="removeStylist(event)">&#128465;</span>
                     </div>
@@ -423,6 +433,7 @@
                 serviceItem.insertAdjacentHTML('beforeend', stylist2Html);
             }
         }
+
 
         function validateStylists(select, firstStylistId) {
             if (select.value === firstStylistId) {
