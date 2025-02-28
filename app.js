@@ -19,7 +19,11 @@ const EmployeeTarget = require('./models/employeeTarget'); // Add this line to i
 const ProductBill = require('./models/productBill');
 const DailyCode = require('./models/dailycode');
 const Attendance = require('./models/attendance');
-
+const PDFDocument = require("pdfkit");
+const fs = require("fs");
+const path = require("path");
+const ejs = require('ejs');
+const puppeteer = require('puppeteer'); 
 
 
 require("./connection");
@@ -2145,30 +2149,30 @@ app.get('/export', (req, res) => {
     });
 });
 
-app.post('/export', async (req, res) => {
-    const { fromDate, toDate } = req.body;
+// app.post('/export', async (req, res) => {
+//     const { fromDate, toDate } = req.body;
 
-    try {
-        // Convert fromDate and toDate to Date objects
-        const startDate = new Date(fromDate);
-        const endDate = new Date(toDate);
+//     try {
+//         // Convert fromDate and toDate to Date objects
+//         const startDate = new Date(fromDate);
+//         const endDate = new Date(toDate);
 
-        // Query the Fetch model to get data within the date range
-        const billingData = await Fetch.find({
-            date: {
-                $gte: startDate,
-                $lte: endDate
-            }
-        });
+//         // Query the Fetch model to get data within the date range
+//         const billingData = await Fetch.find({
+//             date: {
+//                 $gte: startDate,
+//                 $lte: endDate
+//             }
+//         });
 
-        // Render the export.ejs page with the fetched billing data
-        res.render('export', { billingData, fromDate, toDate });
+//         // Render the export.ejs page with the fetched billing data
+//         res.render('export', { billingData, fromDate, toDate });
 
-    } catch (error) {
-        console.error("Error fetching billing data:", error);
-        res.status(500).send('Server Error');
-    }
-});
+//     } catch (error) {
+//         console.error("Error fetching billing data:", error);
+//         res.status(500).send('Server Error');
+//     }
+// });
 
 app.get('/topemployees', async (req, res) => {
     try {
@@ -2394,6 +2398,60 @@ app.get("/api/product-bills", async (req, res) => {
         res.json(bills);
     } catch (error) {
         res.status(500).json({ message: error.message });
+    }
+});
+
+app.post("/export", async (req, res) => {
+    const { fromDate, toDate, billType } = req.body;
+
+    try {
+        const query = {
+            date: {
+                $gte: new Date(fromDate),
+                $lte: new Date(toDate)
+            }
+        };
+        
+        if (billType === "package") {
+            query.billType = "package";
+        } else if (billType === "service") {
+            query.billType = "service";
+        } // If billType is "both", don't filter by billType
+        
+        const data = await Fetch.find(query);
+        
+        if (data.length === 0) {
+            return res.status(404).send("No records found for the selected date range.");
+        }
+        // Render HTML content using EJS
+        const htmlContent = await new Promise((resolve, reject) => {
+            res.render("billingTemplate", { data }, (err, html) => {
+                if (err) reject(err);
+                else resolve(html);
+            });
+        });
+
+        // Generate PDF using Puppeteer
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+
+        const pdfPath = path.join(__dirname, "billing_data.pdf");
+        await page.pdf({ path: pdfPath, format: "A4", printBackground: true });
+        
+
+        await browser.close();
+
+        // Send the PDF as a download
+        res.download(pdfPath, "billing_data.pdf", (err) => {
+            if (err) {
+                console.error("Error downloading PDF:", err);
+                res.status(500).send("Error downloading file");
+            }
+        });
+    } catch (error) {
+        console.error("Error exporting data:", error);
+        res.status(500).send("Internal server error");
     }
 });
 
