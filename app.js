@@ -635,7 +635,7 @@ app.post('/search-customer', async (req, res) => {
 
         // Fetch customer data from ProductBill model
         const productBillCustomerData = await ProductBill.find({ customer_number: customerNumber });
-
+        // console.log(productBillCustomerData, fetchCustomerData);
         // Combine data from both models
         const combinedData = [...fetchCustomerData, ...productBillCustomerData];
 
@@ -669,6 +669,9 @@ app.post('/search-customer', async (req, res) => {
             } else if (daysSinceLastVisit > 180) {
                 customerType = 'Dormant';
             }
+
+            // Get customer info from whichever dataset is available
+            const customerInfo = fetchCustomerData[0] || productBillCustomerData[0];
 
             // Initialize membership variables
             let membershipStatus = '----';
@@ -704,10 +707,10 @@ app.post('/search-customer', async (req, res) => {
                     }
                 }
             }
-
+            
             res.json({
                 success: true,
-                cust_name: fetchCustomerData[0].customer_name,
+                cust_name: customerInfo.customer_name,
                 customerType,
                 lastVisit,
                 visits,
