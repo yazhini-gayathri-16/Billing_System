@@ -164,16 +164,26 @@
                         </label>
                     </div>
 
+                    <div class="form-group" id="membershipDiscounts" style="display: none;">
+                        <div>
+                            <input type="checkbox" id="birthdayOffer" name="birthdayOffer" onchange="calculateGrandTotal()">
+                            <label for="birthdayOffer">Apply Birthday Offer (20%)</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" id="anniversaryOffer" name="anniversaryOffer" onchange="calculateGrandTotal()">
+                            <label for="anniversaryOffer">Apply Anniversary Offer (20%)</label>
+                        </div>
+                    </div>
+
                     <!-- Discount in Percentage -->
                     <div class="form-group" id="percentageDiscountField">
                         <label>Discount in Percentage (%):</label>
                         <input type="number" name="discountPercentage" id="discountPercentageInput" oninput="calculateGrandTotal()">
                     </div>
-
-                    <!-- Discount in Rupees -->
+                
                     <div class="form-group" id="rupeesDiscountField" style="display: none;">
                         <label>Discount in Rupees (₹):</label>
-                        <input type="number" name="discountRupees" id="discountRupeesInput" oninput="calculaterupeesGrandTotal()">
+                        <input type="number" name="discountRupees" id="discountRupeesInput" oninput="calculateGrandTotal()">
                     </div>
 
 
@@ -328,16 +338,20 @@
         function toggleMembershipIDField() {
             const checkbox = document.getElementById('hasMembership');
             const membershipMessage = document.getElementById('membershipMessage');
+            const membershipDiscounts = document.getElementById('membershipDiscounts');
+            
             membershipMessage.style.display = checkbox.checked ? 'block' : 'none';
+            membershipDiscounts.style.display = checkbox.checked ? 'block' : 'none';
             
             if (checkbox.checked) {
                 fetchClientDetails(); // Re-fetch details when membership checkbox is toggled
             } else {
                 document.getElementById('membershipID').value = '';
-                document.getElementById('applyBirthdayDiscount').value = 'false';
-                document.getElementById('applyAnniversaryDiscount').value = 'false';
+                document.getElementById('birthdayOffer').checked = false;
+                document.getElementById('anniversaryOffer').checked = false;
                 resetClientDetails();
             }
+            calculateGrandTotal();
         }
 
 
@@ -541,11 +555,22 @@
                         document.getElementById('previousProducts').textContent = 
                             data.products && data.products.length > 0 ? data.products.join(', ') : '-';
 
-                        // Update offer status
+                        // Update offer availability status and checkboxes
+                        const birthdayOffer = document.getElementById('birthdayOffer');
+                        const anniversaryOffer = document.getElementById('anniversaryOffer');
+                        
                         document.getElementById('birthdayOfferStatus').textContent = 
                             data.canUseBirthdayOffer ? 'Available' : 'Not Available';
                         document.getElementById('anniversaryOfferStatus').textContent = 
                             data.canUseAnniversaryOffer ? 'Available' : 'Not Available';
+
+                        // Enable/disable checkboxes based on offer availability
+                        birthdayOffer.disabled = !data.canUseBirthdayOffer;
+                        anniversaryOffer.disabled = !data.canUseAnniversaryOffer;
+
+                        // Uncheck if disabled
+                        if (!data.canUseBirthdayOffer) birthdayOffer.checked = false;
+                        if (!data.canUseAnniversaryOffer) anniversaryOffer.checked = false;
 
                         // Update membership fields if applicable
                         if (document.getElementById('hasMembership').checked) {
@@ -554,7 +579,13 @@
 
                         if (data.membershipID) {
                             document.getElementById('membershipID').value = data.membershipID;
+                            document.getElementById('hasMembership').checked = true;
+                            document.getElementById('membershipMessage').style.display = 'block';
+                            document.getElementById('membershipDiscounts').style.display = 'block';
                         }
+
+                        // Recalculate grand total after updating membership status
+                        calculateGrandTotal();
                     } else {
                         resetClientDetails();
                     }
@@ -584,28 +615,41 @@
 
         function calculateGrandTotal() {
             const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;
-            let grandTotal = subtotal;
+            let totalDiscount = 0;
+            
+            // Calculate regular discount
             const discountType = document.querySelector('input[name="discountType"]:checked').value;
-
             if (discountType === 'percentage') {
                 const discountPercent = parseFloat(document.getElementById('discountPercentageInput').value) || 0;
-                grandTotal = subtotal - subtotal * (discountPercent / 100);
+                totalDiscount = subtotal * (discountPercent / 100);
             } else {
-                const discountRupees = parseFloat(document.getElementById('discountRupeesInput').value) || 0;
-                grandTotal = subtotal - discountRupees;
+                totalDiscount = parseFloat(document.getElementById('discountRupeesInput').value) || 0;
             }
-
-            console.log(grandTotal);
-
+            
+            // Add membership offers if applicable
+            if (document.getElementById('hasMembership').checked) {
+                const birthdayOfferChecked = document.getElementById('birthdayOffer').checked;
+                const anniversaryOfferChecked = document.getElementById('anniversaryOffer').checked;
+                
+                // Apply 20% discount for each offer
+                if (birthdayOfferChecked) {
+                    totalDiscount += (subtotal - totalDiscount) * 0.2;
+                }
+                if (anniversaryOfferChecked) {
+                    totalDiscount += (subtotal - totalDiscount) * 0.2;
+                }
+            }
+            
+            const grandTotal = Math.max(subtotal - totalDiscount, 0);
             document.getElementById('grandTotal').value = grandTotal.toFixed(2);
         }
 
-        function calculaterupeesGrandTotal() {
-            const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;
-            const discount = parseFloat(document.getElementById('discountRupeesInput').value) || 0;
-            const grandTotal = subtotal - discount;
-            document.getElementById('grandTotal').value = grandTotal.toFixed(2);
-        }
+        // function calculaterupeesGrandTotal() {
+        //     const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;
+        //     const discount = parseFloat(document.getElementById('discountRupeesInput').value) || 0;
+        //     const grandTotal = subtotal - discount;
+        //     document.getElementById('grandTotal').value = grandTotal.toFixed(2);
+        // }
 
         function updateSubtotal() {
             const priceInputs = document.querySelectorAll('[name^="prices"]');
@@ -623,6 +667,12 @@
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
 
+            // Add birthday and anniversary flags
+            if (document.getElementById('hasMembership').checked) {
+                data.birthdayDiscountApplied = document.getElementById('birthdayOffer').checked;
+                data.anniversaryDiscountApplied = document.getElementById('anniversaryOffer').checked;
+            }
+
             fetch('/bill', {
                 method: 'POST',
                 headers: {
@@ -638,6 +688,8 @@
                     resetClientDetails();
                     document.getElementById('hasMembership').checked = false;
                     document.getElementById('membershipMessage').style.display = 'none';
+                    document.getElementById('membershipDiscounts').style.display = 'none';
+
                 } else {
                     alert(data.message || 'Failed to generate bill');
                 }

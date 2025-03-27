@@ -299,33 +299,21 @@ app.post("/bill", async (req, res) => {
             gender,
             membershipID,
             subtotal,
-            discountPercentage,
-            discountRupees,
             discountType,
             grandTotal,
             paymentMethod,
-            billType
+            billType,
+            birthdayDiscountApplied,
+            anniversaryDiscountApplied
         } = req.body;
 
-        // Initialize discount variables
-        let finalGrandTotal = parseFloat(grandTotal);
-        let finalDiscount = 0;
-        let birthdayDiscountApplied = false;
-        let anniversaryDiscountApplied = false;
-
-        // Handle regular discounts
-        if (discountType === "percentage" && discountPercentage) {
-            finalDiscount = (parseFloat(subtotal) * parseFloat(discountPercentage)) / 100;
-        } else if (discountType === "rupees" && discountRupees) {
-            finalDiscount = parseFloat(discountRupees);
-        }
-
-        // Handle membership discounts
-        if (membershipID) {
+        let finalDiscount = parseFloat(subtotal) - parseFloat(grandTotal);
+        
+        // Update membership usage if offers were applied
+        if (membershipID && (birthdayDiscountApplied || anniversaryDiscountApplied)) {
             const membership = await Membership.findOne({ membershipID });
             if (membership) {
                 const today = new Date();
-                const currentMonth = today.getMonth();
                 const currentYear = today.getFullYear();
                 
                 // Find or create yearly usage record
@@ -338,47 +326,25 @@ app.post("/bill", async (req, res) => {
                     };
                     membership.yearlyUsage.push(yearlyUsage);
                 }
-        
-                // Calculate discount (20%)
-                const maxDiscount = 20;
-                let discountApplied = false;
-        
-                // Check birthday discount
-                const birthMonth = new Date(membership.birthDate).getMonth();
-                if (currentMonth === birthMonth && !yearlyUsage.usedBirthdayOffer) {
-                    finalDiscount += finalGrandTotal * (maxDiscount / 100);
-                    birthdayDiscountApplied = true;
+
+                // Update usage flags based on which offers were applied
+                if (birthdayDiscountApplied) {
                     yearlyUsage.usedBirthdayOffer = true;
-                    discountApplied = true;
                 }
-                
-                // Only check anniversary if birthday discount wasn't applied
-                if (!discountApplied && membership.anniversaryDate) {
-                    const anniversaryMonth = new Date(membership.anniversaryDate).getMonth();
-                    if (currentMonth === anniversaryMonth && !yearlyUsage.usedAnniversaryOffer) {
-                        finalDiscount += finalGrandTotal * (maxDiscount / 100);
-                        anniversaryDiscountApplied = true;
-                        yearlyUsage.usedAnniversaryOffer = true;
-                    }
+                if (anniversaryDiscountApplied) {
+                    yearlyUsage.usedAnniversaryOffer = true;
                 }
-        
-                // Save membership changes
-                if (birthdayDiscountApplied || anniversaryDiscountApplied) {
-                    await membership.save();
-                }
+
+                await membership.save();
             }
         }
-
-        
-        // Calculate final total after all discounts
-        finalGrandTotal = Math.max(parseFloat(subtotal) - finalDiscount, 0);
 
         // Process services array creation
         let services = [];
         let index = 1;
         while (req.body[`services${index}`]) {
             const stylistId = req.body[`stylist${index}`];
-            const stylist2Id = req.body[`stylist2${index}`]; // Changed to use indexed version
+            const stylist2Id = req.body[`stylist2${index}`];
             const stylist = await Staff.findById(stylistId);
             
             if (!stylist) {
@@ -404,7 +370,7 @@ app.post("/bill", async (req, res) => {
             index++;
         }
 
-        // Create bill record
+        // Create bill record with values calculated from frontend
         const user = await Fetch.create({
             customer_name,
             customer_number,
@@ -415,7 +381,7 @@ app.post("/bill", async (req, res) => {
             subtotal: parseFloat(subtotal),
             discount: finalDiscount,
             discountType,
-            grandTotal: finalGrandTotal,
+            grandTotal: parseFloat(grandTotal),
             paymentMethod,
             services,
             billType,
@@ -423,11 +389,11 @@ app.post("/bill", async (req, res) => {
             anniversaryDiscountApplied
         });
 
+        // Update monthly data
         const currentMonth = new Date().toLocaleString('default', { month: 'short' });
         const currentYear = new Date().getFullYear();
 
         if (user) {
-            // Update or create monthly data
             const monthlyData = await MonthlyData.findOneAndUpdate(
                 { month: currentMonth, year: currentYear },
                 { $inc: { achieved: 1 } },
@@ -447,7 +413,10 @@ app.post("/bill", async (req, res) => {
 
     } catch (err) {
         console.error("Error creating bill:", err);
-        res.status(500).send(err.message);
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
     }
 });
 
