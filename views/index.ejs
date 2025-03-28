@@ -269,8 +269,8 @@
         function setupEventListeners() {
             const container = document.getElementById('service-container');
             const isMember = document.getElementById('hasMembership').checked;
-            console.log(isMember);
-            
+            const membershipStatus = document.getElementById('membershipStatus').textContent;
+            const isActiveMember = isMember && membershipStatus === 'Active';            
 
             container.addEventListener('input', function(e) {
                 if (e.target.name.startsWith('services')) {
@@ -280,8 +280,7 @@
                     const selectedService = services.find(service => service.serviceName.toLowerCase() === e.target.value.toLowerCase());
 
                     if (selectedService) {
-                        console.log(selectedService);
-                        priceInput.value = isMember ? selectedService.membershipPrice : selectedService.regularPrice;
+                        priceInput.value = isActiveMember ? selectedService.membershipPrice : selectedService.regularPrice;
                         updateSubtotal();
                     } else {
                         priceInput.value = '';
@@ -339,7 +338,21 @@
             const checkbox = document.getElementById('hasMembership');
             const membershipMessage = document.getElementById('membershipMessage');
             const membershipDiscounts = document.getElementById('membershipDiscounts');
-            
+            const membershipStatus = document.getElementById('membershipStatus').textContent;
+
+            if (checkbox.checked && membershipStatus === 'Expired') {
+                alert('This membership is expired. Regular prices will be applied.');
+                checkbox.checked = false;
+                membershipMessage.style.display = 'none';
+                membershipDiscounts.style.display = 'none';
+                document.getElementById('membershipID').value = '';
+                clearServiceFields();
+                return;
+            }
+
+            // Clear all service fields when checkbox is toggled
+            clearServiceFields();
+
             membershipMessage.style.display = checkbox.checked ? 'block' : 'none';
             membershipDiscounts.style.display = checkbox.checked ? 'block' : 'none';
             
@@ -352,6 +365,40 @@
                 resetClientDetails();
             }
             calculateGrandTotal();
+        }
+
+        function clearServiceFields() {
+            const serviceContainer = document.getElementById('service-container');
+            // Keep only the first service item and clear its fields
+            const firstServiceItem = serviceContainer.querySelector('.service-item');
+            
+            // Remove all other service items
+            while (serviceContainer.children.length > 1) {
+                serviceContainer.removeChild(serviceContainer.lastChild);
+            }
+            
+            // Clear fields of the first service item
+            if (firstServiceItem) {
+                const serviceInput = firstServiceItem.querySelector('[name^="services"]');
+                const priceInput = firstServiceItem.querySelector('[name^="prices"]');
+                const startTimeInput = firstServiceItem.querySelector('[name^="startTime"]');
+                const endTimeInput = firstServiceItem.querySelector('[name^="endTime"]');
+                
+                if (serviceInput) serviceInput.value = '';
+                if (priceInput) priceInput.value = '';
+                if (startTimeInput) startTimeInput.value = '';
+                if (endTimeInput) endTimeInput.value = '';
+                
+                // Remove second stylist if present
+                const stylist2Container = firstServiceItem.querySelector('#stylist2-container');
+                if (stylist2Container) {
+                    stylist2Container.remove();
+                }
+            }
+            
+            // Reset service count and update subtotal
+            serviceCount = 1;
+            updateSubtotal();
         }
 
 
