@@ -1,4 +1,5 @@
 const express = require("express");
+const MongoStore = require('connect-mongo');
 const cors = require('cors');
 const cron = require('node-cron');
 const multer = require('multer');
@@ -41,8 +42,15 @@ const upload = multer({
 app.use(session({
     secret: 'noble-evergreen',
     resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false } // set to true if using https
+    saveUninitialized: false,
+    store: MongoStore.create({
+        mongoUrl: 'mongodb+srv://yazhini:yazhini@cluster0.xrihspk.mongodb.net/noble_evergreen', // Add your MongoDB connection string
+        ttl: 14 * 24 * 60 * 60 // Session TTL (optional)
+    }),
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
+    }
 }));
 
 // Middleware to check if user is authenticated
