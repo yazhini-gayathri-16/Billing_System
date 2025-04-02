@@ -1707,6 +1707,7 @@ app.post("/do-signin", async (req, res) => {
     try {
         const { mail, password } = req.body;
         const user = await Signup.findOne({ mail });
+        console.log(user);
         
         if (user && password === user.password) {
             // If staff user, verify staff record exists
