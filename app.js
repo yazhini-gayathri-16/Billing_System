@@ -43,14 +43,9 @@ const upload = multer({
 app.use(session({
     secret: 'noble-evergreen',
     resave: false,
-    saveUninitialized: false,
-    store: MongoStore.create({
-        mongoUrl: 'mongodb+srv://yazhini:yazhini@cluster0.xrihspk.mongodb.net/noble_evergreen', // Add your MongoDB connection string
-        ttl: 14 * 24 * 60 * 60 // Session TTL (optional)
-    }),
+    saveUninitialized: true,
     cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
+        secure: false // Set to true if using HTTPS
     }
 }));
 
