@@ -709,43 +709,42 @@
 
         // Add this function in the script section of index.ejs
         function submitBillForm(event) {
-            event.preventDefault();
-            const form = event.target;
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData.entries());
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
 
-            // Add birthday and anniversary flags
-            if (document.getElementById('hasMembership').checked) {
-                data.birthdayDiscountApplied = document.getElementById('birthdayOffer').checked;
-                data.anniversaryDiscountApplied = document.getElementById('anniversaryOffer').checked;
-            }
+    // Add birthday and anniversary flags
+    if (document.getElementById('hasMembership').checked) {
+        data.birthdayDiscountApplied = document.getElementById('birthdayOffer').checked;
+        data.anniversaryDiscountApplied = document.getElementById('anniversaryOffer').checked;
+    }
 
-            fetch('/bill', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Bill generated successfully!');
-                    form.reset();
-                    resetClientDetails();
-                    document.getElementById('hasMembership').checked = false;
-                    document.getElementById('membershipMessage').style.display = 'none';
-                    document.getElementById('membershipDiscounts').style.display = 'none';
-
-                } else {
-                    alert(data.message || 'Failed to generate bill');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error generating bill');
-            });
+    fetch('/bill', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            form.reset();
+            resetClientDetails();
+            document.getElementById('hasMembership').checked = false;
+            document.getElementById('membershipMessage').style.display = 'none';
+            document.getElementById('membershipDiscounts').style.display = 'none';
+        } else {
+            alert(data.message || 'Failed to generate bill');
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error generating bill');
+    });
+}
 
     </script>
 </body>

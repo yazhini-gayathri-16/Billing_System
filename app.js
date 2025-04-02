@@ -25,6 +25,7 @@ const fs = require("fs");
 const path = require("path");
 const ejs = require('ejs');
 const puppeteer = require('puppeteer'); 
+const whatsAppClient = require('@green-api/whatsapp-api-client');
 
 
 require("./connection");
@@ -52,6 +53,12 @@ app.use(session({
         maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
     }
 }));
+
+// Initialize the REST API client
+const restAPI = whatsAppClient.restAPI({
+    idInstance: '7105217263',
+    apiTokenInstance: 'e9897cac52f64553bb62434c7ab4f304de7a915f81994be383'
+  });
 
 // Middleware to check if user is authenticated
 const isAuthenticated = (req, res, next) => {
@@ -407,11 +414,28 @@ app.post("/bill", async (req, res) => {
                 { $inc: { achieved: 1 } },
                 { upsert: true, new: true }
             );
-            res.json({
-                success: true,
-                message: 'Bill generated successfully',
-                billData: user
-            });
+
+            // Send WhatsApp notification
+            try {
+                const message = `Dear ${customer_name},\n\nThank you for visiting Noble Evergreen Salon! We appreciate your trust in our services. Please find the details of your bill below:\nBill Date: ${date}\nServices: ${services.map(s => s.name).join(', ')}\nSubtotal: ₹${subtotal}\nDiscount: ₹${finalDiscount}\nGrand Total: ₹${grandTotal}\nPayment Method: ${paymentMethod}\n
+                \nIf you have any questions regarding your bill or need further assistance, feel free to reach out to us.\nThank you for choosing Noble Evergreen Salon. We look forward to serving you again!\n\nBest Regards,\nNoble Evergreen Salon`;
+                
+                const chatId = `91${customer_number}@c.us`;
+                await restAPI.message.sendMessage(chatId, null, message);
+
+                res.json({
+                    success: true,
+                    message: 'Bill generated and notification sent successfully',
+                    billData: user
+                });
+            } catch (notificationError) {
+                console.error('WhatsApp notification error:', notificationError);
+                res.json({
+                    success: true,
+                    message: 'Bill generated but notification failed to send',
+                    billData: user
+                });
+            }
         } else {
             res.json({
                 success: false,
@@ -2439,4 +2463,3 @@ app.listen(port, () => {
     console.log(`Server is running on ${port}`);
 });
 
-module.exports = app;
