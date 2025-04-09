@@ -19,7 +19,6 @@ const Package = require('./models/packages');
 const EmployeeTarget = require('./models/employeeTarget'); // Add this line to import the new model
 const ProductBill = require('./models/productBill');
 const DailyCode = require('./models/dailycode');
-const Attendance = require('./models/attendance');
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
 const path = require("path");
@@ -87,43 +86,6 @@ function generateRandomCode() {
     return crypto.randomBytes(3).toString('hex').toUpperCase();
 }
 
-
-function generateQRCode() {
-    return crypto.randomBytes(3).toString('hex').toUpperCase();
-}
-
-app.get('/attendance-report', isAdmin, async (req, res) => {
-    try {
-        const startDate = new Date();
-        startDate.setHours(0,0,0,0);
-        
-        const endDate = new Date();
-        endDate.setHours(23,59,59,999);
-
-        const attendance = await Attendance.find({
-            date: { $gte: startDate, $lte: endDate }
-        }).populate('staffId');
-
-        res.render('attendance-report', { 
-            attendance,
-            userRole: req.session.user ? req.session.user.role : null 
-        });
-    } catch (error) {
-        console.error('Error:', error);
-        res.status(500).send(error.message);
-    }
-});
-
-async function isValidQRCode(code) {
-    const validCode = await DailyCode.findOne({
-        code,
-        expiryTime: { $gt: new Date() },
-        used: false
-    });
-    return !!validCode;
-}
-
-
 function isWithinRadius(location, center) {
     const R = 6371e3; // Earth's radius in meters
     const φ1 = location.latitude * Math.PI/180;
@@ -163,141 +125,6 @@ app.get("/", isAuthenticated, async (req, res) => {
         res.status(500).send("Error loading the page.");
     }
 });
-
-app.get('/attendance', isAuthenticated, async (req, res) => {
-    try {
-        if (req.session.user.role === 'admin') {
-            res.render('admin-attendence');
-        } else {
-            const staff = await Staff.findOne({ email: req.session.user.mail });
-            if (!staff) {
-                return res.status(400).send('Staff record not found');
-            }
-            // Explicitly pass staffId and email
-            res.render('attendence', { 
-                staffId: staff._id.toString(),
-                staffEmail: staff.email 
-            });
-        }
-    } catch (error) {
-        console.error('Error loading attendance page:', error);
-        res.status(500).send('Error loading attendance page');
-    }
-});
-
-
-app.post('/attendance/check-in', async (req, res) => {
-    try {
-        const { staffId, location, qrCode } = req.body;
-
-        console.log(location);
-        
-        // Validate staffId
-        if (!staffId || !mongoose.Types.ObjectId.isValid(staffId)) {
-            return res.status(400).json({ 
-                success: false,
-                message: 'Invalid staff ID' 
-            });
-        }
-
-        // Verify QR code validity
-        const validCode = await DailyCode.findOne({
-            code: qrCode,
-            expiryTime: { $gt: new Date() },
-            used: false
-        });
-
-        if (!validCode) {
-            return res.status(400).json({ 
-                success: false,
-                message: 'Invalid or expired QR code' 
-            });
-        }
-
-        // Verify location is within salon premises
-        const salonLocation = {
-            latitude: 12.9174937,
-            longitude: 80.1733073,
-            radius: 100 // meters
-        };
-
-        if (!isWithinRadius(location, salonLocation)) {
-            return res.status(400).json({ 
-                success: false,
-                message: 'Must not be at salon premises' 
-            });
-        }
-
-        // Create attendance record
-        const attendance = new Attendance({
-            staffId,
-            date: new Date(),
-            checkIn: new Date(),
-            location,
-            qrCode // Include QR code in record
-        });
-
-        await attendance.save();
-        
-        // Mark QR code as used
-        await DailyCode.findByIdAndUpdate(validCode._id, { used: true });
-
-        res.json({ success: true, message: 'Attendance marked successfully' });
-
-    } catch (error) {
-        console.error('Attendance check-in error:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error marking attendance' 
-        });
-    }
-});
-
-
-app.post('/attendance/mark', async (req, res) => {
-
-    const { staffId, code } = req.body;
-    
-    const validCode = await DailyCode.findOne({
-      code,
-      expiryTime: { $gt: new Date() },
-      used: false
-    });
-  
-    if (!validCode) {
-      return res.status(400).json({ message: 'Invalid or expired code' });
-    }
-  
-    // Mark attendance and invalidate code
-    await Promise.all([
-      Attendance.create({
-        staffId,
-        date: new Date()
-      }),
-      DailyCode.findByIdAndUpdate(validCode._id, { used: true })
-    ]);
-  
-    res.json({ success: true });
-});
-
-
-app.post('/attendance/generate-code', isAdmin, async (req, res) => {
-    try {
-        const code = generateRandomCode();
-        const expiryTime = new Date(Date.now() + 5*60*1000); // 5 minutes
-
-        await DailyCode.create({
-            code,
-            expiryTime,
-            used: false
-        });
-
-        res.json({ code });
-    } catch (error) {
-        res.status(500).send(error.message);
-    }
-});
-
 
 app.post("/bill", async (req, res) => {
     try {
@@ -626,16 +453,47 @@ app.post('/search-customer', async (req, res) => {
     try {
         const { customerNumber } = req.body;
 
-        // Fetch customer data from Fetch model
-        const fetchCustomerData = await Fetch.find({ customer_number: customerNumber });
+        // First check membership status since it should be independent of purchase history
+        const membership = await Membership.findOne({ phoneNumber: customerNumber });
+        
+        // Initialize membership variables
+        let membershipStatus = '----';
+        let membershipID = null;
+        let canUseBirthdayOffer = false;
+        let canUseAnniversaryOffer = false;
 
-        // Fetch customer data from ProductBill model
+        if (membership) {
+            membershipID = membership.membershipID;
+            membershipStatus = 'Active';
+
+            // Check if membership is expired
+            const today = new Date();
+            if (membership.validTillDate < today) {
+                membershipStatus = 'Expired';
+            } else {
+                // Check for birthday and anniversary offers
+                const currentMonth = today.getMonth();
+                const birthMonth = new Date(membership.birthDate).getMonth();
+                const anniversaryMonth = membership.anniversaryDate ? new Date(membership.anniversaryDate).getMonth() : -1;
+                const currentYear = today.getFullYear();
+                const yearlyUsage = membership.yearlyUsage.find(usage => usage.year === currentYear);
+
+                if (currentMonth === birthMonth && (!yearlyUsage || !yearlyUsage.usedBirthdayOffer)) {
+                    canUseBirthdayOffer = true;
+                }
+
+                if (currentMonth === anniversaryMonth && (!yearlyUsage || !yearlyUsage.usedAnniversaryOffer)) {
+                    canUseAnniversaryOffer = true;
+                }
+            }
+        }
+
+        // Fetch customer purchase history
+        const fetchCustomerData = await Fetch.find({ customer_number: customerNumber });
         const productBillCustomerData = await ProductBill.find({ customer_number: customerNumber });
-        // console.log(productBillCustomerData, fetchCustomerData);
-        // Combine data from both models
         const combinedData = [...fetchCustomerData, ...productBillCustomerData];
 
-        if (combinedData.length > 0) {
+        if (combinedData.length > 0 || membership) {  // Return data if either purchase history exists OR customer has membership
             const totalSpent = combinedData.reduce((sum, record) => {
                 if (record.services) {
                     return sum + record.services.reduce((serviceSum, service) => serviceSum + service.price, 0);
@@ -646,10 +504,12 @@ app.post('/search-customer', async (req, res) => {
             }, 0);
 
             const visits = combinedData.length;
-            const lastVisit = combinedData.reduce((latest, record) => {
-                const recordDate = new Date(record.date);
-                return recordDate > latest ? recordDate : latest;
-            }, new Date(0)).toISOString().split('T')[0];
+            const lastVisit = combinedData.length > 0 ? 
+                combinedData.reduce((latest, record) => {
+                    const recordDate = new Date(record.date);
+                    return recordDate > latest ? recordDate : latest;
+                }, new Date(0)).toISOString().split('T')[0] : 
+                'First Visit';
 
             const services = fetchCustomerData.flatMap(record => record.services.map(service => service.name));
             const products = productBillCustomerData.flatMap(record => record.products.map(product => product.name));
@@ -657,52 +517,21 @@ app.post('/search-customer', async (req, res) => {
             const uniqueProducts = [...new Set(products)];
 
             let customerType = 'New';
-            const lastVisitDate = new Date(lastVisit);
-            const daysSinceLastVisit = (new Date() - lastVisitDate) / (1000 * 60 * 60 * 24);
+            if (visits > 0) {
+                const lastVisitDate = new Date(lastVisit);
+                const daysSinceLastVisit = (new Date() - lastVisitDate) / (1000 * 60 * 60 * 24);
 
-            if (visits > 2) {
-                customerType = 'Active';
-            } else if (daysSinceLastVisit > 180) {
-                customerType = 'Dormant';
-            }
-
-            // Get customer info from whichever dataset is available
-            const customerInfo = fetchCustomerData[0] || productBillCustomerData[0];
-
-            // Initialize membership variables
-            let membershipStatus = '----';
-            let membershipID = null;
-            let canUseBirthdayOffer = false;
-            let canUseAnniversaryOffer = false;
-
-            // Find membership using phone number
-            const membership = await Membership.findOne({ phoneNumber: customerNumber });
-
-            if (membership) {
-                membershipID = membership.membershipID;
-                membershipStatus = 'Active';
-
-                // Check if membership is expired
-                const today = new Date();
-                if (membership.validTillDate < today) {
-                    membershipStatus = 'Expired';
-                } else {
-                    // Check for birthday and anniversary offers
-                    const currentMonth = today.getMonth();
-                    const birthMonth = new Date(membership.birthDate).getMonth();
-                    const anniversaryMonth = membership.anniversaryDate ? new Date(membership.anniversaryDate).getMonth() : -1;
-                    const currentYear = today.getFullYear();
-                    const yearlyUsage = membership.yearlyUsage.find(usage => usage.year === currentYear);
-
-                    if (currentMonth === birthMonth && (!yearlyUsage || !yearlyUsage.usedBirthdayOffer)) {
-                        canUseBirthdayOffer = true;
-                    }
-
-                    if (currentMonth === anniversaryMonth && (!yearlyUsage || !yearlyUsage.usedAnniversaryOffer)) {
-                        canUseAnniversaryOffer = true;
-                    }
+                if (visits > 2) {
+                    customerType = 'Active';
+                } else if (daysSinceLastVisit > 180) {
+                    customerType = 'Dormant';
                 }
             }
+
+            // Get customer info or use membership info for first-time visitors
+            const customerInfo = combinedData[0] || { 
+                customer_name: membership ? membership.customername : '----'
+            };
             
             res.json({
                 success: true,
@@ -1702,7 +1531,6 @@ app.post("/do-signin", async (req, res) => {
     try {
         const { mail, password } = req.body;
         const user = await Signup.findOne({ mail });
-        console.log(user);
         
         if (user && password === user.password) {
             // If staff user, verify staff record exists
