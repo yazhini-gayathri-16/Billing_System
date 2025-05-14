@@ -27,6 +27,8 @@ const path = require("path");
 const ejs = require('ejs');
 const puppeteer = require('puppeteer'); 
 const whatsAppClient = require('@green-api/whatsapp-api-client');
+const { Readable } = require('stream'); // Add this at the top with other requires
+
 
 
 require("./connection");
@@ -133,7 +135,7 @@ app.get("/", isAuthenticated, async (req, res) => {
 });
 
 app.post("/bill", async (req, res) => {
-    try {
+   try {
         const {
             customer_name,
             customer_number,
@@ -231,65 +233,82 @@ app.post("/bill", async (req, res) => {
             );
 
             try {
-                // Generate PDF in memory
-                const doc = new PDFDocument();
-                let buffers = [];
-                doc.on('data', buffers.push.bind(buffers));
-                doc.on('end', async () => {
-    const pdfBuffer = Buffer.concat(buffers);
-
-    const chatId = `91${customer_number}@c.us`;
-
-    // Prepare form-data for Green API
-    const form = new FormData();
-    form.append('chatId', chatId);
-    form.append('file', pdfBuffer, {
-        filename: `NobleSalon_Bill_${date.replaceAll('/', '-')}_${time.replaceAll(':', '-')}.pdf`,
-        contentType: 'application/pdf'
-    });
-    form.append('caption', `Dear ${customer_name}, thank you for visiting Noble Evergreen Salon. Please find your bill attached.`);
-
-    try {
-        const response = await axios.post(
-            `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendFileByUpload/${GREEN_API_TOKEN}`,
-            form,
-            { headers: form.getHeaders() }
-        );
-
-        res.json({
-            success: true,
-            message: 'Bill generated and PDF sent via WhatsApp',
-            billData: user
-        });
-    } catch (error) {
-        console.error('PDF or WhatsApp send error:', error?.response?.data || error.message);
-        res.json({
-            success: true,
-            message: 'Bill generated but PDF failed to send via WhatsApp',
-            billData: user
-        });
-    }
-});
-
-                // PDF content
-                doc.fontSize(18).text('Noble Evergreen Salon - Customer Bill', { align: 'center' });
-                doc.moveDown().fontSize(12);
-                doc.text(`Name: ${customer_name}`);
-                doc.text(`Gender: ${gender}`);
-                doc.text(`Date: ${date}    Time: ${time}`);
-                doc.text(`Bill Type: ${billType}`);
-                doc.moveDown();
-                doc.text(`Services:`);
-                services.forEach((s, i) => {
-                    doc.text(`  ${i + 1}. ${s.name} - ₹${s.price.toFixed(2)} (Stylist: ${s.stylist}${s.stylist2 ? ', ' + s.stylist2 : ''})`);
+                // Render HTML using billingTemplate.ejs
+                const htmlContent = await new Promise((resolve, reject) => {
+                    ejs.renderFile(
+                        path.join(__dirname, 'views', 'billingTemplate.ejs'),
+                        { data: [{
+                            customer_name,
+                            customer_number,
+                            date,
+                            time,
+                            gender,
+                            membershipID,
+                            subtotal: parseFloat(subtotal),
+                            discount: finalDiscount,
+                            discountType,
+                            grandTotal: parseFloat(grandTotal),
+                            paymentMethod,
+                            services,
+                            billType
+                        }] },
+                        (err, html) => {
+                            if (err) reject(err);
+                            else resolve(html);
+                        }
+                    );
                 });
-                doc.moveDown();
-                doc.text(`Subtotal: ₹${subtotal}`);
-                doc.text(`Discount (${discountType || 'None'}): ₹${finalDiscount.toFixed(2)}`);
-                doc.text(`Grand Total: ₹${grandTotal}`);
-                doc.text(`Payment Method: ${paymentMethod}`);
-                doc.end();
 
+                // Generate PDF buffer using Puppeteer
+                const browser = await puppeteer.launch({
+                    headless: "new",
+                    args: ['--no-sandbox', '--disable-setuid-sandbox']
+                });
+                const page = await browser.newPage();
+                await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+
+                const pdfBuffer = await page.pdf({
+                    format: "A4",
+                    printBackground: true
+                });
+
+                await browser.close();
+
+                // Wrap pdfBuffer in a Readable stream for form-data
+                const bufferStream = new Readable();
+                bufferStream.push(pdfBuffer);
+                bufferStream.push(null);
+
+                // Send PDF via WhatsApp using Green API
+                const chatId = `91${customer_number}@c.us`;
+                const form = new FormData();
+                form.append('chatId', chatId);
+                form.append('file', bufferStream, {
+                    filename: `NobleSalon_Bill_${date.replaceAll('/', '-')}_${time.replaceAll(':', '-')}.pdf`,
+                    contentType: 'application/pdf'
+                });
+                form.append('caption', `Dear ${customer_name}, thank you for visiting Noble Evergreen Salon. Please find your bill attached.`);
+
+                try {
+                    const response = await axios.post(
+                        `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendFileByUpload/${GREEN_API_TOKEN}`,
+                        form,
+                        { headers: form.getHeaders() }
+                    );
+
+                    res.json({
+                        success: true,
+                        message: 'Bill generated and PDF sent via WhatsApp',
+                        billData: user
+                    });
+                } catch (error) {
+                    console.error('PDF or WhatsApp send error:', error?.response?.data || error.message);
+                    res.json({
+                        success: true,
+                        message: 'Bill generated but PDF failed to send via WhatsApp',
+                        billData: user
+                    });
+                }
             } catch (error) {
                 console.error('PDF or WhatsApp send error:', error);
                 res.json({
