@@ -20,6 +20,8 @@ const EmployeeTarget = require('./models/employeeTarget'); // Add this line to i
 const ProductBill = require('./models/productBill');
 const DailyCode = require('./models/dailycode');
 const PDFDocument = require("pdfkit");
+const FormData = require('form-data');
+const axios = require('axios');
 const fs = require("fs");
 const path = require("path");
 const ejs = require('ejs');
@@ -49,10 +51,14 @@ app.use(session({
 }));
 
 // Initialize the REST API client
-const restAPI = whatsAppClient.restAPI({
-    idInstance: '7105217263',
-    apiTokenInstance: 'e9897cac52f64553bb62434c7ab4f304de7a915f81994be383'
-  });
+// const restAPI = whatsAppClient.restAPI({
+//     idInstance: '7105217263',
+//     apiTokenInstance: 'e9897cac52f64553bb62434c7ab4f304de7a915f81994be383'
+//   });
+
+// Green API credentials
+const GREEN_API_INSTANCE_ID = '7105239852';
+const GREEN_API_TOKEN = '21abe2abe5e541849654c53fb041f41bd11f81ef7ba3423182';  
 
 // Middleware to check if user is authenticated
 const isAuthenticated = (req, res, next) => {
@@ -145,15 +151,12 @@ app.post("/bill", async (req, res) => {
         } = req.body;
 
         let finalDiscount = parseFloat(subtotal) - parseFloat(grandTotal);
-        
-        // Update membership usage if offers were applied
+
         if (membershipID && (birthdayDiscountApplied || anniversaryDiscountApplied)) {
             const membership = await Membership.findOne({ membershipID });
             if (membership) {
                 const today = new Date();
                 const currentYear = today.getFullYear();
-                
-                // Find or create yearly usage record
                 let yearlyUsage = membership.yearlyUsage.find(u => u.year === currentYear);
                 if (!yearlyUsage) {
                     yearlyUsage = {
@@ -163,27 +166,19 @@ app.post("/bill", async (req, res) => {
                     };
                     membership.yearlyUsage.push(yearlyUsage);
                 }
-
-                // Update usage flags based on which offers were applied
-                if (birthdayDiscountApplied) {
-                    yearlyUsage.usedBirthdayOffer = true;
-                }
-                if (anniversaryDiscountApplied) {
-                    yearlyUsage.usedAnniversaryOffer = true;
-                }
-
+                if (birthdayDiscountApplied) yearlyUsage.usedBirthdayOffer = true;
+                if (anniversaryDiscountApplied) yearlyUsage.usedAnniversaryOffer = true;
                 await membership.save();
             }
         }
 
-        // Process services array creation
         let services = [];
         let index = 1;
         while (req.body[`services${index}`]) {
             const stylistId = req.body[`stylist${index}`];
             const stylist2Id = req.body[`stylist2${index}`];
             const stylist = await Staff.findById(stylistId);
-            
+
             if (!stylist) {
                 return res.status(400).send(`Stylist with ID ${stylistId} not found`);
             }
@@ -207,7 +202,6 @@ app.post("/bill", async (req, res) => {
             index++;
         }
 
-        // Create bill record with values calculated from frontend
         const user = await Fetch.create({
             customer_name,
             customer_number,
@@ -226,35 +220,81 @@ app.post("/bill", async (req, res) => {
             anniversaryDiscountApplied
         });
 
-        // Update monthly data
         const currentMonth = new Date().toLocaleString('default', { month: 'short' });
         const currentYear = new Date().getFullYear();
 
         if (user) {
-            const monthlyData = await MonthlyData.findOneAndUpdate(
+            await MonthlyData.findOneAndUpdate(
                 { month: currentMonth, year: currentYear },
                 { $inc: { achieved: 1 } },
                 { upsert: true, new: true }
             );
 
-            // Send WhatsApp notification
             try {
-                const message = `Dear ${customer_name},\n\nThank you for visiting Noble Evergreen Salon! We appreciate your trust in our services. Please find the details of your bill below:\nBill Date: ${date}\nServices: ${services.map(s => s.name).join(', ')}\nSubtotal: ₹${subtotal}\nDiscount: ₹${finalDiscount}\nGrand Total: ₹${grandTotal}\nPayment Method: ${paymentMethod}\n
-                \nIf you have any questions regarding your bill or need further assistance, feel free to reach out to us.\nThank you for choosing Noble Evergreen Salon. We look forward to serving you again!\n\nBest Regards,\nNoble Evergreen Salon`;
-                
-                const chatId = `91${customer_number}@c.us`;
-                await restAPI.message.sendMessage(chatId, null, message);
+                // Generate PDF in memory
+                const doc = new PDFDocument();
+                let buffers = [];
+                doc.on('data', buffers.push.bind(buffers));
+                doc.on('end', async () => {
+    const pdfBuffer = Buffer.concat(buffers);
 
-                res.json({
-                    success: true,
-                    message: 'Bill generated and notification sent successfully',
-                    billData: user
+    const chatId = `91${customer_number}@c.us`;
+
+    // Prepare form-data for Green API
+    const form = new FormData();
+    form.append('chatId', chatId);
+    form.append('file', pdfBuffer, {
+        filename: `NobleSalon_Bill_${date.replaceAll('/', '-')}_${time.replaceAll(':', '-')}.pdf`,
+        contentType: 'application/pdf'
+    });
+    form.append('caption', `Dear ${customer_name}, thank you for visiting Noble Evergreen Salon. Please find your bill attached.`);
+
+    try {
+        const response = await axios.post(
+            `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendFileByUpload/${GREEN_API_TOKEN}`,
+            form,
+            { headers: form.getHeaders() }
+        );
+
+        res.json({
+            success: true,
+            message: 'Bill generated and PDF sent via WhatsApp',
+            billData: user
+        });
+    } catch (error) {
+        console.error('PDF or WhatsApp send error:', error?.response?.data || error.message);
+        res.json({
+            success: true,
+            message: 'Bill generated but PDF failed to send via WhatsApp',
+            billData: user
+        });
+    }
+});
+
+                // PDF content
+                doc.fontSize(18).text('Noble Evergreen Salon - Customer Bill', { align: 'center' });
+                doc.moveDown().fontSize(12);
+                doc.text(`Name: ${customer_name}`);
+                doc.text(`Gender: ${gender}`);
+                doc.text(`Date: ${date}    Time: ${time}`);
+                doc.text(`Bill Type: ${billType}`);
+                doc.moveDown();
+                doc.text(`Services:`);
+                services.forEach((s, i) => {
+                    doc.text(`  ${i + 1}. ${s.name} - ₹${s.price.toFixed(2)} (Stylist: ${s.stylist}${s.stylist2 ? ', ' + s.stylist2 : ''})`);
                 });
-            } catch (notificationError) {
-                console.error('WhatsApp notification error:', notificationError);
+                doc.moveDown();
+                doc.text(`Subtotal: ₹${subtotal}`);
+                doc.text(`Discount (${discountType || 'None'}): ₹${finalDiscount.toFixed(2)}`);
+                doc.text(`Grand Total: ₹${grandTotal}`);
+                doc.text(`Payment Method: ${paymentMethod}`);
+                doc.end();
+
+            } catch (error) {
+                console.error('PDF or WhatsApp send error:', error);
                 res.json({
                     success: true,
-                    message: 'Bill generated but notification failed to send',
+                    message: 'Bill generated but PDF failed to send via WhatsApp',
                     billData: user
                 });
             }
