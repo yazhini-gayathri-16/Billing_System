@@ -12,12 +12,11 @@
         }
         .container {
             max-width: 800px;
-            margin: aunto;
+            margin: auto;
             padding: 20px;
             border-radius: 8px;
             position: relative;
-            background-color: white; /* Set background to white */
-            /* Removed page-break-after from here */
+            background-color: white;
         }
         .container::before {
             content: "";
@@ -26,22 +25,74 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: url('/images/logo3.png'); /* Ensure correct path to the logo */
+            background-image: url('/images/logo3.png');
             background-repeat: no-repeat;
             background-position: center;
-            background-size: 300px 300px; /* Adjust size as needed */
-            opacity: 0.1; /* Make the watermark light */
+            background-size: 300px 300px;
+            opacity: 0.1;
             z-index: 0;
+        }
+        .header {
+            display: flex;
+            justify-content: flex-end;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 2;
+        }
+        .invoice-info {
+            text-align: right;
+            min-width: 180px;
+            margin-right: 80px;
+        }
+        .invoice-info .invoice-label {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+        .salon-title-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 0;
+            margin-top: 30px;
+        }
+        .salon-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .salon-logo {
+            height: 60px;
+            width: 60px;
+            margin-right: 15px;
+        }
+        .salon-title-text {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .salon-title-text .name {
+            font-size: 1.7em;
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+        .salon-title-text .address {
+            font-size: 1em;
+            font-weight: normal;
+            margin-bottom: 0;
+            text-align: center;
+            max-width: 500px;
         }
         .content {
             position: relative;
-            z-index: 1; /* Ensure content is above the watermark */
-            /* border: 1px solid #000; Bordered box */
-            border-radius: 5px; /* Rounded corners of 5px */
-            background-color: #8DBE50; /* Background fill */
+            z-index: 1;
+            border-radius: 5px;
+            background-color: #8DBE50;
             padding: 30px;
-            margin: 100px 50px 0 50px; /* Adjust top margin as needed */
-            page-break-after: always; /* Each content div on a new page */
+            margin: 30px 50px 0 50px;
+            page-break-after: always;
         }
         h2 {
             text-align: center;
@@ -77,50 +128,58 @@
 <body>
 
     <% data.forEach(function(record) { %>
-        <div class="receipt-container">
+        <div class="container">
+            <div class="salon-title-block">
+                <div class="salon-title-row">
+                    <!-- <img src="/images/logo_3_square.png" alt="Salon Logo" class="salon-logo" /> -->
+                    <div class="salon-title-text">
+                        <div class="name">NOBLE EVERGREEN UNISEX SALON</div>
+                        <div class="address">
+                            Leelavathi Achaer Complex Opp. Muthoot Finance Immadihalli Main Road, Hagadur, Whitefiled, Bangalore - 560066
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="header">
+                <div class="invoice-info">
+                    <div class="invoice-label">INVOICE</div>
+                    <div><strong>Date:</strong> <%= new Date(record.date).toISOString().split('T')[0] %></div>
+                    <div><strong>Time:</strong> <%= record.time %></div>
+                </div>
+            </div>
             <div class="content">
                 <h2>Billing Receipt</h2>
                 <h3>Customer Details</h3>
                 <p><strong>Name:</strong> <%= record.customer_name %></p>
                 <p><strong>Phone Number:</strong> <%= record.customer_number %></p>
-                <p><strong>Date: </strong> <%= new Date(record.date).toISOString().split('T')[0] %></p>
-                <p><strong>Time:</strong> <%= record.time %></p>
                 <p><strong>Gender:</strong> <%= record.gender %></p>
-            
-            
-            
-            <h3>Services</h3>
+
+                <h3>Services</h3>
                 <table class="service-table">
-                    
+                    <tr>
+                        <th>Service Name</th>
+                        <th>Price</th>
+                        <th>Stylist</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                    </tr>
+                    <% record.services.forEach(function(service) { %>
                         <tr>
-                            <th>Service Name</th>
-                            <th>Price</th>
-                            <th>Stylist</th>
-                            <th>Start Time</th>
-                            <th>End Time</th>
+                            <td><%= service.name %></td>
+                            <td>₹<%= service.price.toFixed(2) %></td>
+                            <td><%= service.stylist %></td>
+                            <td><%= service.startTime %></td>
+                            <td><%= service.endTime %></td>
                         </tr>
-
-                        <% record.services.forEach(function(service) { %>
-                            <tr>
-                                <td><%= service.name %></td>
-                                <td>₹<%= service.price.toFixed(2) %></td>
-                                <td><%= service.stylist %></td>
-                                <td><%= service.startTime %></td>
-                                <td><%= service.endTime %></td>
-                            </tr>
-                        <% }); %>
-                    
+                    <% }); %>
                 </table>
-            
 
-            <div class="total">
-                <p><Strong>Payment Method:</Strong> <%= record.paymentMethod %></p>
-                <p><Strong>Subtotal:</Strong> ₹<%= record.subtotal %></p>
-                <p><strong>Discount:</strong> <%= record.discountType === 'percentage' ? '₹' + record.discount : '₹' + record.discount %></p>
-                <p><strong>Grand Total:</strong> ₹<%= record.grandTotal %></p>
-            </div>    
-            <p>Bill Type: <%= record.billType %></p>
-            
+                <div class="total">
+                    <p><strong>Subtotal:</strong> ₹<%= record.subtotal %></p>
+                    <p><strong>Discount:</strong> <%= record.discountType === 'percentage' ? '₹' + record.discount : '₹' + record.discount %></p>
+                    <p><strong>Grand Total:</strong> ₹<%= record.grandTotal %></p>
+                </div>
+                <p>Bill Type: <%= record.billType %></p>
             </div>
         </div>
     <% }); %>
