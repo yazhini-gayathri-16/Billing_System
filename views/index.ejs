@@ -108,14 +108,6 @@
                                 </div>
                                 
                             </div>
-                            <div class="form-group basis-time">
-                                <label>Start Time:</label>
-                                <input type="time" name="startTime1" required>
-                            </div>
-                            <div class="form-group basis-time">
-                                <label>End Time:</label>
-                                <input type="time" name="endTime1" required>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -381,14 +373,11 @@
             if (firstServiceItem) {
                 const serviceInput = firstServiceItem.querySelector('[name^="services"]');
                 const priceInput = firstServiceItem.querySelector('[name^="prices"]');
-                const startTimeInput = firstServiceItem.querySelector('[name^="startTime"]');
-                const endTimeInput = firstServiceItem.querySelector('[name^="endTime"]');
+                
                 
                 if (serviceInput) serviceInput.value = '';
                 if (priceInput) priceInput.value = '';
-                if (startTimeInput) startTimeInput.value = '';
-                if (endTimeInput) endTimeInput.value = '';
-                
+                                
                 // Remove second stylist if present
                 const stylist2Container = firstServiceItem.querySelector('#stylist2-container');
                 if (stylist2Container) {
@@ -509,14 +498,7 @@
                                 </div>
                                 
                             </div>
-                            <div class="form-group basis-time">
-                                <label for="startTime${serviceCount}">Start Time:</label>
-                                <input type="time" name="startTime${serviceCount}" required>
-                            </div>
-                            <div class="form-group basis-time">
-                                <label for="endTime${serviceCount}">End Time:</label>
-                                <input type="time" name="endTime${serviceCount}" required>
-                            </div>
+
                         </div>
 
                

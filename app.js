@@ -52,6 +52,13 @@ app.use(session({
     }
 }));
 
+const doc = new PDFDocument();
+const pdfPath = path.join(__dirname, 'billing_data.pdf');
+const writeStream = fs.createWriteStream(pdfPath);
+doc.pipe(writeStream);
+
+
+
 // Initialize the REST API client
 // const restAPI = whatsAppClient.restAPI({
 //     idInstance: '7105217263',
@@ -188,9 +195,7 @@ app.post("/bill", async (req, res) => {
             let serviceObj = {
                 name: req.body[`services${index}`],
                 price: parseFloat(req.body[`prices${index}`]),
-                stylist: stylist.name,
-                startTime: req.body[`startTime${index}`],
-                endTime: req.body[`endTime${index}`]
+                stylist: stylist.name                
             };
 
             if (stylist2Id) {
@@ -259,76 +264,205 @@ app.post("/bill", async (req, res) => {
                     );
                 });
 
-                // Generate PDF buffer using Puppeteer
-                const browser = await puppeteer.launch({
-                    headless: "new",
-                    args: ['--no-sandbox', '--disable-setuid-sandbox']
-                });
-                const page = await browser.newPage();
-                await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+                // // Generate PDF buffer using Puppeteer
+                // const browser = await puppeteer.launch({
+                //     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+                //     headless: "new",
+                //     args: ['--no-sandbox', '--disable-setuid-sandbox']
+                // });
+                // const page = await browser.newPage();
+                // await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
 
-                const pdfBuffer = await page.pdf({
-                    format: "A4",
-                    printBackground: true
-                });
+                // const pdfBuffer = await page.pdf({
+                //     format: "A4",
+                //     printBackground: true
+                // });
 
-                await browser.close();
+                // await browser.close();
 
-                // Wrap pdfBuffer in a Readable stream for form-data
-                const bufferStream = new Readable();
-                bufferStream.push(pdfBuffer);
-                bufferStream.push(null);
+                // // Wrap pdfBuffer in a Readable stream for form-data
+                // const bufferStream = new Readable();
+                // bufferStream.push(pdfBuffer);
+                // bufferStream.push(null);
+
+                // Instead of Puppeteer, use PDFKit to generate PDF in memory
+        const { Readable } = require('stream');
+        const doc = new PDFDocument({ size: 'A4', margin: 50 });
+        const chunks = [];
+        doc.on('data', chunk => chunks.push(chunk));
+        doc.on('end', async () => {
+            const pdfBuffer = Buffer.concat(chunks);
+
 
                 // Send PDF via WhatsApp using Green API
-                const chatId = `91${customer_number}@c.us`;
-                const form = new FormData();
-                form.append('chatId', chatId);
-                form.append('file', bufferStream, {
-                    filename: `NobleSalon_Bill_${date.replaceAll('/', '-')}_${time.replaceAll(':', '-')}.pdf`,
-                    contentType: 'application/pdf'
+            const chatId = `91${customer_number}@c.us`;
+            const bufferStream = new Readable();
+            bufferStream.push(pdfBuffer);
+            bufferStream.push(null);
+
+            const form = new FormData();
+            form.append('chatId', chatId);
+            form.append('file', bufferStream, {
+                filename: `Noble_Evergreen_Unisex_Salon.pdf`,
+                contentType: 'application/pdf'
+            });
+            form.append('caption', `Dear ${customer_name}, thank you for visiting Noble Evergreen Salon. Please find your bill attached.`);
+
+            try {
+                const response = await axios.post(
+                    `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendFileByUpload/${GREEN_API_TOKEN}`,
+                    form,
+                    { headers: form.getHeaders() }
+                );
+
+                res.json({
+                    success: true,
+                    message: 'Bill generated and PDF sent via WhatsApp',
+                    billData: user
                 });
-                form.append('caption', `Dear ${customer_name}, thank you for visiting Noble Evergreen Salon. Please find your bill attached.`);
-
-                try {
-                    const response = await axios.post(
-                        `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendFileByUpload/${GREEN_API_TOKEN}`,
-                        form,
-                        { headers: form.getHeaders() }
-                    );
-
-                    res.json({
-                        success: true,
-                        message: 'Bill generated and PDF sent via WhatsApp',
-                        billData: user
-                    });
-                } catch (error) {
-                    console.error('PDF or WhatsApp send error:', error?.response?.data || error.message);
-                    res.json({
-                        success: true,
-                        message: 'Bill generated but PDF failed to send via WhatsApp',
-                        billData: user
-                    });
-                }
             } catch (error) {
-                console.error('PDF or WhatsApp send error:', error);
+                console.error('PDF or WhatsApp send error:', error?.response?.data || error.message);
                 res.json({
                     success: true,
                     message: 'Bill generated but PDF failed to send via WhatsApp',
                     billData: user
                 });
             }
-        } else {
-            res.json({
-                success: false,
-                message: 'Failed to create receipt'
-            });
-        }
+        });
+
+        // --- PDF Content ---
+        // Header and Title Block
+
+        const address = 'Leelavathi Achaer Complex Opp. Muthoot Finance Immadihalli Main Road, Hagadur, Whitefiled, Bangalore - 560066';
+        const addressWidth = 400; // Adjust width for your desired margin
+        const addressX = (doc.page.width - addressWidth) / 2; // Center horizontally
+
+        doc
+            .rect(0, 0, doc.page.width, 80)
+            .fill('#8DBE50')
+            .fillColor('black')
+            .fontSize(24)
+            .font('Helvetica-Bold')
+            .text('NOBLE EVERGREEN UNISEX SALON', { align: 'center', valign: 'center' })
+            .moveDown(0.5)
+            .fontSize(10)
+            .font('Helvetica')
+            .text(address, addressX, doc.y, {
+                width: addressWidth,
+                align: 'center'
+            })
+            .moveDown(1);
+
+        // Invoice Info
+        doc
+            .moveDown(0.5)
+            .fontSize(14)
+            .font('Helvetica-Bold')
+            .text('INVOICE', { align: 'right' })
+            .fontSize(10)
+            .font('Helvetica')
+            .text(`Date: ${date}`, { align: 'right' })
+            .text(`Time: ${time}`, { align: 'right' })
+            .moveDown(1);
+
+        const leftX = doc.page.margins.left;    
+        // Customer Details
+        doc
+            .fontSize(14)
+            .font('Helvetica-Bold')
+            .text('Billing Receipt', leftX, doc.y)
+            .moveDown(0.5)
+            .fontSize(12)
+            .font('Helvetica-Bold')
+            .text('Customer Details', leftX, doc.y, { underline: true })
+            .font('Helvetica')
+            .moveDown(0.2)
+            .fontSize(11)
+            .text(`Name: ${customer_name}`, leftX, doc.y)
+            .text(`Phone Number: ${customer_number}`, leftX, doc.y)
+            .text(`Gender: ${gender}`, leftX, doc.y)
+            .moveDown(0.5);
+
+        // Services Table Header
+        doc
+            .fontSize(12)
+            .font('Helvetica-Bold')
+            .text('Services', leftX, doc.y, { underline: true })
+            .moveDown(0.2);
+
+        // Table column headers
+        const tableTop = doc.y + 5;
+        const colX = [doc.page.margins.left, 270, 440];
+        doc
+            .fontSize(11)
+            .font('Helvetica-Bold')
+            .text('Service Name', colX[0], tableTop)
+            .text('Price', colX[1], tableTop)
+            .text('Stylist', colX[2], tableTop)
+
+        // Draw header line
+        doc
+            .moveTo(colX[0], tableTop + 15)
+            .lineTo(doc.page.width - doc.page.margins.right, tableTop + 15)
+            .strokeColor('#ddd')
+            .lineWidth(1)
+            .stroke();
+
+        // Table rows
+        let rowY = tableTop + 20;
+        doc.font('Helvetica');
+        services.forEach(service => {
+            doc
+                .fontSize(10)
+                .text(service.name, colX[0], rowY)
+                .text(`Rs.${service.price.toFixed(2)}`, colX[1], rowY)
+                .text(service.stylist + (service.stylist2 ? `, ${service.stylist2}` : ''), colX[2], rowY)
+            rowY += 18;
+        });
+
+        // Totals Section
+const labelX = doc.page.width - doc.page.margins.right - 200; // 200px from right, adjust as needed
+const valueX = doc.page.width - doc.page.margins.right - 150;       // right margin
+
+doc.moveDown(2)
+   .fontSize(12)
+   .font('Helvetica-Bold');
+
+let y = doc.y;
+doc.text('Subtotal:', labelX, y);
+doc.text(`Rs.${parseFloat(subtotal).toFixed(2)}`, valueX, y, { align: 'right' });
+doc.moveDown(0.5);
+
+y = doc.y + 5;
+doc.text('Discount:', labelX, y);
+doc.text(`Rs.${finalDiscount.toFixed(2)} (${discountType})`, valueX, y, { align: 'right' });
+doc.moveDown(0.5);
+
+y = doc.y + 5;
+doc.text('Grand Total:', labelX, y);
+doc.text(`Rs.${parseFloat(grandTotal).toFixed(2)}`, valueX, y, { align: 'right' });
+
+
+doc.moveDown(0.5)
+   .font('Helvetica')
+   .fontSize(11);
+
+        doc.end();
+        // --- End PDF Content ---
 
     } catch (err) {
         console.error("Error creating bill:", err);
         res.status(500).json({
             success: false,
             message: err.message
+        });
+    }
+};
+}catch (error) {
+        console.error("Error creating bill:", error);
+        res.status(500).json({
+            success: false,
+            message: error.message
         });
     }
 });
@@ -443,9 +577,7 @@ app.post("/packageBill", async (req, res) => {
             let packageObj = {
                 name: req.body[`packages${index}`],
                 price: parseFloat(req.body[`prices${index}`]),
-                stylist: stylist.name,
-                startTime: req.body[`startTime${index}`],
-                endTime: req.body[`endTime${index}`]
+                stylist: stylist.name
             };
 
             if (stylist2Id) {
