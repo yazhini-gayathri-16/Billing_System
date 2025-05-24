@@ -2161,37 +2161,22 @@ app.get('/export', (req, res) => {
     defaultFromDate.setDate(defaultFromDate.getDate() - 30);
 
     // Initial render with no billing data
+    // Add stylist1 and stylist2 columns to the table header for the EJS template
     res.render('export', { 
         billingData: null, 
         fromDate: defaultFromDate.toISOString().split('T')[0], 
-        toDate: defaultToDate.toISOString().split('T')[0] 
+        toDate: defaultToDate.toISOString().split('T')[0],
+        tableHeaders: [
+            'Customer Name',
+            'Number',
+            'Date',
+            'Stylist 1',
+            'Stylist 2',
+            'Service',
+            'Price'
+        ]
     });
 });
-
-// app.post('/export', async (req, res) => {
-//     const { fromDate, toDate } = req.body;
-
-//     try {
-//         // Convert fromDate and toDate to Date objects
-//         const startDate = new Date(fromDate);
-//         const endDate = new Date(toDate);
-
-//         // Query the Fetch model to get data within the date range
-//         const billingData = await Fetch.find({
-//             date: {
-//                 $gte: startDate,
-//                 $lte: endDate
-//             }
-//         });
-
-//         // Render the export.ejs page with the fetched billing data
-//         res.render('export', { billingData, fromDate, toDate });
-
-//     } catch (error) {
-//         console.error("Error fetching billing data:", error);
-//         res.status(500).send('Server Error');
-//     }
-// });
 
 app.get('/topemployees', async (req, res) => {
     try {
@@ -2430,44 +2415,174 @@ app.post("/export", async (req, res) => {
                 $lte: new Date(toDate)
             }
         };
-        
+
         if (billType === "package") {
             query.billType = "package";
         } else if (billType === "service") {
             query.billType = "service";
-        } // If billType is "both", don't filter by billType
-        
+        }
+
         const data = await Fetch.find(query);
-        
+
         if (data.length === 0) {
             return res.status(404).send("No records found for the selected date range.");
         }
-        // Render HTML content using EJS
-        const htmlContent = await new Promise((resolve, reject) => {
-            res.render("billingTemplate", { data }, (err, html) => {
-                if (err) reject(err);
-                else resolve(html);
+
+        const PDFDocument = require('pdfkit');
+        const doc = new PDFDocument({ size: 'A3', margin: 40 });
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'attachment; filename="billing_data.pdf"');
+        doc.pipe(res);
+
+        // Title
+        const address = 'Leelavathi Achaer Complex Opp. Muthoot Finance Immadihalli Main Road, Hagadur, Whitefiled, Bangalore - 560066';
+        doc.rect(0, 0, doc.page.width, 60).fill('#8DBE50');
+        doc.fillColor('black')
+            .fontSize(22)
+            .font('Helvetica-Bold')
+            .text('NOBLE EVERGREEN UNISEX SALON', 0, 18, { align: 'center' })
+            .moveDown(0.2)
+            .fontSize(11)
+            .font('Helvetica')
+            .text(address, { align: 'center' })
+            .moveDown(1);
+        doc.moveDown(1);
+        
+        doc.fillColor('black')
+            .fontSize(14)
+            .font('Helvetica')
+            .text('Billing Records', { align: 'center' });
+        doc.moveDown(0.5);
+        doc.fontSize(11)
+            .text(`From: ${fromDate}   To: ${toDate}   Type: ${billType}`, { align: 'center' });
+        doc.moveDown(1);
+
+        // Table columns and centering
+        const colWidths = [140, 90, 90, 90, 90, 80, 70];
+        const rowHeight = 20;
+        const tableWidth = colWidths.reduce((a, b) => a + b, 0);
+        const tableStartX = (doc.page.width - tableWidth) / 2;
+        const colX = [
+            tableStartX,
+            tableStartX + colWidths[0],
+            tableStartX + colWidths[0] + colWidths[1],
+            tableStartX + colWidths[0] + colWidths[1] + colWidths[2],
+            tableStartX + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3],
+            tableStartX + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4],
+            tableStartX + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4] + colWidths[5]
+        ];
+
+        const tableTop = doc.y + 10;
+
+        // Header background
+        doc.rect(colX[0], tableTop, tableWidth, rowHeight)
+            .fill('#c7dfbf');
+        doc.fillColor('black')
+            .fontSize(11)
+            .font('Helvetica-Bold')
+            .text('Customer Name', colX[0] + 4, tableTop + 5, { width: colWidths[0] - 8 })
+            .text('Number', colX[1] + 4, tableTop + 5, { width: colWidths[1] - 8 })
+            .text('Date', colX[2] + 4, tableTop + 5, { width: colWidths[2] - 8 })
+            .text('Stylist 1', colX[3] + 4, tableTop + 5, { width: colWidths[3] - 8 })
+            .text('Stylist 2', colX[4] + 4, tableTop + 5, { width: colWidths[4] - 8 })
+            .text('Service', colX[5] + 4, tableTop + 5, { width: colWidths[5] - 8 })
+            .text('Price', colX[6] + 4, tableTop + 5, { width: colWidths[6] - 8 });
+
+        // Draw header borders
+        let y = tableTop;
+        doc.moveTo(colX[0], y).lineTo(colX[0] + tableWidth, y).stroke('#aad381');
+        doc.moveTo(colX[0], y + rowHeight).lineTo(colX[0] + tableWidth, y + rowHeight).stroke('#aad381');
+        for (let i = 0; i < colX.length; i++) {
+            doc.moveTo(colX[i], y).lineTo(colX[i], y + rowHeight).stroke('#aad381');
+        }
+        doc.moveTo(colX[colX.length - 1] + colWidths[colWidths.length - 1], y)
+            .lineTo(colX[colX.length - 1] + colWidths[colWidths.length - 1], y + rowHeight)
+            .stroke('#aad381');
+
+        // Table rows
+        y += rowHeight;
+        doc.font('Helvetica').fontSize(10);
+
+        // Flatten all services for all bills
+        const allRows = [];
+        data.forEach(bill => {
+            (bill.services || []).forEach(service => {
+                allRows.push({
+                    customer_name: bill.customer_name,
+                    customer_number: bill.customer_number,
+                    date: bill.date ? new Date(bill.date).toISOString().split('T')[0] : '',
+                    stylist1: service.stylist || '-',
+                    stylist2: service.stylist2 || '-',
+                    service: service.name,
+                    price: service.price
+                });
             });
         });
 
-        // Generate PDF using Puppeteer
-        const browser = await puppeteer.launch();
-        const page = await browser.newPage();
-        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-
-        const pdfPath = path.join(__dirname, "billing_data.pdf");
-        await page.pdf({ path: pdfPath, format: "A4", printBackground: true });
-        
-
-        await browser.close();
-
-        // Send the PDF as a download
-        res.download(pdfPath, "billing_data.pdf", (err) => {
-            if (err) {
-                console.error("Error downloading PDF:", err);
-                res.status(500).send("Error downloading file");
+        // Pagination logic
+        const maxY = doc.page.height - doc.page.margins.bottom - rowHeight;
+        for (let idx = 0; idx < allRows.length; idx++) {
+            const row = allRows[idx];
+            // Alternate row color
+            if (idx % 2 === 0) {
+                doc.rect(colX[0], y, tableWidth, rowHeight).fill('#f4f4f9');
+                doc.fillColor('black');
+            } else {
+                doc.fillColor('black');
             }
-        });
+            doc.font('Helvetica').fontSize(10); // Ensure normal font for rows
+            doc.text(row.customer_name || '', colX[0] + 4, y + 5, { width: colWidths[0] - 8 });
+            doc.text(row.customer_number || '', colX[1] + 4, y + 5, { width: colWidths[1] - 8 });
+            doc.text(row.date || '', colX[2] + 4, y + 5, { width: colWidths[2] - 8 });
+            doc.text(row.stylist1 || '-', colX[3] + 4, y + 5, { width: colWidths[3] - 8 });
+            doc.text(row.stylist2 || '-', colX[4] + 4, y + 5, { width: colWidths[4] - 8 });
+            doc.text(row.service || '', colX[5] + 4, y + 5, { width: colWidths[5] - 8 });
+            doc.text(`Rs.${row.price?.toFixed(2) || '0.00'}`, colX[6] + 4, y + 5, { width: colWidths[6] - 8 });
+
+            // Draw row borders
+            doc.moveTo(colX[0], y).lineTo(colX[0] + tableWidth, y).stroke('#aad381');
+            doc.moveTo(colX[0], y + rowHeight).lineTo(colX[0] + tableWidth, y + rowHeight).stroke('#aad381');
+            for (let i = 0; i < colX.length; i++) {
+                doc.moveTo(colX[i], y).lineTo(colX[i], y + rowHeight).stroke('#aad381');
+            }
+            doc.moveTo(colX[colX.length - 1] + colWidths[colWidths.length - 1], y)
+                .lineTo(colX[colX.length - 1] + colWidths[colWidths.length - 1], y + rowHeight)
+                .stroke('#aad381');
+
+            y += rowHeight;
+
+            // Add new page if needed
+            if (y > maxY && idx < allRows.length - 1) {
+                doc.addPage();
+                y = doc.y;
+                // Redraw header on new page
+                doc.rect(colX[0], y, tableWidth, rowHeight)
+                    .fill('#c7dfbf');
+                doc.fillColor('black')
+                    .fontSize(11)
+                    .font('Helvetica-Bold')
+                    .text('Customer Name', colX[0] + 4, y + 5, { width: colWidths[0] - 8 })
+                    .text('Number', colX[1] + 4, y + 5, { width: colWidths[1] - 8 })
+                    .text('Date', colX[2] + 4, y + 5, { width: colWidths[2] - 8 })
+                    .text('Stylist 1', colX[3] + 4, y + 5, { width: colWidths[3] - 8 })
+                    .text('Stylist 2', colX[4] + 4, y + 5, { width: colWidths[4] - 8 })
+                    .text('Service', colX[5] + 4, y + 5, { width: colWidths[5] - 8 })
+                    .text('Price', colX[6] + 4, y + 5, { width: colWidths[6] - 8 });
+                // Draw header borders
+                doc.moveTo(colX[0], y).lineTo(colX[0] + tableWidth, y).stroke('#aad381');
+                doc.moveTo(colX[0], y + rowHeight).lineTo(colX[0] + tableWidth, y + rowHeight).stroke('#aad381');
+                for (let i = 0; i < colX.length; i++) {
+                    doc.moveTo(colX[i], y).lineTo(colX[i], y + rowHeight).stroke('#aad381');
+                }
+                doc.moveTo(colX[colX.length - 1] + colWidths[colWidths.length - 1], y)
+                    .lineTo(colX[colX.length - 1] + colWidths[colWidths.length - 1], y + rowHeight)
+                    .stroke('#aad381');
+                y += rowHeight;
+                doc.font('Helvetica').fontSize(10); // Set font back to normal for rows
+            }
+        }
+
+        doc.end();
     } catch (error) {
         console.error("Error exporting data:", error);
         res.status(500).send("Internal server error");
