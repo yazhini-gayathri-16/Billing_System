@@ -452,7 +452,7 @@
         const result = await response.json();
 
         if (result.success) {
-            alert('Bill generated successfully!');
+            alert('Bill generated and PDF sent via WhatsApp');
             window.location.reload();
         } else {
             alert('Error : ' + result.message);

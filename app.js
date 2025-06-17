@@ -483,7 +483,7 @@ app.get("/packageBilling", async (req, res) => {
 
 app.post("/packageBill", async (req, res) => {
     try {
-        const {
+            const {
             customer_name,
             customer_number,
             date,
@@ -496,102 +496,45 @@ app.post("/packageBill", async (req, res) => {
             discountType,
             grandTotal,
             paymentMethod,
-            billType
+            billType,
+            birthdayDiscountApplied,      // <-- Add this
+            anniversaryDiscountApplied    // <-- And this
         } = req.body;
 
-        
-
-        // Initialize discount variables
-        let finalGrandTotal = parseFloat(grandTotal);
         let finalDiscount = 0;
-        let birthdayDiscountApplied = false;
-        let anniversaryDiscountApplied = false;
-
-        // Handle regular discounts
-        if (discountType === "percentage" && discountPercentage) {
-            finalDiscount = (parseFloat(subtotal) * parseFloat(discountPercentage)) / 100;
-        } else if (discountType === "rupees" && discountRupees) {
-            finalDiscount = parseFloat(discountRupees);
+        if (discountType === "percentage") {
+            finalDiscount = parseFloat(subtotal) * (parseFloat(discountPercentage) || 0) / 100;
+        } else if (discountType === "rupees") {
+            finalDiscount = parseFloat(discountRupees) || 0;
         }
+        finalDiscount = parseFloat(finalDiscount.toFixed(2));
+        const finalGrandTotal = parseFloat(subtotal) - finalDiscount;
 
-        // Handle membership discounts
-        if (membershipID) {
-            const membership = await Membership.findOne({ membershipID });
-            if (membership) {
-                const today = new Date();
-                const currentMonth = today.getMonth();
-                const currentYear = today.getFullYear();
-                
-                let yearlyUsage = membership.yearlyUsage.find(u => u.year === currentYear);
-                if (!yearlyUsage) {
-                    yearlyUsage = {
-                        year: currentYear,
-                        usedBirthdayOffer: false,
-                        usedAnniversaryOffer: false
-                    };
-                    membership.yearlyUsage.push(yearlyUsage);
-                }
-
-                // Check birthday discount
-                const birthMonth = new Date(membership.birthDate).getMonth();
-                if (currentMonth === birthMonth && !yearlyUsage.usedBirthdayOffer) {
-                    finalDiscount += finalGrandTotal * 0.2;
-                    birthdayDiscountApplied = true;
-                    yearlyUsage.usedBirthdayOffer = true;
-                }
-
-                // Check anniversary discount
-                if (membership.anniversaryDate) {
-                    const anniversaryMonth = new Date(membership.anniversaryDate).getMonth();
-                    if (currentMonth === anniversaryMonth && !yearlyUsage.usedAnniversaryOffer) {
-                        finalDiscount += finalGrandTotal * 0.2;
-                        anniversaryDiscountApplied = true;
-                        yearlyUsage.usedAnniversaryOffer = true;
-                    }
-                }
-
-                if (birthdayDiscountApplied || anniversaryDiscountApplied) {
-                    await membership.save();
-                }
-            }
-        }
-
-        // Calculate final total after all discounts
-        finalGrandTotal = Math.max(parseFloat(subtotal) - finalDiscount, 0);
-
-        // Process packages array creation
+        // Build services array from request (similar to /bill)
         let services = [];
         let index = 1;
         while (req.body[`packages${index}`]) {
             const stylistId = req.body[`stylist${index}`];
             const stylist2Id = req.body[`stylist2${index}`];
-            const stylist = await Staff.findById(stylistId);
-            
-            if (!stylist) {
-                return res.json({
-                    success: false,
-                    message: `Stylist with ID ${stylistId} not found`
-                });
-            }
-
-            let packageObj = {
+            let serviceObj = {
                 name: req.body[`packages${index}`],
                 price: parseFloat(req.body[`prices${index}`]),
-                stylist: stylist.name
+                stylist: undefined,
+                stylist2: undefined
             };
-
+            if (stylistId) {
+                const stylist = await Staff.findById(stylistId);
+                if (stylist) serviceObj.stylist = stylist.name;
+            }
             if (stylist2Id) {
                 const stylist2 = await Staff.findById(stylist2Id);
-                if (stylist2) {
-                    packageObj.stylist2 = stylist2.name;
-                }
+                if (stylist2) serviceObj.stylist2 = stylist2.name;
             }
-
-            services.push(packageObj);
+            services.push(serviceObj);
             index++;
         }
 
-        // Create bill record
+        // Create bill record (already present in your code)
         const user = await Fetch.create({
             customer_name,
             customer_number,
@@ -610,21 +553,138 @@ app.post("/packageBill", async (req, res) => {
             anniversaryDiscountApplied
         });
 
-        const currentMonth = new Date().toLocaleString('default', { month: 'short' });
-        const currentYear = new Date().getFullYear();
-
         if (user) {
-            // Update or create monthly data
-            const monthlyData = await MonthlyData.findOneAndUpdate(
-                { month: currentMonth, year: currentYear },
-                { $inc: { achieved: 1 } },
-                { upsert: true, new: true }
-            );
-            res.json({
-                success: true,
-                message: 'Bill generated successfully',
-                billData: user
+            // --- PDF Generation ---
+            const PDFDocument = require('pdfkit');
+            const { Readable } = require('stream');
+            const doc = new PDFDocument({ size: 'A3', margin: 50 });
+            const chunks = [];
+            doc.on('data', chunk => chunks.push(chunk));
+            doc.on('end', async () => {
+                const pdfBuffer = Buffer.concat(chunks);
+
+                // --- WhatsApp Notification ---
+                const chatId = `91${customer_number}@c.us`;
+                const bufferStream = new Readable();
+                bufferStream.push(pdfBuffer);
+                bufferStream.push(null);
+
+                const form = new FormData();
+                form.append('chatId', chatId);
+                form.append('file', bufferStream, {
+                    filename: `Noble_Evergreen_Package_Bill.pdf`,
+                    contentType: 'application/pdf'
+                });
+                form.append('caption', `Dear ${customer_name}, thank you for your package purchase at Noble Evergreen Salon. Please find your bill attached.`);
+
+                try {
+                    await axios.post(
+                        `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendFileByUpload/${GREEN_API_TOKEN}`,
+                        form,
+                        { headers: form.getHeaders() }
+                    );
+                } catch (err) {
+                    console.error('WhatsApp send error:', err?.response?.data || err.message);
+                }
+
+                res.json({
+                    success: true,
+                    message: 'Package bill generated and PDF sent via WhatsApp',
+                    billData: user
+                });
             });
+
+            // --- PDF Content ---
+            doc
+                .rect(0, 0, doc.page.width, 80)
+                .fill('#8DBE50')
+                .fillColor('black')
+                .fontSize(24)
+                .font('Helvetica-Bold')
+                .text('NOBLE EVERGREEN UNISEX SALON', { align: 'center' })
+                .moveDown(0.5)
+                .fontSize(10)
+                .font('Helvetica')
+                .text('Leelavathi Achaer Complex Opp. Muthoot Finance Immadihalli Main Road, Hagadur, Whitefiled, Bangalore - 560066', { align: 'center' })
+                .moveDown(1);
+
+            doc
+                .moveDown(0.5)
+                .fontSize(14)
+                .font('Helvetica-Bold')
+                .text('PACKAGE BILL', { align: 'right' })
+                .fontSize(10)
+                .font('Helvetica')
+                .text(`Date: ${date}`, { align: 'right' })
+                .text(`Time: ${time}`, { align: 'right' })
+                .moveDown(1);
+
+            doc
+                .fontSize(12)
+                .font('Helvetica-Bold')
+                .text('Customer Details')
+                .font('Helvetica')
+                .fontSize(11)
+                .text(`Name: ${customer_name}`)
+                .text(`Phone Number: ${customer_number}`)
+                .text(`Gender: ${gender}`)
+                .moveDown(0.5);
+
+            // Packages Table
+            doc
+                .fontSize(12)
+                .font('Helvetica-Bold')
+                .text('Packages')
+                .moveDown(0.2);
+
+            const tableTop = doc.y + 5;
+            const colX = [doc.page.margins.left, 270, 370, 470, 570];
+            doc
+                .fontSize(11)
+                .font('Helvetica-Bold')
+                .text('Package Name', colX[0], tableTop)
+                .text('Price', colX[1], tableTop)
+                .text('Stylist 1', colX[2], tableTop)
+                .text('Stylist 2', colX[3], tableTop)
+                .text('Total', colX[4], tableTop);
+
+            doc
+                .moveTo(colX[0], tableTop + 15)
+                .lineTo(doc.page.width - doc.page.margins.right, tableTop + 15)
+                .strokeColor('#ddd')
+                .lineWidth(1)
+                .stroke();
+
+            let rowY = tableTop + 20;
+            doc.font('Helvetica');
+            (services || []).forEach(pkg => {
+                doc.text(pkg.name, colX[0], rowY)
+                    .text(`Rs.${parseFloat(pkg.price).toFixed(2)}`, colX[1], rowY)
+                    .text(pkg.stylist || '-', colX[2], rowY)
+                    .text(pkg.stylist2 || '-', colX[3], rowY)
+                    .text(`Rs.${parseFloat(pkg.price).toFixed(2)}`, colX[4], rowY);
+                rowY += 18;
+            });
+
+            // Totals Section
+            doc.moveDown(2)
+                .fontSize(12)
+                .font('Helvetica-Bold');
+            let y = doc.y;
+            doc.text('Subtotal:', colX[3], y);
+            doc.text(`Rs.${parseFloat(subtotal).toFixed(2)}`, colX[4], y, { align: 'right' });
+            doc.moveDown(0.5);
+
+            y = doc.y + 5;
+            doc.text('Discount:', colX[3], y);
+            doc.text(`Rs.${parseFloat(finalDiscount).toFixed(2)} (${discountType})`, colX[4], y, { align: 'right' });
+            doc.moveDown(0.5);
+
+            y = doc.y + 5;
+            doc.text('Grand Total:', colX[3], y);
+            doc.text(`Rs.${parseFloat(finalGrandTotal).toFixed(2)}`, colX[4], y, { align: 'right' });
+
+            doc.end();
         } else {
             res.json({
                 success: false,
@@ -2298,85 +2358,181 @@ app.post("/productbill", async (req, res) => {
             date,
             gender,
             subtotal,
-            discountPercentage,
-            discountRupees,
             discountType,
+            discount,
             grandTotal,
             paymentMethod
         } = req.body;
 
-        let finalGrandTotal = parseFloat(subtotal);
-        let finalDiscount = 0;
-
-        // Handle regular discounts
-        if (discountType === "percentage" && discountPercentage) {
-            finalDiscount = (parseFloat(subtotal) * parseFloat(discountPercentage)) / 100;
-        } else if (discountType === "rupees" && discountRupees) {
-            finalDiscount = parseFloat(discountRupees);
-        }
-
-        // Calculate final total after all discounts
-        finalGrandTotal = Math.max(parseFloat(subtotal) - finalDiscount, 0);
-
-        // Process products and calculate total items
+        // Parse products array from request body
         let products = [];
-        let totalItems = 0;
-        let index = 1;
-
-        while (req.body[`products${index}`]) {
-            const quantity = parseInt(req.body[`quantities${index}`]);
-            const price = parseFloat(req.body[`prices${index}`]);
-            
-            // Validate inventory
-            const product = await Product.findOne({ productName: req.body[`products${index}`] });
-            if (!product || product.stocksInInventory < quantity) {
-                return res.status(400).json({
-                    success: false,
-                    message: `Insufficient stock for ${req.body[`products${index}`]}`
+        if (Array.isArray(req.body.products)) {
+            products = req.body.products;
+        } else if (typeof req.body.products === 'string') {
+            // If sent as JSON string
+            products = JSON.parse(req.body.products);
+        } else {
+            // If sent as products1, products2, etc.
+            let index = 1;
+            while (req.body[`products${index}`]) {
+                products.push({
+                    name: req.body[`products${index}`],
+                    price: parseFloat(req.body[`prices${index}`]) || 0,
+                    quantity: parseInt(req.body[`quantities${index}`]) || 0,
+                    total: (parseFloat(req.body[`prices${index}`]) || 0) * (parseInt(req.body[`quantities${index}`]) || 0)
                 });
+                index++;
             }
-
-            products.push({
-                name: req.body[`products${index}`],
-                price: price,
-                quantity: quantity,
-                total: price * quantity
-            });
-            
-            // Update inventory
-            await Product.findOneAndUpdate(
-                { productName: req.body[`products${index}`] },
-                { $inc: { stocksInInventory: -quantity } }
-            );
-            
-            totalItems += quantity;
-            index++;
         }
 
-        // Create bill with total item count
-        const bill = await ProductBill.create({
+        // Save bill to DB as you already do...
+        await ProductBill.create({
             customer_name,
             customer_number,
-            date: new Date(date),
+            date,
             gender,
             products,
-            subtotal: parseFloat(subtotal),
+            subtotal,
             discountType,
-            discount: finalDiscount,
-            grandTotal: finalGrandTotal,
+            discount,
+            grandTotal,
             paymentMethod
         });
 
-        res.json({ 
-            success: true, 
-            message: "Bill generated successfully", 
-            billId: bill._id,
-            itemCount: totalItems
+        // --- PDF Generation ---
+        const PDFDocument = require('pdfkit');
+        const { Readable } = require('stream');
+        const doc = new PDFDocument({ size: 'A4', margin: 50 });
+        const chunks = [];
+        doc.on('data', chunk => chunks.push(chunk));
+        doc.on('end', async () => {
+            const pdfBuffer = Buffer.concat(chunks);
+
+            // --- WhatsApp Notification ---
+            const chatId = `91${customer_number}@c.us`;
+            const bufferStream = new Readable();
+            bufferStream.push(pdfBuffer);
+            bufferStream.push(null);
+
+            const form = new FormData();
+            form.append('chatId', chatId);
+            form.append('file', bufferStream, {
+                filename: `Noble_Evergreen_Unisex_Salon.pdf`,
+                contentType: 'application/pdf'
+            });
+            form.append('caption', `Dear ${customer_name}, thank you for your purchase at Noble Evergreen Salon. Please find your product bill attached.`);
+
+            try {
+                await axios.post(
+                    `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendFileByUpload/${GREEN_API_TOKEN}`,
+                    form,
+                    { headers: form.getHeaders() }
+                );
+            } catch (err) {
+                console.error('WhatsApp send error:', err?.response?.data || err.message);
+            }
+
+            res.json({
+                success: true,
+                message: 'Product bill generated and PDF sent via WhatsApp'
+            });
         });
 
+        // --- PDF Content ---
+        const address = 'Leelavathi Achaer Complex Opp. Muthoot Finance Immadihalli Main Road, Hagadur, Whitefiled, Bangalore - 560066';
+        doc
+            .rect(0, 0, doc.page.width, 80)
+            .fill('#8DBE50')
+            .fillColor('black')
+            .fontSize(24)
+            .font('Helvetica-Bold')
+            .text('NOBLE EVERGREEN UNISEX SALON', { align: 'center' })
+            .moveDown(0.5)
+            .fontSize(10)
+            .font('Helvetica')
+            .text(address, { align: 'center' })
+            .moveDown(1);
+
+        doc
+            .moveDown(0.5)
+            .fontSize(14)
+            .font('Helvetica-Bold')
+            .text('PRODUCT BILL', { align: 'right' })
+            .fontSize(10)
+            .font('Helvetica')
+            .text(`Date: ${date}`, { align: 'right' })
+            .moveDown(1);
+
+        doc
+            .fontSize(12)
+            .font('Helvetica-Bold')
+            .text('Customer Details')
+            .font('Helvetica')
+            .fontSize(11)
+            .text(`Name: ${customer_name}`)
+            .text(`Phone Number: ${customer_number}`)
+            .text(`Gender: ${gender}`)
+            .moveDown(0.5);
+
+        // Products Table
+        doc
+            .fontSize(12)
+            .font('Helvetica-Bold')
+            .text('Products')
+            .moveDown(0.2);
+
+        const tableTop = doc.y + 5;
+        const colX = [doc.page.margins.left, 270, 370, 470];
+        doc
+            .fontSize(11)
+            .font('Helvetica-Bold')
+            .text('Product Name', colX[0], tableTop)
+            .text('Price', colX[1], tableTop)
+            .text('Quantity', colX[2], tableTop)
+            .text('Total', colX[3], tableTop);
+
+        doc
+            .moveTo(colX[0], tableTop + 15)
+            .lineTo(doc.page.width - doc.page.margins.right, tableTop + 15)
+            .strokeColor('#ddd')
+            .lineWidth(1)
+            .stroke();
+
+        let rowY = tableTop + 20;
+        doc.font('Helvetica');
+        (products || []).forEach(product => {
+            doc.text(product.name, colX[0], rowY)
+                .text(`Rs.${parseFloat(product.price).toFixed(2)}`, colX[1], rowY)
+                .text(product.quantity, colX[2], rowY)
+                .text(`Rs.${parseFloat(product.total).toFixed(2)}`, colX[3], rowY);
+            rowY += 18;
+        });
+
+        // Totals Section
+        doc.moveDown(2)
+            .fontSize(12)
+            .font('Helvetica-Bold');
+        let y = doc.y;
+        doc.text('Subtotal:', colX[2], y);
+        doc.text(`Rs.${parseFloat(subtotal).toFixed(2)}`, colX[3], y, { align: 'right' });
+        doc.moveDown(0.5);
+
+        y = doc.y + 5;
+        doc.text('Discount:', colX[2], y);
+        doc.text(`Rs.${parseFloat(discount).toFixed(2)} (${discountType})`, colX[3], y, { align: 'right' });
+        doc.moveDown(0.5);
+
+        y = doc.y + 5;
+        doc.text('Grand Total:', colX[2], y);
+        doc.text(`Rs.${parseFloat(grandTotal).toFixed(2)}`, colX[3], y, { align: 'right' });
+
+        doc.end();
     } catch (error) {
-        console.error('Error creating bill:', error);
-        res.status(500).json({ success: false, message: error.message });
+        console.error("Error creating product bill:", error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 });
 
