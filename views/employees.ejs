@@ -50,7 +50,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            text-align: center;
+            text-align: left;
         }
 
         .stylist-image {
@@ -60,17 +60,23 @@
             margin-bottom: 15px;
         }
 
+        .stylist-details strong {
+            font-weight: bold;
+            color: #000; /* Optional: make bold text a bit darker */
+        }
+
         .stylist-details h3 {
             margin: 0;
             font-size: 18px;
             font-weight: bold;
             color: #333;
+            text-align: center;
         }
 
         .stylist-details p {
             margin: 5px 0;
             font-size: 14px;
-            color: #555;
+            color: #111;
         }
     </style>
 </head>
@@ -88,8 +94,12 @@
                         <img src= "<%= staff.aadhaarPhoto %>" alt="Stylist Image" class="stylist-image">
                         <div class="stylist-details">
                             <h3><%= staff.name %></h3>
-                            <p><%= staff.jobTitle %></p>
-                            <p><%= staff.employmentStartDate.toDateString() %></p>
+                            <p><strong>Role:</strong> <%= staff.jobTitle %></p>
+                            <p><strong>Date of joining:</strong> <%= staff.employmentStartDate.toDateString() %></p>
+                            <p><strong>Email ID:</strong> <%= staff.email %></p>
+                            <p><strong>Phone Number:</strong> <%= staff.contactNumber %></p>
+                            <p><strong>Address:</strong> <%= staff.address %></p>
+                            <p><strong>Gender:</strong> <%= staff.gender %></p>
                         </div>
                     </div>
                 <% }) %>

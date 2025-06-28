@@ -12,7 +12,6 @@
     <link rel="stylesheet" href="/styles/signinstyle.css">
 </head>
 <body>
-    
     <div class="wrapper">
         <form action="/do-signin" method="post">
             <h1>Login</h1>
@@ -21,13 +20,26 @@
                 <i class='bx bxs-user'></i>
             </div>
             <div class="input-box">
-                <input type="password" name="password" placeholder="Enter password" required>
-                <i class='bx bxs-lock-alt'></i>
+                <input type="password" name="password" id="signin-password" placeholder="Enter password" required>
+                <i class='bx bx-show' id="signin-toggle-eye" style="cursor:pointer;"></i>
             </div>
-
             <button type="submit" class="btn">Login</button>
-
         </form>
     </div>
+    <script>
+        const signinPassword = document.getElementById('signin-password');
+        const signinToggleEye = document.getElementById('signin-toggle-eye');
+        signinToggleEye.addEventListener('click', function() {
+            if (signinPassword.type === 'password') {
+                signinPassword.type = 'text';
+                signinToggleEye.classList.remove('bx-show');
+                signinToggleEye.classList.add('bx-hide');
+            } else {
+                signinPassword.type = 'password';
+                signinToggleEye.classList.remove('bx-hide');
+                signinToggleEye.classList.add('bx-show');
+            }
+        });
+    </script>
 </body>
 </html>

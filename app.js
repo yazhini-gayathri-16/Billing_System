@@ -19,6 +19,7 @@ const Package = require('./models/packages');
 const EmployeeTarget = require('./models/employeeTarget'); // Add this line to import the new model
 const ProductBill = require('./models/productBill');
 const DailyCode = require('./models/dailycode');
+const nodemailer = require('nodemailer'); // Add this at the top with other requires
 const PDFDocument = require("pdfkit");
 const FormData = require('form-data');
 const axios = require('axios');
@@ -817,6 +818,7 @@ app.get('/dashboard', isAuthenticated, isAdmin, (req, res) => {
 
 app.get('/employees',async (req,res)=>{
     try {
+
         // Fetch data for staff members
         const staffMembers = await Staff.find();
 
@@ -1762,6 +1764,16 @@ app.get("/signup", (req, res) => {
 app.post("/add-signup", async (req, res) => {
     try {
         const { mail, password, role } = req.body;
+        // Validate role
+        if (!['admin', 'staff'].includes(role)) {
+            return res.status(400).send('Invalid role');
+        }
+        const userTest = await Signup.findOne({ mail, role });
+        if(userTest) {
+            return res.status(400).send('User already exists with this email and role');
+        }
+        else{
+        // Create new user
         const user = await Signup.create({ mail, password, role });
         
         if(user) {
@@ -1769,6 +1781,7 @@ app.post("/add-signup", async (req, res) => {
         } else {
             res.status(400).send('Failed to create user');
         }
+    }
     } catch (error) {
         res.status(500).send(error.message);
     }
@@ -1781,7 +1794,7 @@ app.get("/signin", (req, res) => {
 app.post("/do-signin", async (req, res) => {
     try {
         const { mail, password } = req.body;
-        const user = await Signup.findOne({ mail });
+        const user = await Signup.findOne({ mail, password });
         
         if (user && password === user.password) {
             // If staff user, verify staff record exists
@@ -2119,7 +2132,7 @@ app.get('/staff', async (req, res) => {
 app.post('/add-staff', upload.single('aadhaarPhoto'), async (req, res) => {
     const { 
         name, 
-        email,  // Add email
+        email,
         birthdate, 
         contactNumber, 
         gender, 
@@ -2134,7 +2147,7 @@ app.post('/add-staff', upload.single('aadhaarPhoto'), async (req, res) => {
     try {
         const newStaff = new Staff({
             name,
-            email,  // Add email
+            email,
             birthdate,
             contactNumber,
             gender,
@@ -2145,6 +2158,38 @@ app.post('/add-staff', upload.single('aadhaarPhoto'), async (req, res) => {
             aadhaarPhoto
         });
         await newStaff.save();
+
+        // // Send email notification using nodemailer
+        // const transporter = nodemailer.createTransport({
+        //     service: 'gmail',
+        //     auth: {
+        //         user: 'raguld2105@gmail.com',
+        //         pass: 'erase' // Use an App Password, not your Gmail password
+        //     }
+        // });
+
+        // const mailOptions = {
+        //     from: 'raguld2105@gmail.com',
+        //     to: 'nobleevergreen2024@gmail.com',
+        //     subject: 'New Staff Added',
+        //     html: `
+        //         <h2>New Staff Member Added</h2>
+        //         <ul>
+        //             <li><strong>Name:</strong> ${name}</li>
+        //             <li><strong>Email:</strong> ${email}</li>
+        //             <li><strong>Birthdate:</strong> ${birthdate}</li>
+        //             <li><strong>Contact Number:</strong> ${contactNumber}</li>
+        //             <li><strong>Gender:</strong> ${gender}</li>
+        //             <li><strong>Address:</strong> ${address}</li>
+        //             <li><strong>Job Title:</strong> ${jobTitle}</li>
+        //             <li><strong>Employment Start Date:</strong> ${employmentStartDate}</li>
+        //             <li><strong>Aadhaar ID:</strong> ${aadhaarId}</li>
+        //         </ul>
+        //     `
+        // };
+
+        // await transporter.sendMail(mailOptions);
+
         res.redirect("/staff");
     } catch (err) {
         console.log(err);
