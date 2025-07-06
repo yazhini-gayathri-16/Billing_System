@@ -8,6 +8,55 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles/menustyle.css">
+    <style>
+        /* Delete Confirmation Modal Styles (from appointmentstyle.css) */
+        #deleteConfirmModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.3);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        #deleteConfirmModal .modal-content {
+            background: #fff;
+            padding: 30px 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            text-align: center;
+            min-width: 250px;
+        }
+        #deleteConfirmModal p {
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            color: #333;
+        }
+        #deleteConfirmModal button {
+            background-color: #D97C17;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-right: 20px;
+            font-size: 1em;
+        }
+        #deleteConfirmModal button:last-child {
+            margin-right: 0;
+            background-color: #6c757d;
+        }
+        #deleteConfirmModal button:hover {
+            background-color: #A65B0F;
+        }
+        #deleteConfirmModal button#cancelDeleteBtn:hover {
+            background-color: #5a6268;
+        }
+    </style>
 </head>
 <body>
     <% if (userRole === 'admin') { %>
@@ -15,7 +64,6 @@
     <% } else { %>
         <%- include('partials/staffnavbar') %>
     <% } %>
-
 
     <div class="container">
         <div class="menu-form">
@@ -50,6 +98,15 @@
                     </form>
                 </div>
             <% }); %>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal">
+        <div class="modal-content">
+            <p>Are you sure to delete?</p>
+            <button id="confirmDeleteBtn" style="margin-right:20px;">Yes</button>
+            <button id="cancelDeleteBtn">No</button>
         </div>
     </div>
 
@@ -91,6 +148,39 @@
             form.querySelector('[type="submit"]').remove();
             form.querySelector('.cancel-btn').outerHTML = `<button type="button" class="edit-btn" onclick='enableEditing("${id}")'>Edit</button>`;
         }
+
+        // Delete confirmation logic (reference: appointment.ejs)
+        let formToDelete = null;
+
+        function attachDeleteConfirmation() {
+            document.querySelectorAll('form.delete-form').forEach(form => {
+                form.removeEventListener('submit', handleDeleteSubmit);
+                form.addEventListener('submit', handleDeleteSubmit);
+            });
+        }
+
+        function handleDeleteSubmit(e) {
+            e.preventDefault();
+            formToDelete = this;
+            document.getElementById('deleteConfirmModal').style.display = 'flex';
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            attachDeleteConfirmation();
+        });
+
+        document.getElementById('confirmDeleteBtn').onclick = function() {
+            if (formToDelete) {
+                formToDelete.submit();
+                formToDelete = null;
+            }
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+        };
+
+        document.getElementById('cancelDeleteBtn').onclick = function() {
+            formToDelete = null;
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+        };
     </script>
 </body>
 </html>

@@ -114,11 +114,69 @@ table th, table td {
     background-color: #c82333;
 }
 
+/* Delete Confirmation Modal Styles */
+#deleteConfirmModal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.3);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+#deleteConfirmModal .modal-content {
+    background: #fff;
+    padding: 30px 40px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    text-align: center;
+    min-width: 250px;
+}
+
+#deleteConfirmModal p {
+    margin-bottom: 20px;
+    font-size: 1.1em;
+    color: #333;
+}
+
+#deleteConfirmModal button {
+    background-color: #D97C17;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-right: 20px;
+    font-size: 1em;
+}
+
+#deleteConfirmModal button:last-child {
+    margin-right: 0;
+    background-color: #6c757d;
+}
+
+#deleteConfirmModal button:hover {
+    background-color: #A65B0F;
+}
+
+#deleteConfirmModal button#cancelDeleteBtn:hover {
+    background-color: #5a6268;
+}
+
 @media (max-width: 768px) {
     .container {
         width: 90%;
     }
     .form-row {
         flex-direction: column;
+    }
+    #deleteConfirmModal .modal-content {
+        padding: 20px 10px;
+        min-width: 180px;
     }
 }

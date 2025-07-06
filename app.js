@@ -1634,6 +1634,37 @@ app.post('/appointments', async (req, res) => {
             contactNumber: newAppointment.contactNumber,
             id: newAppointment._id
         });
+
+        const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'nobleevergreen2024@gmail.com',
+        pass: 'pmgz dgxu uizj umwy' // Use your Gmail App Password
+    }
+});
+
+const mailOptions = {
+    from: 'nobleevergreen2024@gmail.com',
+    to: 'raguld2105@gmail.com',
+    subject: 'New Appointment Added',
+    html: `
+        <h2>New Appointment Added</h2>
+        <ul>
+            <li><strong>Customer Name:</strong> ${newAppointment.customerName}</li>
+            <li><strong>Date & Time:</strong> ${newAppointment.dateTime}</li>
+            <li><strong>Contact Number:</strong> ${newAppointment.contactNumber}</li>
+            <li><strong>Stylist:</strong> ${newAppointment.specialist}</li>
+            <li><strong>Service Type:</strong> ${newAppointment.serviceType}</li>
+            <li><strong>Special Needs:</strong> ${newAppointment.specialNeeds || 'N/A'}</li>
+        </ul>
+    `
+};
+
+try {
+    await transporter.sendMail(mailOptions);
+} catch (emailErr) {
+    console.error('Error sending appointment email:', emailErr);
+}
     } catch (error) {
         console.error('Error booking appointment:', error);
         res.status(500).json({ success: false });
@@ -2159,36 +2190,36 @@ app.post('/add-staff', upload.single('aadhaarPhoto'), async (req, res) => {
         });
         await newStaff.save();
 
-        // // Send email notification using nodemailer
-        // const transporter = nodemailer.createTransport({
-        //     service: 'gmail',
-        //     auth: {
-        //         user: 'raguld2105@gmail.com',
-        //         pass: 'erase' // Use an App Password, not your Gmail password
-        //     }
-        // });
+        // Send email notification using nodemailer
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: 'nobleevergreen2024@gmail.com',
+                pass: 'pmgz dgxu uizj umwy' // Use an App Password, not your Gmail password
+            }
+        });
 
-        // const mailOptions = {
-        //     from: 'raguld2105@gmail.com',
-        //     to: 'nobleevergreen2024@gmail.com',
-        //     subject: 'New Staff Added',
-        //     html: `
-        //         <h2>New Staff Member Added</h2>
-        //         <ul>
-        //             <li><strong>Name:</strong> ${name}</li>
-        //             <li><strong>Email:</strong> ${email}</li>
-        //             <li><strong>Birthdate:</strong> ${birthdate}</li>
-        //             <li><strong>Contact Number:</strong> ${contactNumber}</li>
-        //             <li><strong>Gender:</strong> ${gender}</li>
-        //             <li><strong>Address:</strong> ${address}</li>
-        //             <li><strong>Job Title:</strong> ${jobTitle}</li>
-        //             <li><strong>Employment Start Date:</strong> ${employmentStartDate}</li>
-        //             <li><strong>Aadhaar ID:</strong> ${aadhaarId}</li>
-        //         </ul>
-        //     `
-        // };
+        const mailOptions = {
+            from: 'nobleevergreen2024@gmail.com',
+            to: 'raguld2105@gmail.com',
+            subject: 'New Staff Added',
+            html: `
+                <h2>New Staff Member Added</h2>
+                <ul>
+                    <li><strong>Name:</strong> ${name}</li>
+                    <li><strong>Email:</strong> ${email}</li>
+                    <li><strong>Birthdate:</strong> ${birthdate}</li>
+                    <li><strong>Contact Number:</strong> ${contactNumber}</li>
+                    <li><strong>Gender:</strong> ${gender}</li>
+                    <li><strong>Address:</strong> ${address}</li>
+                    <li><strong>Job Title:</strong> ${jobTitle}</li>
+                    <li><strong>Employment Start Date:</strong> ${employmentStartDate}</li>
+                    <li><strong>Aadhaar ID:</strong> ${aadhaarId}</li>
+                </ul>
+            `
+        };
 
-        // await transporter.sendMail(mailOptions);
+        await transporter.sendMail(mailOptions); 
 
         res.redirect("/staff");
     } catch (err) {

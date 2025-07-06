@@ -77,7 +77,6 @@
                     <div class="form-group">
                         <label for="aadhaarPhoto">Staff Photo:</label>
                         <input type="file" id="aadhaarPhoto" name="aadhaarPhoto" accept="image/png, image/jpeg, image/jpg" required>
-                        
                     </div>
                 </div>
 
@@ -121,6 +120,15 @@
         </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.3); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:#fff; padding:30px 40px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.2); text-align:center;">
+            <p style="margin-bottom:20px;">Are you sure to delete?</p>
+            <button id="confirmDeleteBtn" style="margin-right:20px;">Yes</button>
+            <button id="cancelDeleteBtn">No</button>
+        </div>
+    </div>
+
     <script>
         // Enable editing functionality
         function enableEditing(rowId) {
@@ -158,6 +166,39 @@
             })
             .catch(error => console.error('Error:', error));
         }
+
+        // Delete confirmation logic
+        let formToDelete = null;
+
+        function attachDeleteConfirmation() {
+            document.querySelectorAll('form[action="/delete-staff"]').forEach(form => {
+                form.removeEventListener('submit', handleDeleteSubmit);
+                form.addEventListener('submit', handleDeleteSubmit);
+            });
+        }
+
+        function handleDeleteSubmit(e) {
+            e.preventDefault();
+            formToDelete = this;
+            document.getElementById('deleteConfirmModal').style.display = 'flex';
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            attachDeleteConfirmation();
+        });
+
+        document.getElementById('confirmDeleteBtn').onclick = function() {
+            if (formToDelete) {
+                formToDelete.submit();
+                formToDelete = null;
+            }
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+        };
+
+        document.getElementById('cancelDeleteBtn').onclick = function() {
+            formToDelete = null;
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+        };
     </script>
 </body>
 </html>
