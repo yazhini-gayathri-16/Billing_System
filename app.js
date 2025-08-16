@@ -705,47 +705,50 @@ app.post('/search-customer', async (req, res) => {
     try {
         const { customerNumber } = req.body;
 
-        // First check membership status since it should be independent of purchase history
-        const membership = await Membership.findOne({ phoneNumber: customerNumber });
+        // First check membership status since it should be independent of purchase history 
+
+        //- commented by yazhini - beg
+        // const membership = await Membership.findOne({ phoneNumber: customerNumber }); - for adding new membership field
         
-        // Initialize membership variables
-        let membershipStatus = '----';
-        let membershipID = null;
-        let canUseBirthdayOffer = false;
-        let canUseAnniversaryOffer = false;
+        // Initialize membership variables  
+        // let membershipStatus = '----';
+        // let membershipID = null;
+        // let canUseBirthdayOffer = false;
+        // let canUseAnniversaryOffer = false;
+        
+        // if (membership) {
+        //     membershipID = membership.membershipID;
+        //     membershipStatus = 'Active';
 
-        if (membership) {
-            membershipID = membership.membershipID;
-            membershipStatus = 'Active';
+        //     // Check if membership is expired
+        //     const today = new Date();
+        //     if (membership.validTillDate < today) {
+        //         membershipStatus = 'Expired';
+        //     } else {
+        //         // Check for birthday and anniversary offers
+        //         const currentMonth = today.getMonth();
+        //         const birthMonth = new Date(membership.birthDate).getMonth();
+        //         const anniversaryMonth = membership.anniversaryDate ? new Date(membership.anniversaryDate).getMonth() : -1;
+        //         const currentYear = today.getFullYear();
+        //         const yearlyUsage = membership.yearlyUsage.find(usage => usage.year === currentYear);
 
-            // Check if membership is expired
-            const today = new Date();
-            if (membership.validTillDate < today) {
-                membershipStatus = 'Expired';
-            } else {
-                // Check for birthday and anniversary offers
-                const currentMonth = today.getMonth();
-                const birthMonth = new Date(membership.birthDate).getMonth();
-                const anniversaryMonth = membership.anniversaryDate ? new Date(membership.anniversaryDate).getMonth() : -1;
-                const currentYear = today.getFullYear();
-                const yearlyUsage = membership.yearlyUsage.find(usage => usage.year === currentYear);
+        //         if (currentMonth === birthMonth && (!yearlyUsage || !yearlyUsage.usedBirthdayOffer)) {
+        //             canUseBirthdayOffer = true;
+        //         }
 
-                if (currentMonth === birthMonth && (!yearlyUsage || !yearlyUsage.usedBirthdayOffer)) {
-                    canUseBirthdayOffer = true;
-                }
-
-                if (currentMonth === anniversaryMonth && (!yearlyUsage || !yearlyUsage.usedAnniversaryOffer)) {
-                    canUseAnniversaryOffer = true;
-                }
-            }
-        }
+        //         if (currentMonth === anniversaryMonth && (!yearlyUsage || !yearlyUsage.usedAnniversaryOffer)) {
+        //             canUseAnniversaryOffer = true;
+        //         }
+        //     }
+        // }
+        //- commented by yazhini - end
 
         // Fetch customer purchase history
         const fetchCustomerData = await Fetch.find({ customer_number: customerNumber });
         const productBillCustomerData = await ProductBill.find({ customer_number: customerNumber });
         const combinedData = [...fetchCustomerData, ...productBillCustomerData];
 
-        if (combinedData.length > 0 || membership) {  // Return data if either purchase history exists OR customer has membership
+        if (combinedData.length > 0) {  // Return data if either purchase history exists OR customer has membership
             const totalSpent = combinedData.reduce((sum, record) => {
                 if (record.services) {
                     return sum + record.services.reduce((serviceSum, service) => serviceSum + service.price, 0);
@@ -782,7 +785,7 @@ app.post('/search-customer', async (req, res) => {
 
             // Get customer info or use membership info for first-time visitors
             const customerInfo = combinedData[0] || { 
-                customer_name: membership ? membership.customername : '----'
+                customer_name: '----'
             };
             
             res.json({
@@ -793,11 +796,11 @@ app.post('/search-customer', async (req, res) => {
                 visits,
                 totalSpent,
                 services: uniqueServices,
-                products: uniqueProducts,
-                membership: membershipStatus,
-                membershipID,
-                canUseBirthdayOffer,
-                canUseAnniversaryOffer
+                products: uniqueProducts
+                // membership: membershipStatus,
+                // membershipID,
+                // canUseBirthdayOffer,
+                // canUseAnniversaryOffer
             });
         } else {
             res.json({ success: false, message: 'Customer not found' });
@@ -1488,18 +1491,50 @@ app.post('/add-expense', (req, res) => {
 
 app.post('/validate-membership', async (req, res) => {
     try {
-        const { membershipID } = req.body;        
+        let { membershipID } = req.body;        
         const membership = await Membership.findOne({ membershipID });
+        let membershipStatus = '----';
+        let canUseBirthdayOffer = false;
+        let canUseAnniversaryOffer = false;
 
-        if (!membership) {
+        if (membership) {
+            membershipStatus = 'Active';
+
+            // Check if membership is expired
+            const today = new Date();
+            if (membership.validTillDate < today) {
+                membershipStatus = 'Expired';
+            } else {
+                // Check for birthday and anniversary offers
+                const currentMonth = today.getMonth();
+                const birthMonth = new Date(membership.birthDate).getMonth();
+                const anniversaryMonth = membership.anniversaryDate ? new Date(membership.anniversaryDate).getMonth() : -1;
+                const currentYear = today.getFullYear();
+                const yearlyUsage = membership.yearlyUsage.find(usage => usage.year === currentYear);
+
+                if (currentMonth === birthMonth && (!yearlyUsage || !yearlyUsage.usedBirthdayOffer)) {
+                    canUseBirthdayOffer = true;
+                }
+
+                if (currentMonth === anniversaryMonth && (!yearlyUsage || !yearlyUsage.usedAnniversaryOffer)) {
+                    canUseAnniversaryOffer = true;
+                }
+            }
+        } else {
             return res.status(404).json({ message: 'Wrong membership ID' });
         }
 
-        if (new Date(membership.validTillDate) < new Date()) {
+        if (membershipStatus === 'Expired') {
             return res.status(200).json({ message: 'Membership ID expired' });
         }
 
-        res.status(200).json({ message: 'Valid membership ID' });
+        res.status(200).json({
+            message: 'Valid membership ID',
+            membership: membershipStatus,
+            membershipID,
+            canUseBirthdayOffer,
+            canUseAnniversaryOffer
+        });
     } catch (error) {
         console.error('Error validating membership:', error);
         res.status(500).json({ message: 'Error validating membership ID' });

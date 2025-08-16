@@ -73,8 +73,12 @@
                         <label>Do you have a membership?</label>
                         <input type="checkbox" id="hasMembership" name="hasMembership" onchange="toggleMembershipIDField()">
                     </div>
-                    <!-- Hidden field to store membership ID -->
-                    <input type="hidden" id="membershipID" name="membershipID">
+
+                    <div class="form-group">
+                        <label for="membershipID">Membership ID:</label>
+                        <input type="text" id="membershipID" name="membershipID" placeholder="Enter Membership ID" onblur="validateMembershipID()">
+                    </div>
+
                     <div id="membershipMessage"></div>
 
                     <!-- Hidden fields for discounts -->
@@ -331,16 +335,8 @@
             const membershipMessage = document.getElementById('membershipMessage');
             const membershipDiscounts = document.getElementById('membershipDiscounts');
             const membershipStatus = document.getElementById('membershipStatus').textContent;
-
-            if (checkbox.checked && membershipStatus === 'Expired') {
-                alert('This membership is expired. Regular prices will be applied.');
-                checkbox.checked = false;
-                membershipMessage.style.display = 'none';
-                membershipDiscounts.style.display = 'none';
-                document.getElementById('membershipID').value = '';
-                clearServiceFields();
-                return;
-            }
+            const membershipID = document.getElementById('membershipID');
+            
 
             // Clear all service fields when checkbox is toggled
             clearServiceFields();
@@ -350,10 +346,12 @@
             
             if (checkbox.checked) {
                 fetchClientDetails(); // Re-fetch details when membership checkbox is toggled
+                membershipID.disabled = false;
             } else {
                 document.getElementById('membershipID').value = '';
                 document.getElementById('birthdayOffer').checked = false;
                 document.getElementById('anniversaryOffer').checked = false;
+                membershipID.disabled = true;
                 resetClientDetails();
             }
             calculateGrandTotal();
@@ -535,23 +533,74 @@
 
         function validateMembershipID() {
             const membershipID = document.getElementById('membershipID').value;
+            const membershipMessage = document.getElementById('membershipMessage');
+            const membershipDiscounts = document.getElementById('membershipDiscounts');
             const messageDisplay = document.getElementById('membershipMessage');
+            const checkbox = document.getElementById('hasMembership');
+            
+            // birthdayOffer.disabled = !data.canUseBirthdayOffer;
+            if(membershipID){
 
-            fetch('/validate-membership', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ membershipID })
-            })
-            .then(response => response.json())
-            .then(data => {
-                messageDisplay.textContent = data.message;                
-                messageDisplay.style.color = data.message === 'Valid membership ID' ? 'green' : 'red';
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                messageDisplay.textContent = 'Error checking membership ID';
-                messageDisplay.style.color = 'red';
-            });
+                fetch('/validate-membership', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ membershipID })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    messageDisplay.textContent = data.message;                
+                    messageDisplay.style.color = data.message === 'Valid membership ID' ? 'green' : 'red';
+                    document.getElementById('membershipStatus').textContent = data.membership || '-';
+                
+
+                const birthdayOffer = document.getElementById('birthdayOffer');
+                const anniversaryOffer = document.getElementById('anniversaryOffer');
+
+                if (checkbox.checked && membershipStatus === 'Expired') {
+                    alert('This membership is expired. Regular prices will be applied.');
+                    checkbox.checked = false;
+                    membershipMessage.style.display = 'none';
+                    membershipDiscounts.style.display = 'none';
+                    document.getElementById('membershipID').value = '';
+                    clearServiceFields();
+                    return;
+                }
+                        
+                document.getElementById('birthdayOfferStatus').textContent = 
+                    data.canUseBirthdayOffer ? 'Available' : 'Not Available';
+                document.getElementById('anniversaryOfferStatus').textContent = 
+                    data.canUseAnniversaryOffer ? 'Available' : 'Not Available';
+
+                
+
+                //Enable/disable checkboxes based on offer availability
+                birthdayOffer.disabled = !data.canUseBirthdayOffer;
+                anniversaryOffer.disabled = !data.canUseAnniversaryOffer;
+
+                //Uncheck if disabled
+                if (!data.canUseBirthdayOffer) birthdayOffer.checked = false;
+                if (!data.canUseAnniversaryOffer) anniversaryOffer.checked = false;
+
+                // Update membership fields if applicable
+                if (document.getElementById('hasMembership').checked) {
+                    document.getElementById('membershipID').value = data.membershipID || '';
+                }
+
+                if (data.membershipID) {
+                    document.getElementById('membershipID').value = data.membershipID;
+                    document.getElementById('hasMembership').checked = true;
+                    document.getElementById('membershipMessage').style.display = 'block';
+                    document.getElementById('membershipDiscounts').style.display = 'block';
+                }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    messageDisplay.textContent = 'Error checking membership ID';
+                    messageDisplay.style.color = 'red';
+                });
+                
+            
+        }
         }
 
         document.getElementById('membershipID').addEventListener('blur', validateMembershipID);
@@ -576,7 +625,7 @@
                         document.getElementById('lastVisit').textContent = data.lastVisit || '-';
                         document.getElementById('totalVisits').textContent = data.visits || '-';
                         document.getElementById('totalSpendings').textContent = data.totalSpent.toLocaleString('en-IN') || '-';
-                        document.getElementById('membershipStatus').textContent = data.membership || '-';
+                        // document.getElementById('membershipStatus').textContent = data.membership || '-';
 
                         // Update services and products
                         document.getElementById('previousServices').textContent = 
@@ -584,34 +633,37 @@
                         document.getElementById('previousProducts').textContent = 
                             data.products && data.products.length > 0 ? data.products.join(', ') : '-';
 
+                        //- commented by yazhini    
                         // Update offer availability status and checkboxes
-                        const birthdayOffer = document.getElementById('birthdayOffer');
-                        const anniversaryOffer = document.getElementById('anniversaryOffer');
+                        // const birthdayOffer = document.getElementById('birthdayOffer');
+                        // const anniversaryOffer = document.getElementById('anniversaryOffer');
                         
-                        document.getElementById('birthdayOfferStatus').textContent = 
-                            data.canUseBirthdayOffer ? 'Available' : 'Not Available';
-                        document.getElementById('anniversaryOfferStatus').textContent = 
-                            data.canUseAnniversaryOffer ? 'Available' : 'Not Available';
+                        // document.getElementById('birthdayOfferStatus').textContent = 
+                        //     data.canUseBirthdayOffer ? 'Available' : 'Not Available';
+                        // document.getElementById('anniversaryOfferStatus').textContent = 
+                        //     data.canUseAnniversaryOffer ? 'Available' : 'Not Available';
 
                         // Enable/disable checkboxes based on offer availability
-                        birthdayOffer.disabled = !data.canUseBirthdayOffer;
-                        anniversaryOffer.disabled = !data.canUseAnniversaryOffer;
+                        // birthdayOffer.disabled = !data.canUseBirthdayOffer;
+                        // anniversaryOffer.disabled = !data.canUseAnniversaryOffer;
 
                         // Uncheck if disabled
-                        if (!data.canUseBirthdayOffer) birthdayOffer.checked = false;
-                        if (!data.canUseAnniversaryOffer) anniversaryOffer.checked = false;
+                        // if (!data.canUseBirthdayOffer) birthdayOffer.checked = false;
+                        // if (!data.canUseAnniversaryOffer) anniversaryOffer.checked = false;
 
-                        // Update membership fields if applicable
-                        if (document.getElementById('hasMembership').checked) {
-                            document.getElementById('membershipID').value = data.membershipID || '';
-                        }
+                        // // Update membership fields if applicable
+                        // if (document.getElementById('hasMembership').checked) {
+                        //     document.getElementById('membershipID').value = data.membershipID || '';
+                        // }
 
-                        if (data.membershipID) {
-                            document.getElementById('membershipID').value = data.membershipID;
-                            document.getElementById('hasMembership').checked = true;
-                            document.getElementById('membershipMessage').style.display = 'block';
-                            document.getElementById('membershipDiscounts').style.display = 'block';
-                        }
+                        // if (data.membershipID) {
+                        //     document.getElementById('membershipID').value = data.membershipID;
+                        //     document.getElementById('hasMembership').checked = true;
+                        //     document.getElementById('membershipMessage').style.display = 'block';
+                        //     document.getElementById('membershipDiscounts').style.display = 'block';
+                        // }
+
+                        //- commented by yazhini - end
 
                         // Recalculate grand total after updating membership status
                         calculateGrandTotal();
