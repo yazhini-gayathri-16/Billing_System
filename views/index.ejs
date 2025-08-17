@@ -71,12 +71,12 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Do you have a membership?</label>
-                        <input type="checkbox" id="hasMembership" name="hasMembership" onchange="toggleMembershipIDField()">
+                        <input type="checkbox" id="hasMembership" name="hasMembership" onchange="toggleMembershipIDField()" >
                     </div>
 
                     <div class="form-group">
                         <label for="membershipID">Membership ID:</label>
-                        <input type="text" id="membershipID" name="membershipID" placeholder="Enter Membership ID" onblur="validateMembershipID()">
+                        <input type="text" id="membershipID" name="membershipID" placeholder="Enter Membership ID" onblur="validateMembershipID()" disabled="true" autocomplete="off">
                     </div>
 
                     <div id="membershipMessage"></div>
@@ -127,13 +127,13 @@
                     <div class="form-group-PM">
                         <label>Payment Method:</label>
                         <div>
-                            <input type="radio" id="paymentUPI" name="paymentMethod" value="UPI" checked="checked" required>
+                            <input type="radio" id="paymentUPI" name="paymentMethod" value="UPI" checked="checked" required onchange="addingGST()">
                             <label for="paymentUPI">UPI</label>
     
-                            <input type="radio" id="paymentCard" name="paymentMethod" value="Card">
+                            <input type="radio" id="paymentCard" name="paymentMethod" value="Card" onchange="addingGST()">
                             <label for="paymentCard">Card</label>
     
-                            <input type="radio" id="paymentCash" name="paymentMethod" value="Cash">
+                            <input type="radio" id="paymentCash" name="paymentMethod" value="Cash" onchange="addingGST()">
                             <label for="paymentCash">Cash</label>
                         </div>
                     </div>   
@@ -141,6 +141,7 @@
                     <div class="form-group grow">
                         <label>Subtotal:</label>
                         <input type="number" name="subtotal" id="subtotal" readonly>
+                        <p id="gstMessage"></p>
                     </div>
 
                 </div>
@@ -400,11 +401,29 @@
             anniversaryField.style.display = document.getElementById('applyAnniversaryDiscount').checked ? 'block' : 'none';
         }
 
+        function addingGST() {
+            const cardPayment = document.getElementById('paymentCard');
+            const subtotal = document.getElementById('subtotal');
+            const gstMessage = document.getElementById('gstMessage');
 
+            if (cardPayment.checked) {
+                const gstRate = 0.18; // 18% GST
+                const gstAmount = parseFloat(subtotal.value) * gstRate;
+                document.getElementById('subtotal').value = (parseFloat(subtotal.value) + gstAmount).toFixed(2);
+                gstMessage.textContent = `GST (18%): ₹${gstAmount.toFixed(2)}`;
+                gstMessage.style.color = 'red';
+                gstMessage.style.padding = '0px';
+                gstMessage.style.fontSize = '13px';
+                gstMessage.style.margin = '0px';
+            } else {
+                gstMessage.textContent = '';
+            }
+                calculateGrandTotal();
+        }
+        
 
         function toggleDiscountType() {
             const discountType = document.querySelector('input[name="discountType"]:checked').value;
-
             const percentageField = document.getElementById('percentageDiscountField');
             const rupeesField = document.getElementById('rupeesDiscountField');
 
