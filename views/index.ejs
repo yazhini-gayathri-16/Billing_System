@@ -127,13 +127,13 @@
                     <div class="form-group-PM">
                         <label>Payment Method:</label>
                         <div>
-                            <input type="radio" id="paymentUPI" name="paymentMethod" value="UPI" checked="checked" required onchange="addingGST()">
+                            <input type="radio" id="paymentUPI" name="paymentMethod" value="UPI" checked="checked" required onchange="calculateGrandTotal()">
                             <label for="paymentUPI">UPI</label>
     
-                            <input type="radio" id="paymentCard" name="paymentMethod" value="Card" onchange="addingGST()">
+                            <input type="radio" id="paymentCard" name="paymentMethod" value="Card" onchange="calculateGrandTotal()">
                             <label for="paymentCard">Card</label>
-    
-                            <input type="radio" id="paymentCash" name="paymentMethod" value="Cash" onchange="addingGST()">
+
+                            <input type="radio" id="paymentCash" name="paymentMethod" value="Cash" onchange="calculateGrandTotal()">
                             <label for="paymentCash">Cash</label>
                         </div>
                     </div>   
@@ -141,7 +141,6 @@
                     <div class="form-group grow">
                         <label>Subtotal:</label>
                         <input type="number" name="subtotal" id="subtotal" readonly>
-                        <p id="gstMessage"></p>
                     </div>
 
                 </div>
@@ -192,6 +191,7 @@
                 <div class="form-group">
                     <label>Grand Total:</label>
                     <input type="number" name="grandTotal" id="grandTotal" readonly>
+                    <p id="gstMessage"></p>
                 </div>
 
                 <button type="submit" class="button-generate">Generate Bill</button>
@@ -401,25 +401,6 @@
             anniversaryField.style.display = document.getElementById('applyAnniversaryDiscount').checked ? 'block' : 'none';
         }
 
-        function addingGST() {
-            const cardPayment = document.getElementById('paymentCard');
-            const subtotal = document.getElementById('subtotal');
-            const gstMessage = document.getElementById('gstMessage');
-
-            if (cardPayment.checked) {
-                const gstRate = 0.18; // 18% GST
-                const gstAmount = parseFloat(subtotal.value) * gstRate;
-                document.getElementById('subtotal').value = (parseFloat(subtotal.value) + gstAmount).toFixed(2);
-                gstMessage.textContent = `GST (18%): ₹${gstAmount.toFixed(2)}`;
-                gstMessage.style.color = 'red';
-                gstMessage.style.padding = '0px';
-                gstMessage.style.fontSize = '13px';
-                gstMessage.style.margin = '0px';
-            } else {
-                gstMessage.textContent = '';
-            }
-                calculateGrandTotal();
-        }
         
 
         function toggleDiscountType() {
@@ -714,8 +695,11 @@
 
 
         function calculateGrandTotal() {
+            const cardPayment = document.getElementById('paymentCard');
+            const gstMessage = document.getElementById('gstMessage');
             const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;
             let totalDiscount = 0;
+            let gstfinal = 0;
             
             // Calculate regular discount
             const discountType = document.querySelector('input[name="discountType"]:checked').value;
@@ -741,7 +725,24 @@
             }
             
             const grandTotal = Math.max(subtotal - totalDiscount, 0);
-            document.getElementById('grandTotal').value = grandTotal.toFixed(2);
+            
+
+            if (cardPayment.checked) {
+                const gstRate = 0.18; // 18% GST
+                const gstAmount = parseFloat(grandTotal.toFixed(2)) * gstRate;
+                gstfinal = (parseFloat(grandTotal.toFixed(2)) + gstAmount).toFixed(2);
+                gstMessage.textContent = `GST (18%): ₹${gstAmount.toFixed(2)}`;
+                gstMessage.style.color = 'red';
+                gstMessage.style.padding = '0px';
+                gstMessage.style.fontSize = '13px';
+                gstMessage.style.margin = '0px';
+            } else {
+                gstMessage.textContent = '';
+                gstfinal = grandTotal.toFixed(2);
+            }
+
+            
+            document.getElementById('grandTotal').value = gstfinal;
         }
 
         // function calculaterupeesGrandTotal() {
