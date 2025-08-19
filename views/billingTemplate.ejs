@@ -135,7 +135,7 @@
                     <div class="salon-title-text">
                         <div class="name">NOBLE EVERGREEN UNISEX SALON</div>
                         <div class="address">
-                            Leelavathi Achaer Complex Opp. Muthoot Finance Immadihalli Main Road, Hagadur, Whitefiled, Bangalore - 560066
+                            1st Floor, Leelavathi Achar Complex, Opp. Muthoot Finance, Immadihalli Main Road, Hagadur, Whitefield, Bangalore - 560066.
                         </div>
                     </div>
                 </div>
@@ -160,16 +160,16 @@
                         <th>Service Name</th>
                         <th>Price</th>
                         <th>Stylist</th>
-                        <th>Start Time</th>
-                        <th>End Time</th>
+                        <!-- <th>Start Time</th>
+                        <th>End Time</th> -->
                     </tr>
                     <% record.services.forEach(function(service) { %>
                         <tr>
                             <td><%= service.name %></td>
                             <td>₹<%= service.price.toFixed(2) %></td>
                             <td><%= service.stylist %></td>
-                            <td><%= service.startTime %></td>
-                            <td><%= service.endTime %></td>
+                            <!-- <td><%= service.startTime %></td>
+                            <td><%= service.endTime %></td> -->
                         </tr>
                     <% }); %>
                 </table>

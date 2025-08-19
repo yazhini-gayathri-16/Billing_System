@@ -334,17 +334,14 @@ app.post("/bill", async (req, res) => {
         // --- PDF Content ---
         // Header and Title Block
 
-        const address = 'Leelavathi Achaer Complex Opp. Muthoot Finance Immadihalli Main Road, Hagadur, Whitefiled, Bangalore - 560066';
+        const address = '1st Floor, Leelavathi Achar Complex, Opp. Muthoot Finance, Immadihalli Main Road, Hagadur, Whitefield, Bangalore - 560066';
         const addressWidth = 400; // Adjust width for your desired margin
         const addressX = (doc.page.width - addressWidth) / 2; // Center horizontally
 
         doc
-            .rect(0, 0, doc.page.width, 80)
-            .fill('#8DBE50')
-            .fillColor('black')
-            .fontSize(24)
-            .font('Helvetica-Bold')
-            .text('NOBLE EVERGREEN UNISEX SALON', { align: 'center', valign: 'center' })
+            .rect(0, 0, doc.page.width, 80) // Draw background rectangle
+            .fill('#8DBE50') // Set background color
+            .image(path.join(__dirname, 'public/images/logo 3-square.png'), doc.page.width / 2 - 40, 10, { width: 80, height: 80 }) // Add logo image
             .moveDown(0.5)
             .fontSize(10)
             .font('Helvetica')
@@ -352,6 +349,9 @@ app.post("/bill", async (req, res) => {
                 width: addressWidth,
                 align: 'center'
             })
+            .moveDown(0.5)
+            .text('Email: nobleevergreen01@gmail.com', doc.page.margins.left, doc.y, { align: 'left' }) // Add email
+            .text('Phone: 91104 33853 / 82969 39896', doc.page.margins.left, doc.y, { align: 'left' }) // Add phone numbers
             .moveDown(1);
 
         // Invoice Info
