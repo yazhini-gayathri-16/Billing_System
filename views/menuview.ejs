@@ -21,14 +21,20 @@
     
         <div class="menu-container">
             <% services.forEach(function(service) { %>
-                <div class="menu-card">        
-                            <p><strong>Service:</strong> <span class="menu-item"></span><%= service.serviceName %></span></p>
-                            <p><strong>Regular Price:</strong> ₹<span class="item-price"></span><%= service.regularPrice.toFixed(2) %></span></p>
-                            <p><strong>Membership Price:</strong> ₹<span class="membership-price"></span><%= service.membershipPrice.toFixed(2) %></span></p>
-                        
-                    
-                </div>    
-            <% }); %>    
+                <!-- Card for Regular Price -->
+                <div class="menu-card">
+                    <p><strong>Service:</strong> <%= service.serviceName %></p>
+                    <p><strong>Price Type:</strong> Regular Price</p>
+                    <p><strong>Price:</strong> ₹<%= service.regularPrice.toFixed(2) %></p>
+                </div>
+
+                <!-- Card for Membership Price -->
+                <div class="menu-card">
+                    <p><strong>Service:</strong> <%= service.serviceName %></p>
+                    <p><strong>Price Type:</strong> Membership Price</p>
+                    <p><strong>Price:</strong> ₹<%= service.membershipPrice.toFixed(2) %></p>
+                </div>
+            <% }); %>
         </div>
     </div>
 </body>

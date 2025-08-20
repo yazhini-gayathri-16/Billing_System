@@ -80,17 +80,25 @@
         <!-- Displaying Services -->
         <div class="service-container">
             <% services.forEach(function(service, index) { %>
+                <!-- Card for Regular Price -->
                 <div class="service-card">
-                    <form id="service-form-<%= index %>" class="service-form" action="/edit-service" method="post">
+                    <form id="service-form-regular-<%= index %>" class="service-form" action="/edit-service" method="post">
                         <input type="hidden" name="id" value="<%= service._id %>">
                         <p><strong>Service Name:</strong> <span class="service-name"><%= service.serviceName %></span></p>
-                        <p><strong>Regular Price:</strong> ₹<span class="regular-price"><%= service.regularPrice %></span></p>
-                        <p><strong>Membership Price:</strong> ₹<span class="membership-price"><%= service.membershipPrice %></span></p>
-                        <button type="button" class="edit-btn" onclick="enableEditing('service-form-<%= index %>')">Edit</button>
+                        <p><strong>Price Type:</strong> Regular Price</p>
+                        <p><strong>Price:</strong> ₹<span class="regular-price"><%= service.regularPrice %></span></p>
+                        <button type="button" class="edit-btn" onclick="enableEditing('service-form-regular-<%= index %>')">Edit</button>
                     </form>
-                    <form action="/delete-service" method="post" class="delete-form">
+                </div>
+
+                <!-- Card for Membership Price -->
+                <div class="service-card">
+                    <form id="service-form-membership-<%= index %>" class="service-form" action="/edit-service" method="post">
                         <input type="hidden" name="id" value="<%= service._id %>">
-                        <button type="submit" class="delete-btn">Delete</button>
+                        <p><strong>Service Name:</strong> <span class="service-name"><%= service.serviceName %></span></p>
+                        <p><strong>Price Type:</strong> Membership Price</p>
+                        <p><strong>Price:</strong> ₹<span class="membership-price"><%= service.membershipPrice %></span></p>
+                        <button type="button" class="edit-btn" onclick="enableEditing('service-form-membership-<%= index %>')">Edit</button>
                     </form>
                 </div>
             <% }); %>
