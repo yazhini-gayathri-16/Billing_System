@@ -29,7 +29,8 @@ const ejs = require('ejs');
 const puppeteer = require('puppeteer'); 
 const whatsAppClient = require('@green-api/whatsapp-api-client');
 const { Readable } = require('stream'); // Add this at the top with other requires
-
+const swaggerJSDoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
 
 
 require("./connection");
@@ -52,6 +53,26 @@ app.use(session({
         secure: false // Set to true if using HTTPS
     }
 }));
+
+const options={
+    definition:{
+        openapi:'3.0.0',
+        info:{
+            title:'Noble Evergreen API',
+            version:'1.0.0',
+            description:'A simple Express Library API'
+        },
+        servers:[
+            {
+                url:'http://localhost:3000/'
+            }
+        ]
+    },
+    apis:['./app.js']    
+}
+
+const swaggerSpec=swaggerJSDoc(options);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 const doc = new PDFDocument();
 const pdfPath = path.join(__dirname, 'billing_data.pdf');
@@ -1496,7 +1517,7 @@ app.post('/validate-membership', async (req, res) => {
         let membershipStatus = '----';
         let canUseBirthdayOffer = false;
         let canUseAnniversaryOffer = false;
-
+        
         if (membership) {
             membershipStatus = 'Active';
 
@@ -1506,9 +1527,10 @@ app.post('/validate-membership', async (req, res) => {
                 membershipStatus = 'Expired';
             } else {
                 // Check for birthday and anniversary offers
-                const currentMonth = today.getMonth();
-                const birthMonth = new Date(membership.birthDate).getMonth();
-                const anniversaryMonth = membership.anniversaryDate ? new Date(membership.anniversaryDate).getMonth() : -1;
+                const currentMonth = today.getMonth() + 1; // Get current month (1-12)
+                const birthMonth = membership.birthMonth; // Already stored as a number
+                const anniversaryMonth = membership.anniversaryMonth; // Already stored as a number
+
                 const currentYear = today.getFullYear();
                 const yearlyUsage = membership.yearlyUsage.find(usage => usage.year === currentYear);
 
@@ -1771,14 +1793,14 @@ app.get("/client", (req, res) => {
 app.post('/add-membership', async (req, res) => {
 
     try {
-        const { customername, membershipID, phoneNumber, birthDate, anniversaryDate, registeredDate, validTillDate, memprice, mempaymentMethod } = req.body;
+        const { customername, membershipID, phoneNumber, birthMonth, anniversaryMonth, registeredDate, validTillDate, memprice, mempaymentMethod } = req.body;
         const currentYear = new Date().getFullYear();
         const newMembership = new Membership({
             customername,
             membershipID,
             phoneNumber,
-            birthDate,
-            anniversaryDate,
+            birthMonth, 
+            anniversaryMonth,
             registeredDate,
             validTillDate,
             memprice,             
@@ -1799,9 +1821,9 @@ app.post('/add-membership', async (req, res) => {
 
 app.post('/find-membership', async (req, res) => {
     try {
-        const {searchPhoneNumber } = req.body;
+        const {searchMembershipID } = req.body;
         const membership = await Membership.findOne({
-            phoneNumber: searchPhoneNumber
+            membershipID: searchMembershipID
         });
 
         if (membership) {
@@ -1810,8 +1832,8 @@ app.post('/find-membership', async (req, res) => {
                 name: membership.customername,
                 membershipID: membership.membershipID,
                 phoneNumber: membership.phoneNumber,
-                birthDate: membership.birthDate,
-                anniversaryDate: membership.anniversaryDate || null,
+                birthMonth: membership.birthMonth, // Return only the month
+                anniversaryMonth: membership.anniversaryMonth || null, // Return only the month
                 yearlyUsage: membership.yearlyUsage
             });
         } else {

@@ -31,7 +31,7 @@ const customer_id_schema = new mongoose.Schema({
         enum: ["Male", "Female", "Other"]
     },
     membershipID: {
-        type: Number,
+        type: String,
         required: false
     },
     paymentMethod: {

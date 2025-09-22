@@ -41,14 +41,14 @@
                         <input type="number" autocomplete="off" name="phoneNumber" placeholder="Phone Number" required>
                     </div>
                     <div class="form-group">
-                        <label for="birthDate">Birth Date:</label>
-                        <input type="date" autocomplete="off" name="birthDate" required>
+                        <label for="birthMonth">Birth Month:</label>
+                        <input type="month" autocomplete="off" name="birthMonth" required>
                     </div>
                 </div>
 
                 <div class="form-row">
-                <label for="anniversaryDate">Anniversary Date:</label>
-                <input type="date" autocomplete="off" name="anniversaryDate">
+                <label for="anniversaryMonth">Anniversary Month:</label>
+                <input type="month" autocomplete="off" name="anniversaryMonth">
 
                 <label for="registeredDate">Registered Date:</label>
                 <input type="date" autocomplete="off" id="registeredDate" name="registeredDate" required onchange="setValidTillDate()">
@@ -94,8 +94,8 @@
         <div class="search-membership">
             <h2>Search Membership</h2>
             <form id="findMembershipForm" class="form-inline">
-                <label for="searchPhoneNumber">Phone Number:</label>
-                <input type="text" autocomplete="off" id="searchNumber" name="searchPhoneNumber" placeholder="Phone Number" required>
+                <label for="searchMembershipID">Membership ID:</label>
+                <input type="text" autocomplete="off" id="searchMembershipID" name="searchMembershipID" placeholder="Membership ID" required>
                 <button type="button" onclick="findMembership()">Find Membership</button>
             </form>
             <div id="membershipDetails" class="result"></div>
@@ -214,12 +214,12 @@
 
     // Find Membership Details
     function findMembership() {
-        const searchPhoneNumber = document.getElementById("searchNumber").value;
+        const searchMembershipID = document.getElementById("searchMembershipID").value;
 
         fetch('/find-membership', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({searchPhoneNumber})
+            body: JSON.stringify({searchMembershipID})
         })
         .then(response => response.json())
         .then(data => {
@@ -229,8 +229,8 @@
                     <p><strong>Member Name:</strong> ${data.name}</p>
                     <p><strong>Card Number:</strong> ${data.membershipID}</p>
                     <p><strong>Phone Number:</strong> ${data.phoneNumber}</p>
-                    <p><strong>Birth Date:</strong> ${new Date(data.birthDate).toISOString().slice(0, 10)}</p>
-                    <p><strong>Anniversary Date:</strong> ${data.anniversaryDate ? new Date(data.anniversaryDate).toISOString().slice(0, 10) : 'N/A'}</p>
+                    <p><strong>Birth Month:</strong> ${data.birthMonth}</p>
+                    <p><strong>Anniversary Month:</strong> ${data.anniversaryMonth || 'N/A'}</p>
                     <p><strong>Yearly Usage:</strong> ${JSON.stringify(data.yearlyUsage)}</p>
                 `;
             } else {
@@ -248,7 +248,13 @@
         const form = document.getElementById('newMembershipForm');
         const formData = new FormData(form);
         const membershipData = {};
-        formData.forEach((value, key) => membershipData[key] = value);
+        formData.forEach((value, key) => {
+            if (key === 'birthMonth' || key === 'anniversaryMonth') {
+                membershipData[key] = value.split('-')[1]; // Extract only the month
+            } else {
+                membershipData[key] = value;
+            }
+        });
 
         fetch('/add-membership', {
             method: 'POST',
