@@ -1876,20 +1876,27 @@ app.post("/add-signup", async (req, res) => {
 });
 
 app.get("/signin", (req, res) => {
-    res.render("signin");
+    res.render("signin", {
+        errorMessage: null,
+        submittedMail: ''
+    });
 });
 
 app.post("/do-signin", async (req, res) => {
+    const { mail, password } = req.body;
+
     try {
-        const { mail, password } = req.body;
         const user = await Signup.findOne({ mail, password });
-        
+
         if (user && password === user.password) {
             // If staff user, verify staff record exists
             if (user.role === 'staff') {
                 const staff = await Staff.findOne({ email: mail });
                 if (!staff) {
-                    return res.status(400).send('Staff record not found');
+                    return res.status(404).render("signin", {
+                        errorMessage: 'Staff record not found. Please contact an administrator.',
+                        submittedMail: mail || ''
+                    });
                 }
             }
 
@@ -1897,13 +1904,20 @@ app.post("/do-signin", async (req, res) => {
                 mail: user.mail,
                 role: user.role
             };
-            
-            res.redirect('/');
-        } else {
-            res.status(400).send('Invalid credentials');
+
+            return res.redirect('/');
         }
+
+        return res.status(401).render("signin", {
+            errorMessage: 'Invalid credentials. Please try again.',
+            submittedMail: mail || ''
+        });
     } catch (error) {
-        res.status(500).send(error.message);
+        console.error("Signin error:", error);
+        return res.status(500).render("signin", {
+            errorMessage: 'Something went wrong. Please try again.',
+            submittedMail: mail || ''
+        });
     }
 });
 

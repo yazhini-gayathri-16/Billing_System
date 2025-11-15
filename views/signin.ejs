@@ -13,10 +13,15 @@
 </head>
 <body>
     <div class="wrapper">
+        <% if (typeof errorMessage !== 'undefined' && errorMessage) { %>
+            <div class="alert-banner" role="alert">
+                <%= errorMessage %>
+            </div>
+        <% } %>
         <form action="/do-signin" method="post">
             <h1>Login</h1>
             <div class="input-box">
-                <input type="email" name="mail" placeholder="Enter mail ID" required autocomplete="off">
+                <input type="email" name="mail" placeholder="Enter mail ID" required autocomplete="email" value="<%= submittedMail || '' %>" autofocus>
                 <i class='bx bxs-user'></i>
             </div>
             <div class="input-box">
