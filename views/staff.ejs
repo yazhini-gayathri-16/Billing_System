@@ -14,6 +14,11 @@
     <%- include('partials/navbar') %>
 
     <div class="container">
+        <% if (userRole === 'admin') { %>
+            <div class="actions-bar">
+                <a href="/signup" class="btn-primary">Add Credentials</a>
+            </div>
+        <% } %>
         <!-- Add Staff Form -->
         <div class="staff-form">
             <h1>Add New Staff</h1>

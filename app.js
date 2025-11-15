@@ -1845,11 +1845,11 @@ app.post('/find-membership', async (req, res) => {
     }
 });
 
-app.get("/signup", (req, res) => {
+app.get("/signup", isAuthenticated, isAdmin, (req, res) => {
     res.render("signup");
 });
 
-app.post("/add-signup", async (req, res) => {
+app.post("/add-signup", isAuthenticated, isAdmin, async (req, res) => {
     try {
         const { mail, password, role } = req.body;
         // Validate role

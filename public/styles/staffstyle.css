@@ -69,6 +69,34 @@ textarea {
     background-color: #45a049;
 }
 
+.actions-bar{
+    width: 70%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.btn-primary{
+    display: inline-block;
+    padding: 10px 20px;
+    border-radius: 5px;
+    border: none;
+    background-color: #4CAF50;
+    color: #ffffff;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+
+.btn-primary:hover{
+    background-color: #45a049;
+}
+
+.btn-primary:focus{
+    outline: 3px solid rgba(69, 160, 73, 0.35);
+    outline-offset: 2px;
+}
+
 .staff-list{
     width: 80%;
     background-color: #E6F7D1;
