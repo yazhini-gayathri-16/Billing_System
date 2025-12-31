@@ -82,8 +82,10 @@
                         <div class="form-row">
                             <div class="form-group basis-service">
                                 <label>Package:</label>
-                                <input type="text" list="serviceList1" autocomplete="off" name="packages1" required placeholder="Enter the package" oninput="filterPackages(this)" onchange="showIncludedServices(this)">
-                                <datalist id="serviceList1"></datalist>
+                                <div class="autocomplete-wrapper">
+                                    <input type="text" autocomplete="off" name="packages1" required placeholder="Enter the package" oninput="filterPackages(this)" onfocus="filterPackages(this)" onchange="showIncludedServices(this)">
+                                    <div class="autocomplete-dropdown" id="packageDropdown1"></div>
+                                </div>
                             </div>
                             <div class="form-group basis-price">
                                 <label>Price:</label>
@@ -340,25 +342,43 @@
         function filterPackages(input) {
             setupEventListeners();
             const index = input.name.match(/\d+/)[0];
-            const listId = `serviceList${index}`;
-            const datalist = document.getElementById(listId);
+            const dropdownId = `packageDropdown${index}`;
+            const dropdown = document.getElementById(dropdownId);
             
-            datalist.innerHTML = '';
+            dropdown.innerHTML = '';
             const searchText = input.value.toLowerCase();
+            let hasResults = false;
 
             packages.forEach(pkg => {
                 if (pkg.serviceName.toLowerCase().includes(searchText)) {
-                    const option = document.createElement('option');
-                    option.value = pkg.serviceName;
-                    // Show package name, price and included services in dropdown
+                    hasResults = true;
                     const servicesText = pkg.includedServices && pkg.includedServices.length > 0 
-                        ? ` (${pkg.includedServices.join(', ')})` 
+                        ? pkg.includedServices.join(', ')
                         : '';
-                    option.textContent = `${pkg.serviceName} - ₹${pkg.regularPrice}${servicesText}`;
-                    datalist.appendChild(option);
+                    const item = document.createElement('div');
+                    item.className = 'autocomplete-item';
+                    item.innerHTML = `<strong>${pkg.serviceName}</strong><span class="price-info">₹${pkg.regularPrice}${servicesText ? ' - ' + servicesText : ''}</span>`;
+                    item.onclick = function() {
+                        input.value = pkg.serviceName;
+                        dropdown.style.display = 'none';
+                        showIncludedServices(input);
+                        // Trigger price update
+                        const event = new Event('input', { bubbles: true });
+                        input.dispatchEvent(event);
+                    };
+                    dropdown.appendChild(item);
                 }
             });
+
+            dropdown.style.display = hasResults ? 'block' : 'none';
         }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.autocomplete-wrapper')) {
+                document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.style.display = 'none');
+            }
+        });
 
         function showIncludedServices(input) {
             const index = input.name.match(/\d+/)[0];
@@ -492,8 +512,10 @@
                 <div class="form-row">
                     <div class="form-group basis-service">
                         <label for="packages${serviceCount}">Package:</label>
-                        <input type="text" list="serviceList${serviceCount}" name="packages${serviceCount}" autocomplete="off" required placeholder="Enter the package" oninput="filterPackages(this)" onchange="showIncludedServices(this)">
-                        <datalist id="serviceList${serviceCount}"></datalist>
+                        <div class="autocomplete-wrapper">
+                            <input type="text" name="packages${serviceCount}" autocomplete="off" required placeholder="Enter the package" oninput="filterPackages(this)" onfocus="filterPackages(this)" onchange="showIncludedServices(this)">
+                            <div class="autocomplete-dropdown" id="packageDropdown${serviceCount}"></div>
+                        </div>
                     </div>
                     <div class="form-group basis-price">
                         <label for="prices${serviceCount}">Price:</label>
@@ -850,6 +872,51 @@
     </div>
 
     <style>
+        /* Autocomplete dropdown styles */
+        .autocomplete-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .autocomplete-wrapper input {
+            width: 100%;
+        }
+        .autocomplete-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .autocomplete-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+        .autocomplete-item:hover {
+            background-color: #f0f8e2;
+        }
+        .autocomplete-item strong {
+            color: #333;
+            font-size: 13px;
+        }
+        .autocomplete-item .price-info {
+            color: #666;
+            font-size: 11px;
+        }
         .button-row {
             display: flex;
             gap: 15px;

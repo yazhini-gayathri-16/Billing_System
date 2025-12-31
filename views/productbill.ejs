@@ -63,8 +63,10 @@
                         <div class="form-row">
                             <div class="form-group basis-service">
                                 <label>Product</label>
-                                <input type="text" list="productList1" name="products1" required placeholder="Enter product" oninput="filterProducts(this)">
-                                <datalist id="productList1"></datalist>
+                                <div class="autocomplete-wrapper">
+                                    <input type="text" autocomplete="off" name="products1" required placeholder="Enter product" oninput="filterProducts(this)" onfocus="filterProducts(this)">
+                                    <div class="autocomplete-dropdown" id="productDropdown1"></div>
+                                </div>
                             </div>
                             <div class="form-group basis-price">
                                 <label>Price</label>
@@ -297,20 +299,39 @@
 
         function filterProducts(input) {
             const index = input.name.match(/\d+/)[0];
-            const listId = `productList${index}`;
-            const datalist = document.getElementById(listId);
-            datalist.innerHTML = '';
+            const dropdownId = `productDropdown${index}`;
+            const dropdown = document.getElementById(dropdownId);
+            dropdown.innerHTML = '';
             
             const searchText = input.value.toLowerCase();
+            let hasResults = false;
+
             products.forEach(product => {
                 if (product.productName.toLowerCase().includes(searchText)) {
-                    const option = document.createElement('option');
-                    option.value = product.productName;
-                    option.textContent = `${product.productName} - ₹${product.productPrice}`;
-                    datalist.appendChild(option);
+                    hasResults = true;
+                    const item = document.createElement('div');
+                    item.className = 'autocomplete-item';
+                    item.innerHTML = `<strong>${product.productName}</strong><span class="price-info">₹${product.productPrice}</span>`;
+                    item.onclick = function() {
+                        input.value = product.productName;
+                        dropdown.style.display = 'none';
+                        // Trigger price update
+                        const event = new Event('input', { bubbles: true });
+                        input.dispatchEvent(event);
+                    };
+                    dropdown.appendChild(item);
                 }
             });
+
+            dropdown.style.display = hasResults ? 'block' : 'none';
         }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.autocomplete-wrapper')) {
+                document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.style.display = 'none');
+            }
+        });
 
         function addMore() {
             productCount++;
@@ -322,8 +343,10 @@
                 <div class="form-row">
                     <div class="form-group basis-service">
                         <label>Product:</label>
-                        <input type="text" list="productList${productCount}" name="products${productCount}" required placeholder="Enter product" oninput="filterProducts(this)">
-                        <datalist id="productList${productCount}"></datalist>
+                        <div class="autocomplete-wrapper">
+                            <input type="text" autocomplete="off" name="products${productCount}" required placeholder="Enter product" oninput="filterProducts(this)" onfocus="filterProducts(this)">
+                            <div class="autocomplete-dropdown" id="productDropdown${productCount}"></div>
+                        </div>
                     </div>
                     <div class="form-group basis-price">
                         <label>Price:</label>
@@ -646,6 +669,51 @@
     </div>
 
     <style>
+        /* Autocomplete dropdown styles */
+        .autocomplete-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .autocomplete-wrapper input {
+            width: 100%;
+        }
+        .autocomplete-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .autocomplete-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+        .autocomplete-item:hover {
+            background-color: #f0f8e2;
+        }
+        .autocomplete-item strong {
+            color: #333;
+            font-size: 13px;
+        }
+        .autocomplete-item .price-info {
+            color: #666;
+            font-size: 11px;
+        }
         .button-row {
             display: flex;
             gap: 15px;

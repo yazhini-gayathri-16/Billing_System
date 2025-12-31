@@ -93,8 +93,10 @@
                         <div class="form-row">
                             <div class="form-group basis-service">
                                 <label>Service:</label>
-                                <input type="text" list="serviceList1" autocomplete="off" name="services1" required placeholder="Enter the service" oninput="filterServices(this)">
-                                <datalist id="serviceList1"></datalist>
+                                <div class="autocomplete-wrapper">
+                                    <input type="text" autocomplete="off" name="services1" required placeholder="Enter the service" oninput="filterServices(this)" onfocus="filterServices(this)">
+                                    <div class="autocomplete-dropdown" id="serviceDropdown1"></div>
+                                </div>
                             </div>
                             <div class="form-group basis-price">
                                 <label>Price:</label>
@@ -199,6 +201,12 @@
                     <button type="submit" class="button-generate">Generate Bill</button>
                 </div>
             </form>
+            <!-- Hidden staff list for dynamic service items -->
+            <div id="staffList" style="display: none;">
+                <% staffMembers.forEach(function(staff) { %>
+                    <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
+                <% }); %>
+            </div>
         </div>
     
         <!-- Client 360 Section -->
@@ -307,23 +315,41 @@
         function filterServices(input) {
             setupEventListeners();
             const index = input.name.match(/\d+/)[0];
-            const listId = `serviceList${index}`;
-            const datalist = document.getElementById(listId);
+            const dropdownId = `serviceDropdown${index}`;
+            const dropdown = document.getElementById(dropdownId);
             
             // Clear existing options
-            datalist.innerHTML = '';
+            dropdown.innerHTML = '';
 
             const searchText = input.value.toLowerCase();
+            let hasResults = false;
 
             services.forEach(service => {
                 if (service.serviceName.toLowerCase().includes(searchText)) {
-                    const option = document.createElement('option');
-                    option.value = service.serviceName;
-                    option.textContent = `${service.serviceName} - ₹${service.regularPrice} (Member: ₹${service.membershipPrice})`;
-                    datalist.appendChild(option);
+                    hasResults = true;
+                    const item = document.createElement('div');
+                    item.className = 'autocomplete-item';
+                    item.innerHTML = `<strong>${service.serviceName}</strong><span class="price-info">₹${service.regularPrice} (Member: ₹${service.membershipPrice})</span>`;
+                    item.onclick = function() {
+                        input.value = service.serviceName;
+                        dropdown.style.display = 'none';
+                        // Trigger price update
+                        const event = new Event('input', { bubbles: true });
+                        input.dispatchEvent(event);
+                    };
+                    dropdown.appendChild(item);
                 }
             });
+
+            dropdown.style.display = hasResults ? 'block' : 'none';
         }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.autocomplete-wrapper')) {
+                document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.style.display = 'none');
+            }
+        });
 
         function updateDateTime() {
             const today = new Date();
@@ -465,47 +491,37 @@
             const container = document.getElementById('service-container');
             serviceCount++;
 
+            // Get staff options from hidden div
+            const staffOptions = document.getElementById('staffList') ? document.getElementById('staffList').innerHTML : '';
+
             const newService = document.createElement('div');
             newService.classList.add('service-item');
 
             newService.innerHTML = `
-
-
-
                 <!-- Service, Price, and Stylist on the same line -->
-                        <div class="form-row">
-                            <div class="form-group basis-service">
-                                <label for="services${serviceCount}">Service:</label>
-                                <input type="text" list="serviceList${serviceCount}" name="services${serviceCount}" autocomplete="off" required placeholder="Enter the service" oninput="filterServices(this)">
-                                <datalist id="serviceList${serviceCount}">
-                                    <% services.forEach(function(service) { %>
-                                    <option value="<%= service.serviceName %>"><%= service.serviceName %> - ₹<%= service.regularPrice %> (Member: ₹<%= service.membershipPrice %>)</option>
-                                    <% }); %>
-                                </datalist>
-                            </div>
-                            <div class="form-group basis-price">
-                                <label  for="prices${serviceCount}">Price:</label>
-                                <input type="number" name="prices${serviceCount}" required oninput="updateSubtotal()">
-                            </div>
-                            <div class="form-group basis-stylist">
-                                <label for="stylist${serviceCount}">Stylist under service:</label>
-                                <div class="flex">
-                                    <select name="stylist${serviceCount}" required>
-                                        <% staffMembers.forEach(function(staff) { %>
-                                            <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
-                                        <% }); %>
-                                    </select>
-                                    <button type="button" onclick="addStylist(event)">Add Stylist</button>
-                                </div>
-                                
-                            </div>
-
+                <div class="form-row">
+                    <div class="form-group basis-service">
+                        <label for="services${serviceCount}">Service:</label>
+                        <div class="autocomplete-wrapper">
+                            <input type="text" name="services${serviceCount}" autocomplete="off" required placeholder="Enter the service" oninput="filterServices(this)" onfocus="filterServices(this)">
+                            <div class="autocomplete-dropdown" id="serviceDropdown${serviceCount}"></div>
                         </div>
-
-               
-
+                    </div>
+                    <div class="form-group basis-price">
+                        <label for="prices${serviceCount}">Price:</label>
+                        <input type="number" name="prices${serviceCount}" required oninput="updateSubtotal()">
+                    </div>
+                    <div class="form-group basis-stylist">
+                        <label for="stylist${serviceCount}">Stylist under service:</label>
+                        <div class="flex">
+                            <select name="stylist${serviceCount}" required>
+                                ${staffOptions}
+                            </select>
+                            <button type="button" onclick="addStylist(event)">Add Stylist</button>
+                        </div>
+                    </div>
+                </div>
                 <span class="delete-btn" onclick="removeService(this)">&#128465;</span>
-                
             `;
 
             container.appendChild(newService);
@@ -1012,6 +1028,51 @@
     </div>
 
     <style>
+        /* Autocomplete dropdown styles */
+        .autocomplete-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .autocomplete-wrapper input {
+            width: 100%;
+        }
+        .autocomplete-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .autocomplete-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+        .autocomplete-item:hover {
+            background-color: #f0f8e2;
+        }
+        .autocomplete-item strong {
+            color: #333;
+            font-size: 13px;
+        }
+        .autocomplete-item .price-info {
+            color: #666;
+            font-size: 11px;
+        }
         .button-row {
             display: flex;
             gap: 15px;

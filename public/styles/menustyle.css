@@ -91,7 +91,19 @@ body {
 
 .delete-btn:hover {
     background-color: #c82333;
-    
+}
+
+.delete-btn-yellow {
+    background-color: #FFC107;
+    color: #333;
+    border: none;
+    border-radius: 5px;
+    padding: 8px;
+    cursor: pointer;
+}
+
+.delete-btn-yellow:hover {
+    background-color: #e0a800;
 }
 
 .button-group {

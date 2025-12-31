@@ -87,7 +87,10 @@
                         <p><strong>Service Name:</strong> <span class="service-name"><%= service.serviceName %></span></p>
                         <p><strong>Price Type:</strong> Regular Price</p>
                         <p><strong>Price:</strong> ₹<span class="regular-price"><%= service.regularPrice %></span></p>
-                        <button type="button" class="edit-btn" onclick="enableEditing('service-form-regular-<%= index %>')">Edit</button>
+                        <div class="button-group">
+                            <button type="button" class="edit-btn" onclick="enableEditing('service-form-regular-<%= index %>')">Edit</button>
+                            <button type="button" class="delete-btn-yellow" onclick="confirmDelete('<%= service._id %>', '<%= service.serviceName %>')">Delete</button>
+                        </div>
                     </form>
                 </div>
 
@@ -98,7 +101,10 @@
                         <p><strong>Service Name:</strong> <span class="service-name"><%= service.serviceName %></span></p>
                         <p><strong>Price Type:</strong> Membership Price</p>
                         <p><strong>Price:</strong> ₹<span class="membership-price"><%= service.membershipPrice %></span></p>
-                        <button type="button" class="edit-btn" onclick="enableEditing('service-form-membership-<%= index %>')">Edit</button>
+                        <div class="button-group">
+                            <button type="button" class="edit-btn" onclick="enableEditing('service-form-membership-<%= index %>')">Edit</button>
+                            <button type="button" class="delete-btn-yellow" onclick="confirmDelete('<%= service._id %>', '<%= service.serviceName %>')">Delete</button>
+                        </div>
                     </form>
                 </div>
             <% }); %>
@@ -108,9 +114,13 @@
     <!-- Delete Confirmation Modal -->
     <div id="deleteConfirmModal">
         <div class="modal-content">
-            <p>Are you sure to delete?</p>
-            <button id="confirmDeleteBtn" style="margin-right:20px;">Yes</button>
-            <button id="cancelDeleteBtn">No</button>
+            <p>Are you sure you want to delete "<span id="deleteServiceName"></span>"?</p>
+            <p style="font-size: 0.9em; color: #666; margin-top: -10px;">This will delete both Regular and Membership prices.</p>
+            <form id="deleteForm" action="/delete-service" method="post">
+                <input type="hidden" name="id" id="deleteServiceId">
+                <button type="submit" id="confirmDeleteBtn">Yes</button>
+                <button type="button" id="cancelDeleteBtn">No</button>
+            </form>
         </div>
     </div>
 
@@ -122,11 +132,15 @@
             const membershipPrice = form.querySelector('.membership-price');
 
             serviceName.innerHTML = `<input type="text" name="serviceName" value="${serviceName.textContent.trim()}" required>`;
-            regularPrice.innerHTML = `<input type="number" name="regularPrice" value="${regularPrice.textContent.trim()}" required>`;
-            membershipPrice.innerHTML = `<input type="number" name="membershipPrice" value="${membershipPrice.textContent.trim()}" required>`;
+            if (regularPrice) {
+                regularPrice.innerHTML = `<input type="number" name="regularPrice" value="${regularPrice.textContent.trim()}" required>`;
+            }
+            if (membershipPrice) {
+                membershipPrice.innerHTML = `<input type="number" name="membershipPrice" value="${membershipPrice.textContent.trim()}" required>`;
+            }
 
-            const editButton = form.querySelector('.edit-btn');
-            editButton.outerHTML = `
+            const buttonGroup = form.querySelector('.button-group');
+            buttonGroup.innerHTML = `
                 <button type="submit">Update</button>
                 <button type="button" class="cancel-btn" onclick='cancelEdit("${formId}")'>Cancel</button>`;
         }
@@ -137,45 +151,37 @@
             const regularPriceInput = form.querySelector('.regular-price input');
             const membershipPriceInput = form.querySelector('.membership-price input');
 
-            form.querySelector('.service-name').innerHTML = serviceNameInput.value;
-            form.querySelector('.regular-price').innerHTML = regularPriceInput.value;
-            form.querySelector('.membership-price').innerHTML = membershipPriceInput.value;
+            form.querySelector('.service-name').innerHTML = serviceNameInput ? serviceNameInput.value : '';
+            if (regularPriceInput) {
+                form.querySelector('.regular-price').innerHTML = regularPriceInput.value;
+            }
+            if (membershipPriceInput) {
+                form.querySelector('.membership-price').innerHTML = membershipPriceInput.value;
+            }
 
-            form.querySelector('[type="submit"]').remove();
-            form.querySelector('.cancel-btn').outerHTML = `<button type="button" class="edit-btn" onclick='enableEditing("${formId}")'>Edit</button>`;
+            const buttonGroup = form.querySelector('.button-group') || form.querySelector('button[type="submit"]').parentElement;
+            const serviceId = form.querySelector('input[name="id"]').value;
+            buttonGroup.innerHTML = `
+                <button type="button" class="edit-btn" onclick='enableEditing("${formId}")'>Edit</button>
+                <button type="button" class="delete-btn-yellow" onclick="confirmDelete('${serviceId}', '${serviceNameInput ? serviceNameInput.value : ''}')">Delete</button>`;
         }
 
-        // Delete confirmation logic (referenced from appointment.ejs)
-        let formToDelete = null;
-
-        function attachDeleteConfirmation() {
-            document.querySelectorAll('form.delete-form').forEach(form => {
-                form.removeEventListener('submit', handleDeleteSubmit);
-                form.addEventListener('submit', handleDeleteSubmit);
-            });
-        }
-
-        function handleDeleteSubmit(e) {
-            e.preventDefault();
-            formToDelete = this;
+        // Delete confirmation logic
+        function confirmDelete(serviceId, serviceName) {
+            document.getElementById('deleteServiceId').value = serviceId;
+            document.getElementById('deleteServiceName').textContent = serviceName;
             document.getElementById('deleteConfirmModal').style.display = 'flex';
         }
 
-        document.addEventListener("DOMContentLoaded", function() {
-            attachDeleteConfirmation();
-        });
-
-        document.getElementById('confirmDeleteBtn').onclick = function() {
-            if (formToDelete) {
-                formToDelete.submit();
-                formToDelete = null;
-            }
+        document.getElementById('cancelDeleteBtn').onclick = function() {
             document.getElementById('deleteConfirmModal').style.display = 'none';
         };
 
-        document.getElementById('cancelDeleteBtn').onclick = function() {
-            formToDelete = null;
-            document.getElementById('deleteConfirmModal').style.display = 'none';
+        // Close modal when clicking outside
+        document.getElementById('deleteConfirmModal').onclick = function(e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+            }
         };
     </script>
     <%- include('partials/globalScripts') %>
