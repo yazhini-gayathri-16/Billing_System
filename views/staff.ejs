@@ -107,12 +107,12 @@
                     <% staffMembers.forEach(function(staff, index) { %>
                     <tr id="staff-<%= staff._id %>">
                         <td><%= index + 1 %></td>
-                        <td class="editable name"><%= staff.name %></td>
-                        <td class="editable contactNumber"><%= staff.contactNumber %></td>
-                        <td class="editable jobTitle"><%= staff.jobTitle %></td>
-                        <td class="editable employmentStartDate"><%= new Date(staff.employmentStartDate).toISOString().slice(0,10) %></td>
+                        <td><%= staff.name %></td>
+                        <td><%= staff.contactNumber %></td>
+                        <td><%= staff.jobTitle %></td>
+                        <td><%= new Date(staff.employmentStartDate).toISOString().slice(0,10) %></td>
                         <td>
-                            <button type="button" class="edit-btn" onclick="enableEditing('staff-<%= staff._id %>')">Edit</button>
+                            <button type="button" class="preview-btn" onclick="showPreview('<%= staff._id %>')">Preview</button>
                             <form action="/delete-staff" method="post" style="display: inline;">
                                 <input type="hidden" name="id" value="<%= staff._id %>">
                                 <button type="submit" class="delete-btn">Delete</button>
@@ -125,51 +125,180 @@
         </div>
     </div>
 
+    <!-- Staff Preview Modal -->
+    <div id="staffPreviewModal" class="modal-overlay">
+        <div class="modal-content preview-modal">
+            <span class="modal-close" onclick="closePreview()">&times;</span>
+            <h2>Staff Details</h2>
+            <div id="previewContent" class="preview-content">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+            <div class="preview-actions">
+                <button type="button" id="editPreviewBtn" class="edit-btn" onclick="enablePreviewEditing()">Edit</button>
+                <button type="button" id="savePreviewBtn" class="save-btn" style="display:none;" onclick="savePreviewChanges()">Save</button>
+                <button type="button" id="cancelEditBtn" class="cancel-btn" style="display:none;" onclick="cancelPreviewEditing()">Cancel</button>
+                <button type="button" class="close-modal-btn" onclick="closePreview()">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Delete Confirmation Modal -->
-    <div id="deleteConfirmModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.3); z-index:1000; align-items:center; justify-content:center;">
-        <div style="background:#fff; padding:30px 40px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.2); text-align:center;">
-            <p style="margin-bottom:20px;">Are you sure to delete?</p>
-            <button id="confirmDeleteBtn" style="margin-right:20px;">Yes</button>
+    <div id="deleteConfirmModal" class="modal-overlay">
+        <div class="modal-content">
+            <p>Are you sure to delete?</p>
+            <button id="confirmDeleteBtn">Yes</button>
             <button id="cancelDeleteBtn">No</button>
         </div>
     </div>
 
     <script>
-        // Enable editing functionality
-        function enableEditing(rowId) {
-            const row = document.getElementById(rowId);
-            row.querySelectorAll('.editable').forEach(cell => {
-                const key = cell.classList[1];
-                cell.innerHTML = key === 'employmentStartDate'
-                    ? `<input type="date" name="${key}" value="${cell.textContent.trim()}">`
-                    : `<input type="text" name="${key}" value="${cell.textContent.trim()}">`;
-            });
+        // Store all staff data for preview
+        const staffData = <%- JSON.stringify(staffMembers) %>;
+        let currentStaffId = null;
+        let originalPreviewData = null;
 
-            const editButton = row.querySelector('.edit-btn');
-            editButton.textContent = 'Save';
-            editButton.setAttribute('onclick', `saveChanges('${rowId}')`);
+        // Show staff preview modal
+        function showPreview(staffId) {
+            currentStaffId = staffId;
+            const staff = staffData.find(s => s._id === staffId);
+            if (!staff) return;
+
+            // Store original data for cancel functionality
+            originalPreviewData = { ...staff };
+
+            const birthdate = new Date(staff.birthdate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+            const employmentStartDate = new Date(staff.employmentStartDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+
+            const previewHtml = `
+                <div class="preview-photo">
+                    ${staff.aadhaarPhoto ? `<img src="${staff.aadhaarPhoto}" alt="Staff Photo">` : '<div class="no-photo">No Photo</div>'}
+                </div>
+                <div class="preview-details">
+                    <div class="detail-row">
+                        <label>Name:</label>
+                        <span class="detail-value" data-field="name">${staff.name}</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>Email:</label>
+                        <span class="detail-value" data-field="email">${staff.email}</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>Birthdate:</label>
+                        <span class="detail-value" data-field="birthdate" data-raw="${new Date(staff.birthdate).toISOString().slice(0,10)}">${birthdate}</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>Contact Number:</label>
+                        <span class="detail-value" data-field="contactNumber">${staff.contactNumber}</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>Gender:</label>
+                        <span class="detail-value" data-field="gender">${staff.gender}</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>Address:</label>
+                        <span class="detail-value" data-field="address">${staff.address}</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>Job Title:</label>
+                        <span class="detail-value" data-field="jobTitle">${staff.jobTitle}</span>
+                    </div>
+                    <div class="detail-row non-editable">
+                        <label>Employment Start Date:</label>
+                        <span class="detail-value" data-field="employmentStartDate">${employmentStartDate}</span>
+                    </div>
+                    <div class="detail-row non-editable">
+                        <label>Aadhaar ID:</label>
+                        <span class="detail-value" data-field="aadhaarId">${staff.aadhaarId}</span>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('previewContent').innerHTML = previewHtml;
+            document.getElementById('staffPreviewModal').style.display = 'flex';
+            
+            // Reset buttons
+            document.getElementById('editPreviewBtn').style.display = 'inline-block';
+            document.getElementById('savePreviewBtn').style.display = 'none';
+            document.getElementById('cancelEditBtn').style.display = 'none';
         }
 
-        // Save the updated staff details
-        function saveChanges(rowId) {
-            const row = document.getElementById(rowId);
-            const formData = {};
-            row.querySelectorAll('input').forEach(input => formData[input.name] = input.value);
+        // Close preview modal
+        function closePreview() {
+            document.getElementById('staffPreviewModal').style.display = 'none';
+            currentStaffId = null;
+            originalPreviewData = null;
+        }
+
+        // Enable editing in preview modal
+        function enablePreviewEditing() {
+            const editableFields = document.querySelectorAll('.detail-value:not(.non-editable *)');
+            
+            editableFields.forEach(span => {
+                const field = span.dataset.field;
+                const value = span.dataset.raw || span.textContent;
+                
+                // Skip non-editable fields
+                if (field === 'employmentStartDate' || field === 'aadhaarId') return;
+                
+                let inputHtml = '';
+                if (field === 'birthdate') {
+                    inputHtml = `<input type="date" class="edit-input" data-field="${field}" value="${value}">`;
+                } else if (field === 'gender') {
+                    inputHtml = `
+                        <select class="edit-input" data-field="${field}">
+                            <option value="Male" ${value === 'Male' ? 'selected' : ''}>Male</option>
+                            <option value="Female" ${value === 'Female' ? 'selected' : ''}>Female</option>
+                            <option value="Other" ${value === 'Other' ? 'selected' : ''}>Other</option>
+                        </select>
+                    `;
+                } else if (field === 'address') {
+                    inputHtml = `<textarea class="edit-input" data-field="${field}">${value}</textarea>`;
+                } else {
+                    inputHtml = `<input type="text" class="edit-input" data-field="${field}" value="${value}">`;
+                }
+                
+                span.innerHTML = inputHtml;
+            });
+
+            // Toggle buttons
+            document.getElementById('editPreviewBtn').style.display = 'none';
+            document.getElementById('savePreviewBtn').style.display = 'inline-block';
+            document.getElementById('cancelEditBtn').style.display = 'inline-block';
+        }
+
+        // Cancel editing and restore original values
+        function cancelPreviewEditing() {
+            if (originalPreviewData) {
+                showPreview(currentStaffId);
+            }
+        }
+
+        // Save changes from preview modal
+        function savePreviewChanges() {
+            const formData = { id: currentStaffId };
+            
+            document.querySelectorAll('.edit-input').forEach(input => {
+                formData[input.dataset.field] = input.value;
+            });
 
             fetch('/update-staff', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: rowId.split('-')[1], ...formData })
+                body: JSON.stringify(formData)
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
+                    alert('Staff details updated successfully!');
                     location.reload();
                 } else {
-                    alert('Failed to update staff');
+                    alert('Failed to update staff details');
                 }
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating staff details');
+            });
         }
 
         // Delete confirmation logic
@@ -204,6 +333,13 @@
             formToDelete = null;
             document.getElementById('deleteConfirmModal').style.display = 'none';
         };
+
+        // Close modal when clicking outside
+        document.getElementById('staffPreviewModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePreview();
+            }
+        });
     </script>
     <%- include('partials/globalScripts') %>
 </body>

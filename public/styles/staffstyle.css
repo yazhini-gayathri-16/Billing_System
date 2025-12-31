@@ -117,6 +117,20 @@ table th, table td {
     border-bottom: 1px solid #ddd;
 }
 
+.preview-btn {
+    background-color: #17a2b8;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    margin-right: 5px;
+    border: none;
+    cursor: pointer;
+}
+
+.preview-btn:hover {
+    background-color: #138496;
+}
+
 .edit-btn {
     background-color: #007BFF;
     color: white;
@@ -124,6 +138,7 @@ table th, table td {
     border-radius: 5px;
     margin-right: 5px;
     border: none;
+    cursor: pointer;
 }
 
 .delete-btn {
@@ -132,6 +147,7 @@ table th, table td {
     padding: 5px 10px;
     border-radius: 5px;
     border: none;
+    cursor: pointer;
 }
 
 .edit-btn:hover {
@@ -142,29 +158,201 @@ table th, table td {
     background-color: #c82333;
 }
 
-/* Delete Confirmation Modal Styles */
-#deleteConfirmModal {
-    display: none; /* Hidden by default */
+.save-btn {
+    background-color: #28a745;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 5px;
+    margin-right: 10px;
+    border: none;
+    cursor: pointer;
+}
+
+.save-btn:hover {
+    background-color: #218838;
+}
+
+.cancel-btn {
+    background-color: #6c757d;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 5px;
+    margin-right: 10px;
+    border: none;
+    cursor: pointer;
+}
+
+.cancel-btn:hover {
+    background-color: #5a6268;
+}
+
+.close-modal-btn {
+    background-color: #6c757d;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+}
+
+.close-modal-btn:hover {
+    background-color: #5a6268;
+}
+
+/* Modal Overlay Styles */
+.modal-overlay {
+    display: none;
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0,0,0,0.3);
+    background: rgba(0,0,0,0.5);
     z-index: 1000;
     align-items: center;
     justify-content: center;
 }
 
-#deleteConfirmModal .modal-content {
+.modal-content {
     background: #fff;
     padding: 30px 40px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     text-align: center;
     min-width: 250px;
+    position: relative;
 }
 
+/* Staff Preview Modal */
+.preview-modal {
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    text-align: left;
+}
+
+.preview-modal h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+    border-bottom: 2px solid #4CAF50;
+    padding-bottom: 10px;
+}
+
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    color: #666;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: #333;
+}
+
+.preview-content {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.preview-photo {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.preview-photo img {
+    max-width: 150px;
+    max-height: 150px;
+    border-radius: 10px;
+    border: 3px solid #4CAF50;
+    object-fit: cover;
+}
+
+.no-photo {
+    width: 150px;
+    height: 150px;
+    background: #e0e0e0;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    margin: 0 auto;
+}
+
+.preview-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.detail-row {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #4CAF50;
+}
+
+.detail-row.non-editable {
+    border-left-color: #6c757d;
+    background: #e9ecef;
+}
+
+.detail-row label {
+    min-width: 160px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0;
+}
+
+.detail-value {
+    flex: 1;
+    color: #555;
+}
+
+.edit-input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #4CAF50;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.edit-input:focus {
+    outline: none;
+    border-color: #45a049;
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+}
+
+textarea.edit-input {
+    min-height: 60px;
+    resize: vertical;
+}
+
+.preview-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #ddd;
+}
+
+.preview-actions button {
+    padding: 10px 20px;
+    font-size: 14px;
+}
+
+/* Delete Confirmation Modal Styles */
 #deleteConfirmModal p {
     margin-bottom: 20px;
     font-size: 1.1em;
@@ -203,8 +391,22 @@ table th, table td {
     .form-row {
         flex-direction: column;
     }
-    #deleteConfirmModal .modal-content {
-        padding: 20px 10px;
+    .modal-content {
+        padding: 20px 15px;
         min-width: 180px;
+    }
+    .preview-modal {
+        width: 95%;
+        padding: 20px 15px;
+    }
+    .detail-row {
+        flex-direction: column;
+        gap: 5px;
+    }
+    .detail-row label {
+        min-width: auto;
+    }
+    .preview-actions {
+        flex-wrap: wrap;
     }
 }
