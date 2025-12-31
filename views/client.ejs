@@ -42,13 +42,43 @@
                     </div>
                     <div class="form-group">
                         <label for="birthMonth">Birth Month:</label>
-                        <input type="month" autocomplete="off" name="birthMonth" required>
+                        <select name="birthMonth" required>
+                            <option value="">Select Month</option>
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
                     </div>
                 </div>
 
                 <div class="form-row">
-                <label for="anniversaryMonth">Anniversary Month:</label>
-                <input type="month" autocomplete="off" name="anniversaryMonth">
+                <div class="form-group">
+                    <label for="anniversaryMonth">Anniversary Month:</label>
+                    <select name="anniversaryMonth">
+                        <option value="">Select Month</option>
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                </div>
 
                 <label for="registeredDate">Registered Date:</label>
                 <input type="date" autocomplete="off" id="registeredDate" name="registeredDate" required onchange="setValidTillDate()">
@@ -249,11 +279,7 @@
         const formData = new FormData(form);
         const membershipData = {};
         formData.forEach((value, key) => {
-            if (key === 'birthMonth' || key === 'anniversaryMonth') {
-                membershipData[key] = value.split('-')[1]; // Extract only the month
-            } else {
-                membershipData[key] = value;
-            }
+            membershipData[key] = value;
         });
 
         fetch('/add-membership', {
