@@ -178,7 +178,10 @@
                     <input type="number" name="grandTotal" id="grandTotal" readonly>
                 </div>
 
-                <button type="submit" class="button-generate">Generate Bill</button>
+                <div class="button-row">
+                    <button type="button" class="button-generate" onclick="showBillPreview()">Preview Bill</button>
+                    <button type="submit" class="button-generate">Generate Bill</button>
+                </div>
             </form>
             <div id="staffList" style="display: none;">
                 <% staffMembers.forEach(function(staff) { %>
@@ -667,7 +670,324 @@
             calculateGrandTotal(); // Recalculate the grand total when subtotal changes
         }
 
+        // Bill Preview Functions
+        function showBillPreview() {
+            // Validate required fields
+            const customerName = document.getElementById('customerName').value;
+            const customerNumber = document.getElementById('customerNumber').value;
+            const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;
+            
+            if (!customerName || !customerNumber) {
+                alert('Please fill in customer name and contact number');
+                return;
+            }
+            
+            if (subtotal === 0) {
+                alert('Please add at least one package');
+                return;
+            }
+            
+            // Format date
+            const dateVal = document.getElementById('date').value;
+            const timeVal = document.getElementById('time').value;
+            const dateObj = new Date(dateVal);
+            const formattedDate = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' });
+            
+            // Populate preview
+            document.getElementById('previewDate').textContent = formattedDate;
+            document.getElementById('previewTime').textContent = timeVal;
+            document.getElementById('previewCustomerName').textContent = customerName;
+            
+            // Get packages
+            const servicesBody = document.getElementById('previewServicesBody');
+            servicesBody.innerHTML = '';
+            
+            let grossTotal = 0;
+            const serviceItems = document.querySelectorAll('.service-item');
+            serviceItems.forEach((item, index) => {
+                const packageInput = item.querySelector('[name^="packages"]');
+                const priceInput = item.querySelector('[name^="prices"]');
+                const includedServicesInput = item.querySelector('[name^="includedServices"]');
+                
+                if (packageInput && packageInput.value && priceInput && priceInput.value) {
+                    const price = parseFloat(priceInput.value) || 0;
+                    grossTotal += price;
+                    const includedServices = includedServicesInput ? includedServicesInput.value : '';
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${packageInput.value}${includedServices ? '<br><small style="color:#666;">(' + includedServices + ')</small>' : ''}</td>
+                        <td>${price.toFixed(2)}</td>
+                        <td>1</td>
+                        <td>0.00</td>
+                        <td>${price.toFixed(2)}</td>
+                    `;
+                    servicesBody.appendChild(row);
+                }
+            });
+            
+            // Calculate discount
+            const discountType = document.querySelector('input[name="discountType"]:checked').value;
+            let discount = 0;
+            
+            if (discountType === 'percentage') {
+                const discountPercent = parseFloat(document.getElementById('discountPercentageInput').value) || 0;
+                discount = subtotal * (discountPercent / 100);
+            } else {
+                discount = parseFloat(document.getElementById('discountRupeesInput').value) || 0;
+            }
+            
+            // Update table footer
+            document.getElementById('previewGrossTotal').textContent = grossTotal.toFixed(2);
+            document.getElementById('previewTotalDiscount').textContent = discount.toFixed(2);
+            
+            const netTotal = grossTotal - discount;
+            document.getElementById('previewNetTotal').textContent = netTotal.toFixed(2);
+            
+            // Update summary
+            document.getElementById('previewSummaryGross').textContent = grossTotal.toFixed(2);
+            document.getElementById('previewSummaryDiscount').textContent = discount.toFixed(2);
+            document.getElementById('previewGrandTotal').textContent = netTotal.toFixed(2);
+            document.getElementById('previewPaymentMethod').textContent = document.querySelector('input[name="paymentMethod"]:checked').value;
+            
+            // Show modal
+            document.getElementById('billPreviewModal').style.display = 'block';
+        }
+        
+        function closeBillPreview() {
+            document.getElementById('billPreviewModal').style.display = 'none';
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('billPreviewModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+
     </script>
+
+    <!-- Bill Preview Modal -->
+    <div id="billPreviewModal" class="preview-modal">
+        <div class="preview-modal-content">
+            <span class="preview-close" onclick="closeBillPreview()">&times;</span>
+            <div class="preview-container">
+                <!-- Header -->
+                <div class="preview-header">
+                    <h1 class="preview-salon-name">NOBLE EVERGREEN UNISEX SALON</h1>
+                    <p class="preview-phone">7349661676</p>
+                </div>
+
+                <!-- Customer Details -->
+                <div class="preview-details">
+                    <div class="preview-row">
+                        <span class="preview-label">Customer Name</span>
+                        <span class="preview-value">: <span id="previewCustomerName"></span></span>
+                    </div>
+                    <div class="preview-row">
+                        <span class="preview-label">Bill Number</span>
+                        <span class="preview-value">: <span id="previewBillNumber">PREVIEW</span></span>
+                    </div>
+                    <div class="preview-row">
+                        <span class="preview-label">Date</span>
+                        <span class="preview-value">: <span id="previewDate"></span>, <span id="previewTime"></span></span>
+                    </div>
+                </div>
+
+                <hr class="preview-divider">
+
+                <!-- Packages Table -->
+                <table class="preview-table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Gross</th>
+                            <th>Qty</th>
+                            <th>Disc</th>
+                            <th>Net</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewServicesBody">
+                    </tbody>
+                    <tfoot>
+                        <tr class="preview-total-row">
+                            <td><strong>Total</strong></td>
+                            <td><span id="previewGrossTotal"></span></td>
+                            <td></td>
+                            <td><span id="previewTotalDiscount"></span></td>
+                            <td><strong><span id="previewNetTotal"></span></strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <hr class="preview-divider">
+
+                <!-- Summary -->
+                <div class="preview-summary">
+                    <div class="preview-summary-row">
+                        <span>Gross Total</span>
+                        <span id="previewSummaryGross"></span>
+                    </div>
+                    <div class="preview-summary-row">
+                        <span>Discount</span>
+                        <span id="previewSummaryDiscount"></span>
+                    </div>
+                    <div class="preview-summary-row preview-net-total">
+                        <span><strong>Net Total</strong></span>
+                        <span><strong id="previewGrandTotal"></strong></span>
+                    </div>
+                    <div class="preview-summary-row">
+                        <span>Payment Mode</span>
+                        <span id="previewPaymentMethod"></span>
+                    </div>
+                </div>
+
+                <div class="preview-footer">
+                    <p>Thank you for visiting!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .button-row {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 15px;
+        }
+        .preview-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow: auto;
+        }
+        .preview-modal-content {
+            background-color: #fff;
+            margin: 2% auto;
+            width: 95%;
+            max-width: 550px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        .preview-close {
+            position: absolute;
+            right: 12px;
+            top: 8px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #999;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .preview-close:hover {
+            color: #333;
+        }
+        .preview-container {
+            padding: 25px 30px;
+            font-family: 'Arial', sans-serif;
+        }
+        .preview-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .preview-salon-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin: 0 0 5px 0;
+        }
+        .preview-phone {
+            font-size: 13px;
+            color: #666;
+            margin: 0;
+        }
+        .preview-details {
+            margin-bottom: 15px;
+        }
+        .preview-row {
+            display: flex;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+        .preview-label {
+            width: 120px;
+            color: #333;
+        }
+        .preview-value {
+            color: #333;
+        }
+        .preview-divider {
+            border: none;
+            border-top: 1px solid #333;
+            margin: 15px 0;
+        }
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        .preview-table th {
+            text-align: left;
+            padding: 8px 5px;
+            border-bottom: 1px solid #333;
+            font-weight: bold;
+            color: #333;
+        }
+        .preview-table td {
+            padding: 8px 5px;
+            vertical-align: top;
+            color: #333;
+        }
+        .preview-table th:nth-child(1), .preview-table td:nth-child(1) { width: 45%; }
+        .preview-table th:nth-child(2), .preview-table td:nth-child(2) { width: 15%; text-align: right; }
+        .preview-table th:nth-child(3), .preview-table td:nth-child(3) { width: 10%; text-align: center; }
+        .preview-table th:nth-child(4), .preview-table td:nth-child(4) { width: 15%; text-align: right; }
+        .preview-table th:nth-child(5), .preview-table td:nth-child(5) { width: 15%; text-align: right; }
+        .preview-total-row {
+            border-top: 1px solid #333;
+        }
+        .preview-total-row td {
+            padding-top: 10px;
+            font-weight: bold;
+        }
+        .preview-summary {
+            width: 60%;
+            margin-left: auto;
+            margin-top: 15px;
+        }
+        .preview-summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 13px;
+            color: #333;
+        }
+        .preview-net-total {
+            border-top: 1px solid #333;
+            margin-top: 5px;
+            padding-top: 8px;
+        }
+        .preview-footer {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px dashed #ccc;
+        }
+        .preview-footer p {
+            font-size: 12px;
+            color: #666;
+            margin: 0;
+        }
+    </style>
+
     <%- include('partials/globalScripts') %>
 </body>
 </html>

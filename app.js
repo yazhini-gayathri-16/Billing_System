@@ -1248,7 +1248,192 @@ app.get('/sales', async (req, res) => {
     }
 });
 
+// API route for filtered sales data
+app.get('/api/sales-data', async (req, res) => {
+    try {
+        const { filter, fromDate, toDate } = req.query;
+        let startDate, endDate;
+        const now = new Date();
+        
+        // Calculate date range based on filter type
+        switch(filter) {
+            case 'today':
+                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+                endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+                break;
+            case 'weekly':
+                const dayOfWeek = now.getDay();
+                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek, 0, 0, 0);
+                endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+                break;
+            case 'monthly':
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+                break;
+            case 'yearly':
+                startDate = new Date(now.getFullYear(), 0, 1, 0, 0, 0);
+                endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+                break;
+            case 'custom':
+                startDate = new Date(fromDate);
+                startDate.setHours(0, 0, 0, 0);
+                endDate = new Date(toDate);
+                endDate.setHours(23, 59, 59, 999);
+                break;
+            default:
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+        }
 
+        // Total income from Fetch (services + packages)
+        const totalIncomeFetch = await Fetch.aggregate([
+            { $match: { date: { $gte: startDate, $lte: endDate } } },
+            { $group: { _id: null, total: { $sum: "$grandTotal" } } }
+        ]);
+
+        // Total income from Products
+        const totalIncomePro = await ProductBill.aggregate([
+            { $match: { date: { $gte: startDate, $lte: endDate } } },
+            { $group: { _id: null, total: { $sum: "$grandTotal" } } }
+        ]);
+
+        // Total expenses
+        const totalExpenses = await Expense.aggregate([
+            { $match: { date: { $gte: startDate, $lte: endDate } } },
+            { $group: { _id: null, total: { $sum: "$amount" } } }
+        ]);
+
+        // Service income
+        const serviceIncomeAgg = await Fetch.aggregate([
+            { $match: { date: { $gte: startDate, $lte: endDate }, billType: "service" } },
+            { $group: { _id: null, total: { $sum: "$grandTotal" } } }
+        ]);
+
+        // Package income
+        const packageIncomeAgg = await Fetch.aggregate([
+            { $match: { date: { $gte: startDate, $lte: endDate }, billType: "package" } },
+            { $group: { _id: null, total: { $sum: "$grandTotal" } } }
+        ]);
+
+        // Membership income
+        const membershipIncomeAgg = await Membership.aggregate([
+            { $match: { registeredDate: { $gte: startDate, $lte: endDate } } },
+            { $group: { _id: null, total: { $sum: "$memprice" } } }
+        ]);
+
+        // Service payment methods
+        const totalIncomeUPI = await Fetch.aggregate([
+            { $match: { date: { $gte: startDate, $lte: endDate }, paymentMethod: "UPI", billType: "service" } },
+            { $group: { _id: null, total: { $sum: "$grandTotal" } } }
+        ]);
+        const totalIncomeCard = await Fetch.aggregate([
+            { $match: { date: { $gte: startDate, $lte: endDate }, paymentMethod: "Card", billType: "service" } },
+            { $group: { _id: null, total: { $sum: "$grandTotal" } } }
+        ]);
+        const totalIncomeCash = await Fetch.aggregate([
+            { $match: { date: { $gte: startDate, $lte: endDate }, paymentMethod: "Cash", billType: "service" } },
+            { $group: { _id: null, total: { $sum: "$grandTotal" } } }
+        ]);
+
+        // Package payment methods
+        const totalIncomeUPIP = await Fetch.aggregate([
+            { $match: { date: { $gte: startDate, $lte: endDate }, paymentMethod: "UPI", billType: "package" } },
+            { $group: { _id: null, total: { $sum: "$grandTotal" } } }
+        ]);
+        const totalIncomeCardP = await Fetch.aggregate([
+            { $match: { date: { $gte: startDate, $lte: endDate }, paymentMethod: "Card", billType: "package" } },
+            { $group: { _id: null, total: { $sum: "$grandTotal" } } }
+        ]);
+        const totalIncomeCashP = await Fetch.aggregate([
+            { $match: { date: { $gte: startDate, $lte: endDate }, paymentMethod: "Cash", billType: "package" } },
+            { $group: { _id: null, total: { $sum: "$grandTotal" } } }
+        ]);
+
+        // Membership payment methods
+        const totalIncomeUPIM = await Membership.aggregate([
+            { $match: { registeredDate: { $gte: startDate, $lte: endDate }, mempaymentMethod: "UPI" } },
+            { $group: { _id: null, total: { $sum: "$memprice" } } }
+        ]);
+        const totalIncomeCardM = await Membership.aggregate([
+            { $match: { registeredDate: { $gte: startDate, $lte: endDate }, mempaymentMethod: "Card" } },
+            { $group: { _id: null, total: { $sum: "$memprice" } } }
+        ]);
+        const totalIncomeCashM = await Membership.aggregate([
+            { $match: { registeredDate: { $gte: startDate, $lte: endDate }, mempaymentMethod: "Cash" } },
+            { $group: { _id: null, total: { $sum: "$memprice" } } }
+        ]);
+
+        // Product payment methods
+        const totalIncomeUPIPro = await ProductBill.aggregate([
+            { $match: { date: { $gte: startDate, $lte: endDate }, paymentMethod: "UPI" } },
+            { $group: { _id: null, total: { $sum: "$grandTotal" } } }
+        ]);
+        const totalIncomeCardPro = await ProductBill.aggregate([
+            { $match: { date: { $gte: startDate, $lte: endDate }, paymentMethod: "Card" } },
+            { $group: { _id: null, total: { $sum: "$grandTotal" } } }
+        ]);
+        const totalIncomeCashPro = await ProductBill.aggregate([
+            { $match: { date: { $gte: startDate, $lte: endDate }, paymentMethod: "Cash" } },
+            { $group: { _id: null, total: { $sum: "$grandTotal" } } }
+        ]);
+
+        // Extract values safely
+        const totalUPI = totalIncomeUPI[0]?.total || 0;
+        const totalCard = totalIncomeCard[0]?.total || 0;
+        const totalCash = totalIncomeCash[0]?.total || 0;
+
+        const totalUPIM = totalIncomeUPIM[0]?.total || 0;
+        const totalCardM = totalIncomeCardM[0]?.total || 0;
+        const totalCashM = totalIncomeCashM[0]?.total || 0;
+
+        const totalUPIP = totalIncomeUPIP[0]?.total || 0;
+        const totalCardP = totalIncomeCardP[0]?.total || 0;
+        const totalCashP = totalIncomeCashP[0]?.total || 0;
+
+        const totalUPIPro = totalIncomeUPIPro[0]?.total || 0;
+        const totalCardPro = totalIncomeCardPro[0]?.total || 0;
+        const totalCashPro = totalIncomeCashPro[0]?.total || 0;
+
+        const totUPI = totalUPI + totalUPIM + totalUPIP + totalUPIPro;
+        const totCard = totalCard + totalCardM + totalCardP + totalCardPro;
+        const totCash = totalCash + totalCashM + totalCashP + totalCashPro;
+
+        const serviceIncome = serviceIncomeAgg[0]?.total || 0;
+        const packageIncome = packageIncomeAgg[0]?.total || 0;
+        const membershipIncome = membershipIncomeAgg[0]?.total || 0;
+        const productIncome = totalIncomePro[0]?.total || 0;
+
+        const finalTotal = (totalIncomeFetch[0]?.total || 0) + membershipIncome + productIncome;
+
+        res.json({
+            success: true,
+            totalIncome: finalTotal,
+            totalExpenses: totalExpenses[0]?.total || 0,
+            serviceIncome,
+            packageIncome,
+            membershipIncome,
+            productIncome,
+            totalUPI,
+            totalCard,
+            totalCash,
+            totalUPIP,
+            totalCardP,
+            totalCashP,
+            totalUPIPro,
+            totalCardPro,
+            totalCashPro,
+            totalUPIM,
+            totalCardM,
+            totalCashM,
+            totUPI,
+            totCard,
+            totCash
+        });
+    } catch (error) {
+        console.error('Error fetching filtered sales data:', error);
+        res.status(500).json({ success: false, message: 'Error fetching sales data' });
+    }
+});
 
 app.get('/monthly-data', async (req, res) => {
     try {
