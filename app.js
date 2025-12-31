@@ -1677,19 +1677,23 @@ app.post('/appointments', async (req, res) => {
         });
 
         await newAppointment.save();
-        const currentTimeIST = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000);
-
-        const appointments = await Appointment.find({ dateTime: { $gt: currentTimeIST } });
-        //console.log(appointments);
         
+        // Get stylist name for the response
+        const staffMember = await Staff.findById(specialist);
+        const specialistName = staffMember ? staffMember.name : 'N/A';
 
         res.json({
             success: true,
-            appointmentIndex: appointments.length,
-            customerName: newAppointment.customerName,
-            dateTime: newAppointment.dateTime,
-            contactNumber: newAppointment.contactNumber,
-            id: newAppointment._id
+            id: newAppointment._id,
+            appointment: {
+                customerName: newAppointment.customerName,
+                dateTime: newAppointment.dateTime,
+                contactNumber: newAppointment.contactNumber,
+                specialist: newAppointment.specialist,
+                specialistName: specialistName,
+                serviceType: newAppointment.serviceType,
+                specialNeeds: newAppointment.specialNeeds
+            }
         });
 
         const transporter = nodemailer.createTransport({
@@ -1732,12 +1736,15 @@ try {
 
 // In your app.js or routes file
 app.post("/update-appointment", async (req, res) => {
-    const { id, customerName, contactNumber, dateTime } = req.body;
+    const { id, customerName, contactNumber, dateTime, serviceType, specialist, specialNeeds } = req.body;
     try {
         await Appointment.findByIdAndUpdate(id, {
             customerName,
             contactNumber,
-            dateTime: new Date(dateTime)
+            dateTime: new Date(dateTime),
+            serviceType,
+            specialist,
+            specialNeeds
         });
         res.json({ success: true });
     } catch (error) {
@@ -2708,14 +2715,21 @@ app.get("/api/product-bills", async (req, res) => {
     }
 });
 
-app.post("/export", async (req, res) => {
+// Fetch bills for display in table (JSON response)
+app.post("/fetch-bills", async (req, res) => {
     const { fromDate, toDate, billType } = req.body;
 
     try {
+        const startDate = new Date(fromDate);
+        startDate.setHours(0, 0, 0, 0);
+        
+        const endDate = new Date(toDate);
+        endDate.setHours(23, 59, 59, 999);
+
         const query = {
             date: {
-                $gte: new Date(fromDate),
-                $lte: new Date(toDate)
+                $gte: startDate,
+                $lte: endDate
             }
         };
 
@@ -2725,165 +2739,326 @@ app.post("/export", async (req, res) => {
             query.billType = "service";
         }
 
-        const data = await Fetch.find(query);
+        const bills = await Fetch.find(query).sort({ date: -1 });
+
+        if (bills.length === 0) {
+            return res.status(404).json({ message: "No records found for the selected date range." });
+        }
+
+        res.json({ bills });
+    } catch (error) {
+        console.error("Error fetching bills:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+// Individual bill preview PDF
+app.get("/bill-preview/:id", async (req, res) => {
+    try {
+        const bill = await Fetch.findById(req.params.id);
+        
+        if (!bill) {
+            return res.status(404).send("Bill not found");
+        }
+
+        const PDFDocument = require('pdfkit');
+        const doc = new PDFDocument({ size: 'A5', margin: 30 });
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="bill_${bill._id}.pdf"`);
+        doc.pipe(res);
+
+        const invoiceNumber = 'NE' + bill._id.toString().slice(-8).toUpperCase();
+        const billDate = new Date(bill.date);
+        const formattedDate = billDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' });
+        const formattedTime = bill.time || billDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+        // Header - Salon Name
+        doc.fontSize(16)
+           .font('Helvetica-Bold')
+           .text('NOBLE EVERGREEN UNISEX SALON', { align: 'center' });
+        doc.fontSize(9)
+           .font('Helvetica')
+           .text('7349661676', { align: 'center' });
+        doc.moveDown(0.5);
+
+        // Customer Details Section
+        const leftCol = 30;
+        const rightCol = 180;
+        let yPos = doc.y;
+
+        doc.fontSize(10).font('Helvetica');
+        doc.text('Customer Name', leftCol, yPos);
+        doc.text(`: ${bill.customer_name}`, rightCol, yPos);
+        
+        yPos += 15;
+        doc.text('Bill Number', leftCol, yPos);
+        doc.text(`: ${invoiceNumber}`, rightCol, yPos);
+        
+        yPos += 15;
+        doc.text('Date', leftCol, yPos);
+        doc.text(`: ${formattedDate}, ${formattedTime}`, rightCol, yPos);
+
+        doc.moveDown(1);
+
+        // Draw line
+        yPos = doc.y;
+        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 30, yPos).stroke('#000');
+        doc.moveDown(0.3);
+
+        // Services Table Header
+        yPos = doc.y;
+        const colItem = leftCol;
+        const colGross = 150;
+        const colQty = 210;
+        const colDisc = 250;
+        const colNet = 310;
+
+        doc.font('Helvetica-Bold').fontSize(9);
+        doc.text('Item', colItem, yPos);
+        doc.text('Gross', colGross, yPos);
+        doc.text('Qty', colQty, yPos);
+        doc.text('Disc', colDisc, yPos);
+        doc.text('Net', colNet, yPos);
+
+        // Draw line under header
+        yPos += 12;
+        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 30, yPos).stroke('#000');
+        
+        yPos += 5;
+        doc.font('Helvetica').fontSize(9);
+
+        // Combine all services for this bill
+        let totalGross = 0;
+        let totalDiscount = 0;
+
+        (bill.services || []).forEach(service => {
+            const servicePrice = service.price || 0;
+            totalGross += servicePrice;
+            
+            doc.text(service.name, colItem, yPos, { width: 115 });
+            doc.text(servicePrice.toFixed(2), colGross, yPos);
+            doc.text('1', colQty, yPos);
+            doc.text('0.00', colDisc, yPos);
+            doc.text(servicePrice.toFixed(2), colNet, yPos);
+            yPos += 15;
+        });
+
+        // Draw line before total
+        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 30, yPos).stroke('#000');
+        yPos += 5;
+
+        // Total row
+        doc.font('Helvetica-Bold');
+        doc.text('Total', colItem, yPos);
+        doc.text(totalGross.toFixed(2), colGross, yPos);
+        doc.text('', colQty, yPos);
+        
+        // Calculate discount
+        const discountAmount = bill.discountType === 'percentage' 
+            ? (totalGross * bill.discount / 100) 
+            : bill.discount;
+        doc.text(discountAmount.toFixed(2), colDisc, yPos);
+        doc.text(bill.grandTotal.toFixed(2), colNet, yPos);
+
+        // Draw line after total
+        yPos += 15;
+        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 30, yPos).stroke('#000');
+        
+        doc.moveDown(1);
+        yPos = doc.y;
+
+        // Summary section on right side
+        const summaryLeft = 200;
+        const summaryRight = 310;
+
+        doc.font('Helvetica').fontSize(10);
+        doc.text('Gross Total', summaryLeft, yPos);
+        doc.text(totalGross.toFixed(2), summaryRight, yPos);
+        
+        yPos += 15;
+        doc.text('Discount', summaryLeft, yPos);
+        doc.text(discountAmount.toFixed(2), summaryRight, yPos);
+        
+        yPos += 15;
+        doc.font('Helvetica-Bold');
+        doc.text('Net Total (after disc)', summaryLeft, yPos);
+        doc.text(bill.grandTotal.toFixed(2), summaryRight, yPos);
+        
+        yPos += 15;
+        doc.text('Net Payable', summaryLeft, yPos);
+        doc.text(bill.grandTotal.toFixed(2), summaryRight, yPos);
+
+        // Footer
+        doc.moveDown(2);
+        doc.font('Helvetica').fontSize(10);
+        doc.text('Thank you. Please visit again', { align: 'center' });
+
+        doc.end();
+    } catch (error) {
+        console.error("Error generating bill preview:", error);
+        res.status(500).send("Error generating bill preview");
+    }
+});
+
+// Export summary PDF
+app.post("/export", async (req, res) => {
+    const { fromDate, toDate, billType } = req.body;
+
+    try {
+        const startDate = new Date(fromDate);
+        startDate.setHours(0, 0, 0, 0);
+        
+        const endDate = new Date(toDate);
+        endDate.setHours(23, 59, 59, 999);
+
+        const query = {
+            date: {
+                $gte: startDate,
+                $lte: endDate
+            }
+        };
+
+        if (billType === "package") {
+            query.billType = "package";
+        } else if (billType === "service") {
+            query.billType = "service";
+        }
+
+        const data = await Fetch.find(query).sort({ date: -1 });
 
         if (data.length === 0) {
             return res.status(404).send("No records found for the selected date range.");
         }
 
         const PDFDocument = require('pdfkit');
-        const doc = new PDFDocument({ size: 'A3', margin: 40 });
+        const doc = new PDFDocument({ size: 'A4', margin: 40 });
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', 'attachment; filename="billing_data.pdf"');
+        res.setHeader('Content-Disposition', 'attachment; filename="billing_summary.pdf"');
         doc.pipe(res);
 
-        // Title
-        const address = 'Leelavathi Achaer Complex Opp. Muthoot Finance Immadihalli Main Road, Hagadur, Whitefiled, Bangalore - 560066';
-        doc.rect(0, 0, doc.page.width, 60).fill('#8DBE50');
+        // Title Header
+        const address = '1st Floor, Leelavathi Achar Complex, Opp. Muthoot Finance, Immadihalli Main Road, Hagadur, Whitefield, Bangalore - 560066';
+        doc.rect(0, 0, doc.page.width, 70).fill('#8DBE50');
         doc.fillColor('black')
-            .fontSize(22)
+            .fontSize(18)
             .font('Helvetica-Bold')
-            .text('NOBLE EVERGREEN UNISEX SALON', 0, 18, { align: 'center' })
-            .moveDown(0.2)
-            .fontSize(11)
+            .text('NOBLE EVERGREEN UNISEX SALON', 0, 15, { align: 'center' })
+            .moveDown(0.1)
+            .fontSize(9)
             .font('Helvetica')
-            .text(address, { align: 'center' })
-            .moveDown(1);
-        doc.moveDown(1);
+            .text(address, 40, 38, { align: 'center', width: doc.page.width - 80 });
         
+        doc.moveDown(2);
         doc.fillColor('black')
             .fontSize(14)
+            .font('Helvetica-Bold')
+            .text('Billing Summary Report', { align: 'center' });
+        doc.moveDown(0.3);
+        doc.fontSize(10)
             .font('Helvetica')
-            .text('Billing Records', { align: 'center' });
-        doc.moveDown(0.5);
-        doc.fontSize(11)
             .text(`From: ${fromDate}   To: ${toDate}   Type: ${billType}`, { align: 'center' });
         doc.moveDown(1);
 
-        // Table columns and centering
-        const colWidths = [140, 90, 90, 90, 90, 80, 70];
-        const rowHeight = 20;
+        // Table columns - Summary format (combined services per bill)
+        const colWidths = [30, 100, 80, 90, 70, 80];
+        const rowHeight = 25;
         const tableWidth = colWidths.reduce((a, b) => a + b, 0);
         const tableStartX = (doc.page.width - tableWidth) / 2;
-        const colX = [
-            tableStartX,
-            tableStartX + colWidths[0],
-            tableStartX + colWidths[0] + colWidths[1],
-            tableStartX + colWidths[0] + colWidths[1] + colWidths[2],
-            tableStartX + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3],
-            tableStartX + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4],
-            tableStartX + colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4] + colWidths[5]
-        ];
-
-        const tableTop = doc.y + 10;
-
-        // Header background
-        doc.rect(colX[0], tableTop, tableWidth, rowHeight)
-            .fill('#c7dfbf');
-        doc.fillColor('black')
-            .fontSize(11)
-            .font('Helvetica-Bold')
-            .text('Customer Name', colX[0] + 4, tableTop + 5, { width: colWidths[0] - 8 })
-            .text('Number', colX[1] + 4, tableTop + 5, { width: colWidths[1] - 8 })
-            .text('Date', colX[2] + 4, tableTop + 5, { width: colWidths[2] - 8 })
-            .text('Stylist 1', colX[3] + 4, tableTop + 5, { width: colWidths[3] - 8 })
-            .text('Stylist 2', colX[4] + 4, tableTop + 5, { width: colWidths[4] - 8 })
-            .text('Service', colX[5] + 4, tableTop + 5, { width: colWidths[5] - 8 })
-            .text('Price', colX[6] + 4, tableTop + 5, { width: colWidths[6] - 8 });
-
-        // Draw header borders
-        let y = tableTop;
-        doc.moveTo(colX[0], y).lineTo(colX[0] + tableWidth, y).stroke('#aad381');
-        doc.moveTo(colX[0], y + rowHeight).lineTo(colX[0] + tableWidth, y + rowHeight).stroke('#aad381');
-        for (let i = 0; i < colX.length; i++) {
-            doc.moveTo(colX[i], y).lineTo(colX[i], y + rowHeight).stroke('#aad381');
+        
+        let colX = [tableStartX];
+        for (let i = 0; i < colWidths.length - 1; i++) {
+            colX.push(colX[i] + colWidths[i]);
         }
-        doc.moveTo(colX[colX.length - 1] + colWidths[colWidths.length - 1], y)
-            .lineTo(colX[colX.length - 1] + colWidths[colWidths.length - 1], y + rowHeight)
-            .stroke('#aad381');
 
-        // Table rows
-        y += rowHeight;
-        doc.font('Helvetica').fontSize(10);
+        let tableTop = doc.y + 10;
 
-        // Flatten all services for all bills
-        const allRows = [];
-        data.forEach(bill => {
-            (bill.services || []).forEach(service => {
-                allRows.push({
-                    customer_name: bill.customer_name,
-                    customer_number: bill.customer_number,
-                    date: bill.date ? new Date(bill.date).toISOString().split('T')[0] : '',
-                    stylist1: service.stylist || '-',
-                    stylist2: service.stylist2 || '-',
-                    service: service.name,
-                    price: service.price
-                });
-            });
-        });
+        // Header
+        const drawHeader = (y) => {
+            doc.rect(colX[0], y, tableWidth, rowHeight).fill('#c7dfbf');
+            doc.fillColor('black').fontSize(9).font('Helvetica-Bold');
+            doc.text('Sl.', colX[0] + 4, y + 8, { width: colWidths[0] - 8 });
+            doc.text('Customer Name', colX[1] + 4, y + 8, { width: colWidths[1] - 8 });
+            doc.text('Invoice No.', colX[2] + 4, y + 8, { width: colWidths[2] - 8 });
+            doc.text('Customer No.', colX[3] + 4, y + 8, { width: colWidths[3] - 8 });
+            doc.text('Date', colX[4] + 4, y + 8, { width: colWidths[4] - 8 });
+            doc.text('Total Price', colX[5] + 4, y + 8, { width: colWidths[5] - 8 });
 
-        // Pagination logic
-        const maxY = doc.page.height - doc.page.margins.bottom - rowHeight;
-        for (let idx = 0; idx < allRows.length; idx++) {
-            const row = allRows[idx];
+            // Draw header borders
+            doc.moveTo(colX[0], y).lineTo(colX[0] + tableWidth, y).stroke('#aad381');
+            doc.moveTo(colX[0], y + rowHeight).lineTo(colX[0] + tableWidth, y + rowHeight).stroke('#aad381');
+            for (let i = 0; i <= colWidths.length; i++) {
+                const x = i < colWidths.length ? colX[i] : colX[colWidths.length - 1] + colWidths[colWidths.length - 1];
+                doc.moveTo(x, y).lineTo(x, y + rowHeight).stroke('#aad381');
+            }
+        };
+
+        drawHeader(tableTop);
+        let y = tableTop + rowHeight;
+
+        doc.font('Helvetica').fontSize(9);
+
+        // Process each bill as one row (combined services)
+        const maxY = doc.page.height - doc.page.margins.bottom - rowHeight - 30;
+        let grandTotalSum = 0;
+
+        for (let idx = 0; idx < data.length; idx++) {
+            const bill = data[idx];
+            const invoiceNumber = 'NE' + bill._id.toString().slice(-8).toUpperCase();
+            const billDate = bill.date ? new Date(bill.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) : '';
+            
+            grandTotalSum += bill.grandTotal || 0;
+
             // Alternate row color
             if (idx % 2 === 0) {
                 doc.rect(colX[0], y, tableWidth, rowHeight).fill('#f4f4f9');
-                doc.fillColor('black');
-            } else {
-                doc.fillColor('black');
             }
-            doc.font('Helvetica').fontSize(10); // Ensure normal font for rows
-            doc.text(row.customer_name || '', colX[0] + 4, y + 5, { width: colWidths[0] - 8 });
-            doc.text(row.customer_number || '', colX[1] + 4, y + 5, { width: colWidths[1] - 8 });
-            doc.text(row.date || '', colX[2] + 4, y + 5, { width: colWidths[2] - 8 });
-            doc.text(row.stylist1 || '-', colX[3] + 4, y + 5, { width: colWidths[3] - 8 });
-            doc.text(row.stylist2 || '-', colX[4] + 4, y + 5, { width: colWidths[4] - 8 });
-            doc.text(row.service || '', colX[5] + 4, y + 5, { width: colWidths[5] - 8 });
-            doc.text(`Rs.${row.price?.toFixed(2) || '0.00'}`, colX[6] + 4, y + 5, { width: colWidths[6] - 8 });
+            doc.fillColor('black');
+
+            doc.text(String(idx + 1), colX[0] + 4, y + 8, { width: colWidths[0] - 8 });
+            doc.text(bill.customer_name || '', colX[1] + 4, y + 8, { width: colWidths[1] - 8 });
+            doc.text(invoiceNumber, colX[2] + 4, y + 8, { width: colWidths[2] - 8 });
+            doc.text(String(bill.customer_number || ''), colX[3] + 4, y + 8, { width: colWidths[3] - 8 });
+            doc.text(billDate, colX[4] + 4, y + 8, { width: colWidths[4] - 8 });
+            doc.text(`Rs.${(bill.grandTotal || 0).toFixed(2)}`, colX[5] + 4, y + 8, { width: colWidths[5] - 8 });
 
             // Draw row borders
             doc.moveTo(colX[0], y).lineTo(colX[0] + tableWidth, y).stroke('#aad381');
             doc.moveTo(colX[0], y + rowHeight).lineTo(colX[0] + tableWidth, y + rowHeight).stroke('#aad381');
-            for (let i = 0; i < colX.length; i++) {
-                doc.moveTo(colX[i], y).lineTo(colX[i], y + rowHeight).stroke('#aad381');
+            for (let i = 0; i <= colWidths.length; i++) {
+                const x = i < colWidths.length ? colX[i] : colX[colWidths.length - 1] + colWidths[colWidths.length - 1];
+                doc.moveTo(x, y).lineTo(x, y + rowHeight).stroke('#aad381');
             }
-            doc.moveTo(colX[colX.length - 1] + colWidths[colWidths.length - 1], y)
-                .lineTo(colX[colX.length - 1] + colWidths[colWidths.length - 1], y + rowHeight)
-                .stroke('#aad381');
 
             y += rowHeight;
 
             // Add new page if needed
-            if (y > maxY && idx < allRows.length - 1) {
+            if (y > maxY && idx < data.length - 1) {
                 doc.addPage();
-                y = doc.y;
-                // Redraw header on new page
-                doc.rect(colX[0], y, tableWidth, rowHeight)
-                    .fill('#c7dfbf');
-                doc.fillColor('black')
-                    .fontSize(11)
-                    .font('Helvetica-Bold')
-                    .text('Customer Name', colX[0] + 4, y + 5, { width: colWidths[0] - 8 })
-                    .text('Number', colX[1] + 4, y + 5, { width: colWidths[1] - 8 })
-                    .text('Date', colX[2] + 4, y + 5, { width: colWidths[2] - 8 })
-                    .text('Stylist 1', colX[3] + 4, y + 5, { width: colWidths[3] - 8 })
-                    .text('Stylist 2', colX[4] + 4, y + 5, { width: colWidths[4] - 8 })
-                    .text('Service', colX[5] + 4, y + 5, { width: colWidths[5] - 8 })
-                    .text('Price', colX[6] + 4, y + 5, { width: colWidths[6] - 8 });
-                // Draw header borders
-                doc.moveTo(colX[0], y).lineTo(colX[0] + tableWidth, y).stroke('#aad381');
-                doc.moveTo(colX[0], y + rowHeight).lineTo(colX[0] + tableWidth, y + rowHeight).stroke('#aad381');
-                for (let i = 0; i < colX.length; i++) {
-                    doc.moveTo(colX[i], y).lineTo(colX[i], y + rowHeight).stroke('#aad381');
-                }
-                doc.moveTo(colX[colX.length - 1] + colWidths[colWidths.length - 1], y)
-                    .lineTo(colX[colX.length - 1] + colWidths[colWidths.length - 1], y + rowHeight)
-                    .stroke('#aad381');
-                y += rowHeight;
-                doc.font('Helvetica').fontSize(10); // Set font back to normal for rows
+                tableTop = 40;
+                drawHeader(tableTop);
+                y = tableTop + rowHeight;
             }
         }
+
+        // Grand Total Row
+        doc.rect(colX[0], y, tableWidth, rowHeight).fill('#8DBE50');
+        doc.fillColor('black').font('Helvetica-Bold').fontSize(10);
+        doc.text('GRAND TOTAL', colX[0] + 4, y + 8, { width: colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4] - 8 });
+        doc.text(`Rs.${grandTotalSum.toFixed(2)}`, colX[5] + 4, y + 8, { width: colWidths[5] - 8 });
+        
+        // Draw total row borders
+        doc.moveTo(colX[0], y).lineTo(colX[0] + tableWidth, y).stroke('#aad381');
+        doc.moveTo(colX[0], y + rowHeight).lineTo(colX[0] + tableWidth, y + rowHeight).stroke('#aad381');
+        for (let i = 0; i <= colWidths.length; i++) {
+            const x = i < colWidths.length ? colX[i] : colX[colWidths.length - 1] + colWidths[colWidths.length - 1];
+            doc.moveTo(x, y).lineTo(x, y + rowHeight).stroke('#aad381');
+        }
+
+        // Footer with record count
+        doc.moveDown(2);
+        doc.font('Helvetica').fontSize(9);
+        doc.text(`Total Records: ${data.length}`, { align: 'center' });
 
         doc.end();
     } catch (error) {

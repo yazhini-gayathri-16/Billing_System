@@ -20,7 +20,7 @@
     <div class="container">
         <div class="export-form">
             <h2>Export Billing Data</h2>
-            <form action="/export" method="POST">
+            <form id="filterForm" onsubmit="return false;">
                 <div class="form-row">
                     <div class="form-group">
                         <label for="fromDate">From Date:</label>
@@ -39,48 +39,153 @@
                         </select>
                     </div>
                 </div>
-                <button type="submit">Download PDF</button>
+                <div class="button-row">
+                    <button type="button" id="fetchBtn" onclick="fetchBills()">Fetch Bills</button>
+                    <button type="button" id="downloadBtn" onclick="downloadPDF()" disabled>Download Summary PDF</button>
+                </div>
             </form>
+        </div>
+
+        <!-- Bills Table -->
+        <div id="billsTableContainer" class="billing-data-table" style="display: none;">
+            <h3>Billing Records</h3>
+            <p id="recordCount"></p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Sl.No</th>
+                        <th>Customer Name</th>
+                        <th>Invoice Number</th>
+                        <th>Customer Number</th>
+                        <th>Date</th>
+                        <th>Total Price</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="billsTableBody">
+                </tbody>
+            </table>
         </div>
     </div>
 
     <script>
-        document.querySelector('form').addEventListener('submit', async (event) => {
-    event.preventDefault();
+        let fetchedBills = [];
 
-    const formData = {
-        fromDate: document.getElementById('fromDate').value,
-        toDate: document.getElementById('toDate').value,
-        billType: document.getElementById('billType').value
-    };
+        async function fetchBills() {
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const billType = document.getElementById('billType').value;
 
-    try {
-        const response = await fetch('/export', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData)
-        });
+            if (!fromDate || !toDate) {
+                alert('Please select both From and To dates');
+                return;
+            }
 
-        if (response.ok) {
-            const blob = await response.blob();
-            const downloadUrl = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.download = `billing_records_${formData.fromDate}_to_${formData.toDate}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            alert('Downloaded report successfully');
-        } else {
-            const errorData = await response.json();
-            alert(errorData.message || 'Failed to download report');
+            try {
+                const response = await fetch('/fetch-bills', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fromDate, toDate, billType })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    fetchedBills = data.bills;
+                    displayBills(data.bills);
+                    document.getElementById('downloadBtn').disabled = false;
+                } else {
+                    alert(data.message || 'Failed to fetch bills');
+                    document.getElementById('billsTableContainer').style.display = 'none';
+                    document.getElementById('downloadBtn').disabled = true;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error fetching bills');
+            }
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to download report');
-    }
-});
-        </script>
+
+        function displayBills(bills) {
+            const tbody = document.getElementById('billsTableBody');
+            const container = document.getElementById('billsTableContainer');
+            const countEl = document.getElementById('recordCount');
+
+            if (bills.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No records found</td></tr>';
+                container.style.display = 'block';
+                countEl.textContent = '0 records found';
+                return;
+            }
+
+            countEl.textContent = `${bills.length} record(s) found`;
+
+            tbody.innerHTML = bills.map((bill, index) => {
+                const invoiceNumber = 'NE' + bill._id.slice(-8).toUpperCase();
+                const date = new Date(bill.date).toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: '2-digit'
+                });
+                
+                return `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${bill.customer_name}</td>
+                        <td>${invoiceNumber}</td>
+                        <td>${bill.customer_number}</td>
+                        <td>${date}</td>
+                        <td>₹${bill.grandTotal.toFixed(2)}</td>
+                        <td>
+                            <button class="preview-btn" onclick="previewBill('${bill._id}')">Preview</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            container.style.display = 'block';
+        }
+
+        function previewBill(billId) {
+            window.open(`/bill-preview/${billId}`, '_blank');
+        }
+
+        async function downloadPDF() {
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const billType = document.getElementById('billType').value;
+
+            if (!fromDate || !toDate) {
+                alert('Please select both From and To dates');
+                return;
+            }
+
+            try {
+                const response = await fetch('/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fromDate, toDate, billType })
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = `billing_summary_${fromDate}_to_${toDate}.pdf`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    alert('Downloaded report successfully');
+                } else {
+                    const errorText = await response.text();
+                    alert(errorText || 'Failed to download report');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to download report');
+            }
+        }
+    </script>
     <%- include('partials/globalScripts') %>
 </body>
 </html>

@@ -63,7 +63,14 @@ input[type="date"] {
     border-radius: 4px;
 }
 
-button[type="submit"] {
+.button-row {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+button[type="submit"],
+button[type="button"] {
     background-color: #4CAF50;
     color: white;
     border: none;
@@ -71,12 +78,40 @@ button[type="submit"] {
     font-size: 1rem;
     cursor: pointer;
     border-radius: 4px;
-    margin-top: 20px;
     transition: background-color 0.3s;
 }
 
-button[type="submit"]:hover {
+button[type="submit"]:hover,
+button[type="button"]:hover {
     background-color: #45a049;
+}
+
+button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+#downloadBtn {
+    background-color: #2196F3;
+}
+
+#downloadBtn:hover:not(:disabled) {
+    background-color: #1976D2;
+}
+
+.preview-btn {
+    background-color: #ff9800;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.preview-btn:hover {
+    background-color: #f57c00;
 }
 
 /* Tables */

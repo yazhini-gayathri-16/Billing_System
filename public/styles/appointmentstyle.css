@@ -63,22 +63,69 @@ button:hover {
 }
 
 .appointment-list {
-    width: 80%;
+    width: 95%;
+    max-width: 1400px;
     background-color: #E6F7D1;
     padding: 20px;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    overflow-x: auto;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 
 table th, table td {
-    padding: 12px;
+    padding: 12px 8px;
     text-align: left;
     border-bottom: 1px solid #ddd;
+    word-wrap: break-word;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Column widths */
+table th:nth-child(1), table td:nth-child(1) { width: 5%; }  /* Sl.No */
+table th:nth-child(2), table td:nth-child(2) { width: 12%; } /* Name */
+table th:nth-child(3), table td:nth-child(3) { width: 12%; } /* Service */
+table th:nth-child(4), table td:nth-child(4) { width: 14%; } /* Stylist */
+table th:nth-child(5), table td:nth-child(5) { width: 14%; } /* Timing */
+table th:nth-child(6), table td:nth-child(6) { width: 12%; } /* Contact */
+table th:nth-child(7), table td:nth-child(7) { width: 14%; } /* Special Needs */
+table th:nth-child(8), table td:nth-child(8) { width: 17%; } /* Actions */
+
+/* Editing row styles */
+tr.editing {
+    background-color: #fffde7;
+}
+
+tr.editing td {
+    padding: 15px 8px;
+    vertical-align: top;
+}
+
+/* Input styles inside table cells */
+table td input,
+table td select {
+    width: 100%;
+    max-width: 100%;
+    padding: 8px 6px;
+    font-size: 13px;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+table td input[type="datetime-local"] {
+    font-size: 12px;
+    padding: 6px 4px;
+}
+
+table td select {
+    font-size: 12px;
 }
 
 .edit-btn {
@@ -102,4 +149,17 @@ table th, table td {
 
 .delete-btn:hover {
     background-color: #c82333;
+}
+
+.cancel-btn {
+    background-color: #6c757d;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    margin-left: 5px;
+    font-size: 13px;
+}
+
+.cancel-btn:hover {
+    background-color: #545b62;
 }
