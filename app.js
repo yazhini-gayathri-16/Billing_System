@@ -538,8 +538,20 @@ app.post("/packageBill", async (req, res) => {
         while (req.body[`packages${index}`]) {
             const stylistId = req.body[`stylist${index}`];
             const stylist2Id = req.body[`stylist2${index}`];
+            const packageName = req.body[`packages${index}`];
+            
+            // Look up the package to get included services
+            const packageData = await Package.findOne({ packageName: packageName });
+            const includedServices = packageData && packageData.includedServices ? packageData.includedServices : [];
+            
+            // Format name with included services: "Package Name (Service1, Service2)"
+            let displayName = packageName;
+            if (includedServices.length > 0) {
+                displayName = `${packageName} (${includedServices.join(', ')})`;
+            }
+            
             let serviceObj = {
-                name: req.body[`packages${index}`],
+                name: displayName,
                 price: parseFloat(req.body[`prices${index}`]),
                 stylist: undefined,
                 stylist2: undefined
@@ -870,8 +882,8 @@ app.get("/packagebill", async (req, res) => {
 
 app.get("/api/packages", async (req, res) => {
     try {
-        // Fetch all packages from the database
-        const packages = await Package.find({});
+        // Fetch all packages from the database including includedServices
+        const packages = await Package.find({}, 'packageName packagePrice includedServices gender');
         
         // Send the package list as JSON response
         res.status(200).json(packages);
@@ -1629,14 +1641,7 @@ app.get("/api/services", async (req, res) => {
     }
 });
 
-app.get("/api/packages", async (req, res) => {
-    try {
-        const packages = await Package.find({}, 'packageName packagePrice -_id');
-        res.json(packages);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
+// Duplicate route removed - using the one above
 
 
 // In your app.js or a specific routes file
@@ -2745,7 +2750,25 @@ app.post("/fetch-bills", async (req, res) => {
             return res.status(404).json({ message: "No records found for the selected date range." });
         }
 
-        res.json({ bills });
+        // For package bills, look up included services dynamically
+        const enrichedBills = await Promise.all(bills.map(async (bill) => {
+            const billObj = bill.toObject();
+            if (billObj.billType === 'package' && billObj.services) {
+                billObj.services = await Promise.all(billObj.services.map(async (service) => {
+                    // Check if service name already has included services in brackets
+                    if (!service.name.includes('(')) {
+                        const packageData = await Package.findOne({ packageName: service.name });
+                        if (packageData && packageData.includedServices && packageData.includedServices.length > 0) {
+                            service.name = `${service.name} (${packageData.includedServices.join(', ')})`;
+                        }
+                    }
+                    return service;
+                }));
+            }
+            return billObj;
+        }));
+
+        res.json({ bills: enrichedBills });
     } catch (error) {
         console.error("Error fetching bills:", error);
         res.status(500).json({ message: "Internal server error" });
@@ -2761,8 +2784,23 @@ app.get("/bill-preview/:id", async (req, res) => {
             return res.status(404).send("Bill not found");
         }
 
+        // For package bills, enrich service names with included services
+        let enrichedServices = bill.services || [];
+        if (bill.billType === 'package') {
+            enrichedServices = await Promise.all(enrichedServices.map(async (service) => {
+                const serviceObj = service.toObject ? service.toObject() : { ...service };
+                if (!serviceObj.name.includes('(')) {
+                    const packageData = await Package.findOne({ packageName: serviceObj.name });
+                    if (packageData && packageData.includedServices && packageData.includedServices.length > 0) {
+                        serviceObj.name = `${serviceObj.name} (${packageData.includedServices.join(', ')})`;
+                    }
+                }
+                return serviceObj;
+            }));
+        }
+
         const PDFDocument = require('pdfkit');
-        const doc = new PDFDocument({ size: 'A5', margin: 30 });
+        const doc = new PDFDocument({ size: 'A4', margin: 40 });
         
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename="bill_${bill._id}.pdf"`);
@@ -2774,28 +2812,28 @@ app.get("/bill-preview/:id", async (req, res) => {
         const formattedTime = bill.time || billDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
         // Header - Salon Name
-        doc.fontSize(16)
+        doc.fontSize(20)
            .font('Helvetica-Bold')
            .text('NOBLE EVERGREEN UNISEX SALON', { align: 'center' });
-        doc.fontSize(9)
+        doc.fontSize(10)
            .font('Helvetica')
            .text('7349661676', { align: 'center' });
         doc.moveDown(0.5);
 
         // Customer Details Section
-        const leftCol = 30;
-        const rightCol = 180;
+        const leftCol = 40;
+        const rightCol = 200;
         let yPos = doc.y;
 
-        doc.fontSize(10).font('Helvetica');
+        doc.fontSize(11).font('Helvetica');
         doc.text('Customer Name', leftCol, yPos);
         doc.text(`: ${bill.customer_name}`, rightCol, yPos);
         
-        yPos += 15;
+        yPos += 18;
         doc.text('Bill Number', leftCol, yPos);
         doc.text(`: ${invoiceNumber}`, rightCol, yPos);
         
-        yPos += 15;
+        yPos += 18;
         doc.text('Date', leftCol, yPos);
         doc.text(`: ${formattedDate}, ${formattedTime}`, rightCol, yPos);
 
@@ -2803,18 +2841,18 @@ app.get("/bill-preview/:id", async (req, res) => {
 
         // Draw line
         yPos = doc.y;
-        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 30, yPos).stroke('#000');
-        doc.moveDown(0.3);
+        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#000');
+        doc.moveDown(0.5);
 
         // Services Table Header
         yPos = doc.y;
         const colItem = leftCol;
-        const colGross = 150;
-        const colQty = 210;
-        const colDisc = 250;
-        const colNet = 310;
+        const colGross = 320;
+        const colQty = 390;
+        const colDisc = 440;
+        const colNet = 500;
 
-        doc.font('Helvetica-Bold').fontSize(9);
+        doc.font('Helvetica-Bold').fontSize(10);
         doc.text('Item', colItem, yPos);
         doc.text('Gross', colGross, yPos);
         doc.text('Qty', colQty, yPos);
@@ -2822,31 +2860,36 @@ app.get("/bill-preview/:id", async (req, res) => {
         doc.text('Net', colNet, yPos);
 
         // Draw line under header
-        yPos += 12;
-        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 30, yPos).stroke('#000');
+        yPos += 15;
+        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#000');
         
-        yPos += 5;
-        doc.font('Helvetica').fontSize(9);
+        yPos += 8;
+        doc.font('Helvetica').fontSize(10);
 
         // Combine all services for this bill
         let totalGross = 0;
         let totalDiscount = 0;
 
-        (bill.services || []).forEach(service => {
+        enrichedServices.forEach(service => {
             const servicePrice = service.price || 0;
             totalGross += servicePrice;
             
-            doc.text(service.name, colItem, yPos, { width: 115 });
+            // Calculate dynamic row height based on text length
+            const itemWidth = 270;
+            const textHeight = doc.heightOfString(service.name, { width: itemWidth });
+            const rowHeight = Math.max(textHeight + 8, 20);
+            
+            doc.text(service.name, colItem, yPos, { width: itemWidth });
             doc.text(servicePrice.toFixed(2), colGross, yPos);
             doc.text('1', colQty, yPos);
             doc.text('0.00', colDisc, yPos);
             doc.text(servicePrice.toFixed(2), colNet, yPos);
-            yPos += 15;
+            yPos += rowHeight;
         });
 
         // Draw line before total
-        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 30, yPos).stroke('#000');
-        yPos += 5;
+        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#000');
+        yPos += 8;
 
         // Total row
         doc.font('Helvetica-Bold');
@@ -2857,20 +2900,20 @@ app.get("/bill-preview/:id", async (req, res) => {
         // Calculate discount
         const discountAmount = bill.discountType === 'percentage' 
             ? (totalGross * bill.discount / 100) 
-            : bill.discount;
+            : (bill.discount || 0);
         doc.text(discountAmount.toFixed(2), colDisc, yPos);
         doc.text(bill.grandTotal.toFixed(2), colNet, yPos);
 
         // Draw line after total
-        yPos += 15;
-        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 30, yPos).stroke('#000');
+        yPos += 18;
+        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#000');
         
-        doc.moveDown(1);
+        doc.moveDown(1.5);
         yPos = doc.y;
 
         // Summary section on right side
-        const summaryLeft = 200;
-        const summaryRight = 310;
+        const summaryLeft = 350;
+        const summaryRight = 500;
 
         doc.font('Helvetica').fontSize(10);
         doc.text('Gross Total', summaryLeft, yPos);
@@ -2925,11 +2968,28 @@ app.post("/export", async (req, res) => {
             query.billType = "service";
         }
 
-        const data = await Fetch.find(query).sort({ date: -1 });
+        const rawData = await Fetch.find(query).sort({ date: -1 });
 
-        if (data.length === 0) {
+        if (rawData.length === 0) {
             return res.status(404).send("No records found for the selected date range.");
         }
+
+        // Enrich package bills with included services
+        const data = await Promise.all(rawData.map(async (bill) => {
+            const billObj = bill.toObject();
+            if (billObj.billType === 'package' && billObj.services) {
+                billObj.services = await Promise.all(billObj.services.map(async (service) => {
+                    if (!service.name.includes('(')) {
+                        const packageData = await Package.findOne({ packageName: service.name });
+                        if (packageData && packageData.includedServices && packageData.includedServices.length > 0) {
+                            service.name = `${service.name} (${packageData.includedServices.join(', ')})`;
+                        }
+                    }
+                    return service;
+                }));
+            }
+            return billObj;
+        }));
 
         const PDFDocument = require('pdfkit');
         const doc = new PDFDocument({ size: 'A4', margin: 40 });
@@ -2960,9 +3020,9 @@ app.post("/export", async (req, res) => {
             .text(`From: ${fromDate}   To: ${toDate}   Type: ${billType}`, { align: 'center' });
         doc.moveDown(1);
 
-        // Table columns - Summary format (combined services per bill)
-        const colWidths = [30, 100, 80, 90, 70, 80];
-        const rowHeight = 25;
+        // Table columns - Summary format with Services column (wider for long text)
+        const colWidths = [22, 70, 60, 180, 70, 50, 60];
+        const headerRowHeight = 25;
         const tableWidth = colWidths.reduce((a, b) => a + b, 0);
         const tableStartX = (doc.page.width - tableWidth) / 2;
         
@@ -2975,31 +3035,31 @@ app.post("/export", async (req, res) => {
 
         // Header
         const drawHeader = (y) => {
-            doc.rect(colX[0], y, tableWidth, rowHeight).fill('#c7dfbf');
-            doc.fillColor('black').fontSize(9).font('Helvetica-Bold');
-            doc.text('Sl.', colX[0] + 4, y + 8, { width: colWidths[0] - 8 });
-            doc.text('Customer Name', colX[1] + 4, y + 8, { width: colWidths[1] - 8 });
-            doc.text('Invoice No.', colX[2] + 4, y + 8, { width: colWidths[2] - 8 });
-            doc.text('Customer No.', colX[3] + 4, y + 8, { width: colWidths[3] - 8 });
-            doc.text('Date', colX[4] + 4, y + 8, { width: colWidths[4] - 8 });
-            doc.text('Total Price', colX[5] + 4, y + 8, { width: colWidths[5] - 8 });
+            doc.rect(colX[0], y, tableWidth, headerRowHeight).fill('#c7dfbf');
+            doc.fillColor('black').fontSize(7).font('Helvetica-Bold');
+            doc.text('Sl.', colX[0] + 2, y + 8, { width: colWidths[0] - 4 });
+            doc.text('Customer', colX[1] + 2, y + 8, { width: colWidths[1] - 4 });
+            doc.text('Invoice', colX[2] + 2, y + 8, { width: colWidths[2] - 4 });
+            doc.text('Services', colX[3] + 2, y + 8, { width: colWidths[3] - 4 });
+            doc.text('Phone', colX[4] + 2, y + 8, { width: colWidths[4] - 4 });
+            doc.text('Date', colX[5] + 2, y + 8, { width: colWidths[5] - 4 });
+            doc.text('Total', colX[6] + 2, y + 8, { width: colWidths[6] - 4 });
 
             // Draw header borders
             doc.moveTo(colX[0], y).lineTo(colX[0] + tableWidth, y).stroke('#aad381');
-            doc.moveTo(colX[0], y + rowHeight).lineTo(colX[0] + tableWidth, y + rowHeight).stroke('#aad381');
+            doc.moveTo(colX[0], y + headerRowHeight).lineTo(colX[0] + tableWidth, y + headerRowHeight).stroke('#aad381');
             for (let i = 0; i <= colWidths.length; i++) {
                 const x = i < colWidths.length ? colX[i] : colX[colWidths.length - 1] + colWidths[colWidths.length - 1];
-                doc.moveTo(x, y).lineTo(x, y + rowHeight).stroke('#aad381');
+                doc.moveTo(x, y).lineTo(x, y + headerRowHeight).stroke('#aad381');
             }
+            return y + headerRowHeight;
         };
 
-        drawHeader(tableTop);
-        let y = tableTop + rowHeight;
+        let y = drawHeader(tableTop);
 
-        doc.font('Helvetica').fontSize(9);
+        doc.font('Helvetica').fontSize(7);
 
         // Process each bill as one row (combined services)
-        const maxY = doc.page.height - doc.page.margins.bottom - rowHeight - 30;
         let grandTotalSum = 0;
 
         for (let idx = 0; idx < data.length; idx++) {
@@ -3007,7 +3067,25 @@ app.post("/export", async (req, res) => {
             const invoiceNumber = 'NE' + bill._id.toString().slice(-8).toUpperCase();
             const billDate = bill.date ? new Date(bill.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) : '';
             
+            // Get services list - show full text
+            let servicesText = '-';
+            if (bill.services && bill.services.length > 0) {
+                servicesText = bill.services.map(s => s.name).join(', ');
+            }
+            
             grandTotalSum += bill.grandTotal || 0;
+
+            // Calculate dynamic row height based on services text
+            const servicesTextHeight = doc.heightOfString(servicesText, { width: colWidths[3] - 4 });
+            const rowHeight = Math.max(servicesTextHeight + 10, 22);
+
+            // Check if we need a new page
+            const maxY = doc.page.height - doc.page.margins.bottom - rowHeight - 50;
+            if (y > maxY) {
+                doc.addPage();
+                y = drawHeader(40);
+                doc.font('Helvetica').fontSize(7);
+            }
 
             // Alternate row color
             if (idx % 2 === 0) {
@@ -3015,12 +3093,14 @@ app.post("/export", async (req, res) => {
             }
             doc.fillColor('black');
 
-            doc.text(String(idx + 1), colX[0] + 4, y + 8, { width: colWidths[0] - 8 });
-            doc.text(bill.customer_name || '', colX[1] + 4, y + 8, { width: colWidths[1] - 8 });
-            doc.text(invoiceNumber, colX[2] + 4, y + 8, { width: colWidths[2] - 8 });
-            doc.text(String(bill.customer_number || ''), colX[3] + 4, y + 8, { width: colWidths[3] - 8 });
-            doc.text(billDate, colX[4] + 4, y + 8, { width: colWidths[4] - 8 });
-            doc.text(`Rs.${(bill.grandTotal || 0).toFixed(2)}`, colX[5] + 4, y + 8, { width: colWidths[5] - 8 });
+            const textY = y + 5;
+            doc.text(String(idx + 1), colX[0] + 2, textY, { width: colWidths[0] - 4 });
+            doc.text(bill.customer_name || '', colX[1] + 2, textY, { width: colWidths[1] - 4 });
+            doc.text(invoiceNumber, colX[2] + 2, textY, { width: colWidths[2] - 4 });
+            doc.text(servicesText, colX[3] + 2, textY, { width: colWidths[3] - 4 });
+            doc.text(String(bill.customer_number || ''), colX[4] + 2, textY, { width: colWidths[4] - 4 });
+            doc.text(billDate, colX[5] + 2, textY, { width: colWidths[5] - 4 });
+            doc.text(`Rs.${(bill.grandTotal || 0).toFixed(2)}`, colX[6] + 2, textY, { width: colWidths[6] - 4 });
 
             // Draw row borders
             doc.moveTo(colX[0], y).lineTo(colX[0] + tableWidth, y).stroke('#aad381');
@@ -3031,28 +3111,21 @@ app.post("/export", async (req, res) => {
             }
 
             y += rowHeight;
-
-            // Add new page if needed
-            if (y > maxY && idx < data.length - 1) {
-                doc.addPage();
-                tableTop = 40;
-                drawHeader(tableTop);
-                y = tableTop + rowHeight;
-            }
         }
 
         // Grand Total Row
-        doc.rect(colX[0], y, tableWidth, rowHeight).fill('#8DBE50');
-        doc.fillColor('black').font('Helvetica-Bold').fontSize(10);
-        doc.text('GRAND TOTAL', colX[0] + 4, y + 8, { width: colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4] - 8 });
-        doc.text(`Rs.${grandTotalSum.toFixed(2)}`, colX[5] + 4, y + 8, { width: colWidths[5] - 8 });
+        const totalRowHeight = 25;
+        doc.rect(colX[0], y, tableWidth, totalRowHeight).fill('#8DBE50');
+        doc.fillColor('black').font('Helvetica-Bold').fontSize(8);
+        doc.text('GRAND TOTAL', colX[0] + 2, y + 8, { width: colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4] + colWidths[5] - 4 });
+        doc.text(`Rs.${grandTotalSum.toFixed(2)}`, colX[6] + 2, y + 8, { width: colWidths[6] - 4 });
         
         // Draw total row borders
         doc.moveTo(colX[0], y).lineTo(colX[0] + tableWidth, y).stroke('#aad381');
-        doc.moveTo(colX[0], y + rowHeight).lineTo(colX[0] + tableWidth, y + rowHeight).stroke('#aad381');
+        doc.moveTo(colX[0], y + totalRowHeight).lineTo(colX[0] + tableWidth, y + totalRowHeight).stroke('#aad381');
         for (let i = 0; i <= colWidths.length; i++) {
             const x = i < colWidths.length ? colX[i] : colX[colWidths.length - 1] + colWidths[colWidths.length - 1];
-            doc.moveTo(x, y).lineTo(x, y + rowHeight).stroke('#aad381');
+            doc.moveTo(x, y).lineTo(x, y + totalRowHeight).stroke('#aad381');
         }
 
         // Footer with record count

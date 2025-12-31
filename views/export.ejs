@@ -56,6 +56,7 @@
                         <th>Sl.No</th>
                         <th>Customer Name</th>
                         <th>Invoice Number</th>
+                        <th>Services</th>
                         <th>Customer Number</th>
                         <th>Date</th>
                         <th>Total Price</th>
@@ -111,7 +112,7 @@
             const countEl = document.getElementById('recordCount');
 
             if (bills.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No records found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No records found</td></tr>';
                 container.style.display = 'block';
                 countEl.textContent = '0 records found';
                 return;
@@ -127,11 +128,18 @@
                     year: '2-digit'
                 });
                 
+                // Get services - for packages show package name + included services
+                let servicesDisplay = '-';
+                if (bill.services && bill.services.length > 0) {
+                    servicesDisplay = bill.services.map(s => s.name).join(', ');
+                }
+                
                 return `
                     <tr>
                         <td>${index + 1}</td>
                         <td>${bill.customer_name}</td>
                         <td>${invoiceNumber}</td>
+                        <td class="services-cell" title="${servicesDisplay}">${servicesDisplay}</td>
                         <td>${bill.customer_number}</td>
                         <td>${date}</td>
                         <td>₹${bill.grandTotal.toFixed(2)}</td>

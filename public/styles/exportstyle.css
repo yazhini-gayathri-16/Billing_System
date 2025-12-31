@@ -149,6 +149,21 @@ button:disabled {
     font-size: 0.9rem;
 }
 
+.services-cell {
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.services-cell:hover {
+    white-space: normal;
+    overflow: visible;
+    background-color: #fff;
+    position: relative;
+    z-index: 1;
+}
+
 .border-hr-dotted {
     border: 2px dotted #008000;
     margin: 40px 0px 30px 0px;

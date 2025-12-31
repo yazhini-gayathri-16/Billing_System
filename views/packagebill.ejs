@@ -82,7 +82,7 @@
                         <div class="form-row">
                             <div class="form-group basis-service">
                                 <label>Package:</label>
-                                <input type="text" list="serviceList1" autocomplete="off" name="packages1" required placeholder="Enter the package" oninput="filterPackages(this)">
+                                <input type="text" list="serviceList1" autocomplete="off" name="packages1" required placeholder="Enter the package" oninput="filterPackages(this)" onchange="showIncludedServices(this)">
                                 <datalist id="serviceList1"></datalist>
                             </div>
                             <div class="form-group basis-price">
@@ -99,6 +99,12 @@
                                     </select>
                                     <button type="button" onclick="addStylist(event)">Add Stylist</button>
                                 </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 1;">
+                                <label>Included Services:</label>
+                                <input type="text" name="includedServices1" id="includedServices1" readonly placeholder="Services will appear here" style="background-color: #f5f5f5;">
                             </div>
                         </div>
                     </div>
@@ -250,7 +256,8 @@
                     packages = data.map(pkg => ({
                         serviceName: pkg.packageName,
                         regularPrice: pkg.packagePrice,
-                        membershipPrice: pkg.packagePrice * 0.9 // Assuming 10% discount for members
+                        membershipPrice: pkg.packagePrice * 0.9, // Assuming 10% discount for members
+                        includedServices: pkg.includedServices || []
                     }));
                 })
                 .catch(error => console.error('Error fetching packages:', error));
@@ -340,10 +347,30 @@
                 if (pkg.serviceName.toLowerCase().includes(searchText)) {
                     const option = document.createElement('option');
                     option.value = pkg.serviceName;
-                    option.textContent = `${pkg.serviceName} - ₹${pkg.regularPrice}`;
+                    // Show package name, price and included services in dropdown
+                    const servicesText = pkg.includedServices && pkg.includedServices.length > 0 
+                        ? ` (${pkg.includedServices.join(', ')})` 
+                        : '';
+                    option.textContent = `${pkg.serviceName} - ₹${pkg.regularPrice}${servicesText}`;
                     datalist.appendChild(option);
                 }
             });
+        }
+
+        function showIncludedServices(input) {
+            const index = input.name.match(/\d+/)[0];
+            const servicesInput = document.getElementById(`includedServices${index}`);
+            
+            const selectedPackage = packages.find(pkg => 
+                pkg.serviceName.toLowerCase() === input.value.toLowerCase()
+            );
+
+            if (selectedPackage && servicesInput) {
+                const services = selectedPackage.includedServices || [];
+                servicesInput.value = services.length > 0 ? services.join(', ') : 'No services listed';
+            } else if (servicesInput) {
+                servicesInput.value = '';
+            }
         }
 
         function updateDateTime() {
@@ -455,16 +482,15 @@
             const newService = document.createElement('div');
             newService.classList.add('service-item');
 
+            // Get staff options from hidden div
+            const staffOptions = document.getElementById('staffList').innerHTML;
+
             newService.innerHTML = `
                 <div class="form-row">
                     <div class="form-group basis-service">
                         <label for="packages${serviceCount}">Package:</label>
-                        <input type="text" list="serviceList${serviceCount}" name="packages${serviceCount}" autocomplete="off" required placeholder="Enter the package" oninput="filterPackages(this)">
-                        <datalist id="serviceList${serviceCount}">
-                            <% packages.forEach(function(package) { %>
-                                <option value="<%= package.packageName %>"><%= package.packageName %> - ₹<%= package.packagePrice %></option>
-                            <% }); %>
-                        </datalist>
+                        <input type="text" list="serviceList${serviceCount}" name="packages${serviceCount}" autocomplete="off" required placeholder="Enter the package" oninput="filterPackages(this)" onchange="showIncludedServices(this)">
+                        <datalist id="serviceList${serviceCount}"></datalist>
                     </div>
                     <div class="form-group basis-price">
                         <label for="prices${serviceCount}">Price:</label>
@@ -474,12 +500,16 @@
                         <label for="stylist${serviceCount}">Stylist under package:</label>
                         <div class="flex">
                             <select name="stylist${serviceCount}" required>
-                                <% staffMembers.forEach(function(staff) { %>
-                                    <option value="<%= staff._id %>"><%= staff.name %> - <%= staff.jobTitle %></option>
-                                <% }); %>
+                                ${staffOptions}
                             </select>
                             <button type="button" onclick="addStylist(event)">Add Stylist</button>
                         </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Included Services:</label>
+                        <input type="text" name="includedServices${serviceCount}" id="includedServices${serviceCount}" readonly placeholder="Services will appear here" style="background-color: #f5f5f5;">
                     </div>
                 </div>
                 <span class="delete-btn" onclick="removeService(this)">&#128465;</span>
