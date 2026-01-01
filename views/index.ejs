@@ -197,8 +197,7 @@
                 </div>
 
                 <div class="button-row">
-                    <button type="button" class="button-generate" onclick="showBillPreview()">Preview Bill</button>
-                    <button type="submit" class="button-generate">Generate Bill</button>
+                    <button type="button" class="button-generate" onclick="showBillPreview()">Generate Bill</button>
                 </div>
             </form>
             <!-- Hidden staff list for dynamic service items -->
@@ -321,11 +320,26 @@
             // Clear existing options
             dropdown.innerHTML = '';
 
-            const searchText = input.value.toLowerCase();
+            const searchText = input.value.toLowerCase().trim();
             let hasResults = false;
 
+            // Check if searchText is a number (for price search)
+            const isNumeric = !isNaN(searchText) && searchText !== '';
+
             services.forEach(service => {
+                let matches = false;
+                
+                // Search by service name
                 if (service.serviceName.toLowerCase().includes(searchText)) {
+                    matches = true;
+                }
+                
+                // Search by regular price (if input is numeric)
+                if (isNumeric && service.regularPrice.toString().includes(searchText)) {
+                    matches = true;
+                }
+
+                if (matches) {
                     hasResults = true;
                     const item = document.createElement('div');
                     item.className = 'autocomplete-item';
@@ -932,6 +946,16 @@
             document.getElementById('billPreviewModal').style.display = 'none';
         }
         
+        function confirmAndGenerateBill() {
+            // Close the preview modal
+            closeBillPreview();
+            
+            // Submit the form
+            const form = document.getElementById('billForm');
+            const event = new Event('submit', { bubbles: true, cancelable: true });
+            form.dispatchEvent(event);
+        }
+        
         // Close modal when clicking outside
         window.onclick = function(event) {
             const modal = document.getElementById('billPreviewModal');
@@ -1022,6 +1046,12 @@
 
                 <div class="preview-footer">
                     <p>Thank you for visiting!</p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="preview-actions">
+                    <button type="button" class="preview-btn-cancel" onclick="closeBillPreview()">Cancel</button>
+                    <button type="button" class="preview-btn-ok" onclick="confirmAndGenerateBill()">OK</button>
                 </div>
             </div>
         </div>
@@ -1208,6 +1238,37 @@
             font-size: 12px;
             color: #666;
             margin: 0;
+        }
+        .preview-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 20px;
+            padding-bottom: 10px;
+        }
+        .preview-btn-cancel,
+        .preview-btn-ok {
+            padding: 10px 30px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .preview-btn-cancel {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+        .preview-btn-cancel:hover {
+            background-color: #e0e0e0;
+        }
+        .preview-btn-ok {
+            background-color: #8dbe50;
+            color: white;
+        }
+        .preview-btn-ok:hover {
+            background-color: #7aa843;
         }
     </style>
 
