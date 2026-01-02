@@ -2,14 +2,278 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menu Management</title>
     <link rel="icon" href="/images/logo 3-square.png" type="image/x-icon">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles/menustyle.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/navbarstyle.css">
+    <link rel="stylesheet" href="/styles/headerstyle.css">
     <style>
-        /* Delete Confirmation Modal Styles (referenced from appointmentstyle.css) */
+        body {
+            font-family: 'Gowun Batang', serif;
+            background-color: #D3E4CD;
+            color: #1a202c;
+        }
+
+        .page-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 15px 20px;
+        }
+
+        /* Header Section */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .header-content h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 4px;
+        }
+
+        .header-content p {
+            font-size: 14px;
+            color: #718096;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-view-all, .btn-export {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border: none;
+            background: #D97C17;
+            color: white;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-view-all:hover, .btn-export:hover {
+            background: #A65B0F;
+        }
+
+        /* Add New Service Section */
+        .add-service-section {
+            background: #F5F5DC;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .add-service-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .add-service-header i {
+            color: #48bb78;
+            font-size: 18px;
+        }
+
+        .add-service-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #48bb78;
+        }
+
+        .add-service-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 16px;
+            align-items: end;
+        }
+
+        .form-group {
+            min-width: 0;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #4a5568;
+            margin-bottom: 8px;
+            white-space: nowrap;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+
+        .btn-add {
+            padding: 11px 24px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-add:hover {
+            background: #45a049;
+        }
+
+        /* Service List Section */
+        .service-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .service-list-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a202c;
+        }
+
+        .service-count {
+            font-size: 14px;
+            color: #718096;
+        }
+
+        /* Service Cards Grid */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+        }
+
+        .service-card {
+            background: #F0F8E2;
+            border-radius: 10px;
+            padding: 16px;
+            position: relative;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+        }
+
+        .service-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .service-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+
+        .service-actions {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            color: #a0aec0;
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover {
+            background: #f7fafc;
+            color: #4a5568;
+        }
+
+        .icon-btn.delete:hover {
+            background: #fff5f5;
+            color: #e53e3e;
+        }
+
+        .service-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 4px;
+        }
+
+        .service-category {
+            font-size: 11px;
+            color: #718096;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-top: 1px solid #f7fafc;
+        }
+
+        .price-label {
+            font-size: 13px;
+            color: #718096;
+        }
+
+        .price-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1a202c;
+        }
+
+        /* Icon color variations */
+        .icon-scissors { background: #f0fdf4; color: #22c55e; }
+        .icon-palette { background: #fef3f2; color: #f97316; }
+        .icon-droplet { background: #eff6ff; color: #3b82f6; }
+        .icon-star { background: #fef9f3; color: #f59e0b; }
+        .icon-hand { background: #fdf4ff; color: #a855f7; }
+        .icon-spa { background: #ecfdf5; color: #10b981; }
+        .icon-face { background: #f0f9ff; color: #0ea5e9; }
+        .icon-massage { background: #fef2f2; color: #ef4444; }
+
+        /* Delete Modal */
         #deleteConfirmModal {
             display: none;
             position: fixed;
@@ -17,44 +281,282 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(0,0,0,0.3);
+            background: rgba(0,0,0,0.4);
             z-index: 1000;
             align-items: center;
             justify-content: center;
         }
+
         #deleteConfirmModal .modal-content {
             background: #fff;
-            padding: 30px 40px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            padding: 32px;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
             text-align: center;
-            min-width: 250px;
+            min-width: 400px;
         }
+
+        #deleteConfirmModal .modal-icon {
+            width: 56px;
+            height: 56px;
+            background: #fee2e2;
+            color: #ef4444;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 24px;
+        }
+
+        #deleteConfirmModal h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1a202c;
+        }
+
         #deleteConfirmModal p {
-            margin-bottom: 20px;
-            font-size: 1.1em;
-            color: #333;
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 24px;
         }
+
+        #deleteConfirmModal .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
         #deleteConfirmModal button {
-            background-color: #D97C17;
-            color: white;
-            padding: 10px 20px;
+            padding: 10px 24px;
             border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        #deleteConfirmModal #confirmDeleteBtn {
+            background: #DC3545;
+            color: white;
+        }
+
+        #deleteConfirmModal #confirmDeleteBtn:hover {
+            background: #c82333;
+        }
+
+        #deleteConfirmModal #cancelDeleteBtn {
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+
+        #deleteConfirmModal #cancelDeleteBtn:hover {
+            background: #e5e7eb;
+        }
+
+        /* Edit Mode */
+        .service-card.edit-mode {
+            border: 2px solid #48bb78;
+        }
+
+        .service-card.edit-mode input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .edit-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .btn-save, .btn-cancel {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn-save {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-cancel {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        /* Pagination Styles */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            padding-bottom: 10px;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pagination-btn,
+        .pagination-number {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e2e8f0;
+            background: white;
             border-radius: 5px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #4a5568;
             cursor: pointer;
             transition: background-color 0.3s ease;
-            margin-right: 20px;
-            font-size: 1em;
+            text-decoration: none;
         }
-        #deleteConfirmModal button:last-child {
-            margin-right: 0;
-            background-color: #6c757d;
+
+        .pagination-btn:hover:not(:disabled),
+        .pagination-number:hover {
+            background: #f7fafc;
+            border-color: #cbd5e0;
         }
-        #deleteConfirmModal button:hover {
-            background-color: #A65B0F;
+
+        .pagination-number.active {
+            background: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
         }
-        #deleteConfirmModal button#cancelDeleteBtn:hover {
-            background-color: #5a6268;
+
+        .pagination-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .pagination-btn i {
+            font-size: 12px;
+        }
+
+        /* View All Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            overflow: auto;
+        }
+
+        .modal-content-large {
+            background-color: #F5F5DC;
+            margin: 3% auto;
+            width: 90%;
+            max-width: 900px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a202c;
+            margin: 0;
+        }
+
+        .close-modal {
+            font-size: 28px;
+            font-weight: 300;
+            color: #a0aec0;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .close-modal:hover {
+            color: #4a5568;
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .services-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .services-table thead {
+            background: #f7fafc;
+            position: sticky;
+            top: 0;
+        }
+
+        .services-table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            color: #4a5568;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .services-table th:first-child {
+            width: 80px;
+        }
+
+        .services-table th:nth-child(3),
+        .services-table th:nth-child(4) {
+            text-align: right;
+            width: 150px;
+        }
+
+        .services-table tbody tr {
+            border-bottom: 1px solid #f7fafc;
+            transition: background-color 0.2s;
+        }
+
+        .services-table tbody tr:hover {
+            background-color: #f7fafc;
+        }
+
+        .services-table td {
+            padding: 14px 16px;
+            font-size: 14px;
+            color: #1a202c;
+        }
+
+        .services-table td:nth-child(3),
+        .services-table td:nth-child(4) {
+            text-align: right;
+            font-weight: 500;
+            color: #48bb78;
         }
     </style>
 </head>
@@ -65,108 +567,235 @@
         <%- include('partials/staffnavbar') %>
     <% } %>
 
-    <div class="container">
-        <!-- Add Service Form -->
-        <div class="menu-form">
-            <h1>Menu Management</h1>
-            <form action="/add-service" method="post" class="form-inline">
-                <input autocomplete="off" type="text" name="serviceName" placeholder="Enter service name" required>
-                <input autocomplete="off" type="number" name="regularPrice" placeholder="Regular price" required>
-                <input autocomplete="off" type="number" name="membershipPrice" placeholder="Membership price" required>
-                <button type="submit">Add Service</button>
+    <div class="page-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="header-content">
+                <h1>Menu Management</h1>
+                <p>Manage your salon services, regular pricing, and membership tiers.</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn-view-all" onclick="showAllServicesModal()">
+                    <i class="fas fa-list"></i>
+                    View All
+                </button>
+                <button class="btn-export">
+                    <i class="fas fa-download"></i>
+                    Export
+                </button>
+            </div>
+        </div>
+
+        <!-- Add New Service Section -->
+        <div class="add-service-section">
+            <div class="add-service-header">
+                <i class="fas fa-plus-circle"></i>
+                <h2>Add New Service</h2>
+            </div>
+            <form action="/add-service" method="post" class="add-service-form">
+                <div class="form-group">
+                    <label>Service Name</label>
+                    <input type="text" name="serviceName" placeholder="e.g. Hair Cut & Style" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>Regular Price</label>
+                    <input type="number" name="regularPrice" placeholder="₹ 0.00" required autocomplete="off" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Membership Price</label>
+                    <input type="number" name="membershipPrice" placeholder="₹ 0.00" required autocomplete="off" step="0.01">
+                </div>
+                <button type="submit" class="btn-add">Add</button>
             </form>
         </div>
 
-        <!-- Displaying Services -->
-        <div class="service-container">
-            <% services.forEach(function(service, index) { %>
-                <!-- Card for Regular Price -->
-                <div class="service-card">
-                    <form id="service-form-regular-<%= index %>" class="service-form" action="/edit-service" method="post">
-                        <input type="hidden" name="id" value="<%= service._id %>">
-                        <p><strong>Service Name:</strong> <span class="service-name"><%= service.serviceName %></span></p>
-                        <p><strong>Price Type:</strong> Regular Price</p>
-                        <p><strong>Price:</strong> ₹<span class="regular-price"><%= service.regularPrice %></span></p>
-                        <div class="button-group">
-                            <button type="button" class="edit-btn" onclick="enableEditing('service-form-regular-<%= index %>')">Edit</button>
-                            <button type="button" class="delete-btn-yellow" onclick="confirmDelete('<%= service._id %>', '<%= service.serviceName %>')">Delete</button>
-                        </div>
-                    </form>
-                </div>
+        <!-- Service List -->
+        <div class="service-list-header">
+            <h2>Service List</h2>
+            <span class="service-count">Showing <%= ((currentPage - 1) * 10 + 1) %>-<%= Math.min(currentPage * 10, totalServices) %> of <%= totalServices %> services</span>
+        </div>
 
-                <!-- Card for Membership Price -->
-                <div class="service-card">
-                    <form id="service-form-membership-<%= index %>" class="service-form" action="/edit-service" method="post">
+        <div class="services-grid">
+            <% 
+            var icons = ['scissors', 'palette', 'droplet', 'star', 'hand', 'spa', 'face', 'massage'];
+            var categories = ['Styling', 'Coloring', 'Washing', 'Treatment', 'Manicure', 'Therapy', 'Skincare', 'Wellness'];
+            services.forEach(function(service, index) { 
+                var iconClass = icons[index % icons.length];
+                var category = categories[index % categories.length];
+            %>
+                <div class="service-card" id="card-<%= service._id %>">
+                    <div class="service-icon icon-<%= iconClass %>">
+                        <i class="fas fa-<%= iconClass %>"></i>
+                    </div>
+                    <div class="service-actions">
+                        <button class="icon-btn edit" onclick="enableEditing('<%= service._id %>')">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <button class="icon-btn delete" onclick="confirmDelete('<%= service._id %>', '<%= service.serviceName %>')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="form-<%= service._id %>" action="/edit-service" method="post">
                         <input type="hidden" name="id" value="<%= service._id %>">
-                        <p><strong>Service Name:</strong> <span class="service-name"><%= service.serviceName %></span></p>
-                        <p><strong>Price Type:</strong> Membership Price</p>
-                        <p><strong>Price:</strong> ₹<span class="membership-price"><%= service.membershipPrice %></span></p>
-                        <div class="button-group">
-                            <button type="button" class="edit-btn" onclick="enableEditing('service-form-membership-<%= index %>')">Edit</button>
-                            <button type="button" class="delete-btn-yellow" onclick="confirmDelete('<%= service._id %>', '<%= service.serviceName %>')">Delete</button>
+                        <div class="service-info">
+                            <h3 class="service-name" id="name-<%= service._id %>"><%= service.serviceName %></h3>
+                            <span class="service-category"><%= category %></span>
+                            
+                            <div class="price-row">
+                                <span class="price-label">Regular</span>
+                                <span class="price-value" id="regular-<%= service._id %>">₹<%= service.regularPrice %></span>
+                            </div>
+                            <div class="price-row">
+                                <span class="price-label">Member</span>
+                                <span class="price-value" id="member-<%= service._id %>">₹<%= service.membershipPrice %></span>
+                            </div>
                         </div>
                     </form>
                 </div>
             <% }); %>
+        </div>
+
+        <!-- Pagination -->
+        <% if (totalPages > 1) { %>
+        <div class="pagination-container">
+            <div class="pagination">
+                <% if (currentPage > 1) { %>
+                    <a href="?page=<%= currentPage - 1 %>" class="pagination-btn">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                <% } else { %>
+                    <button class="pagination-btn" disabled>
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                <% } %>
+                
+                <% 
+                var startPage = Math.max(1, currentPage - 1);
+                var endPage = Math.min(totalPages, currentPage + 1);
+                
+                if (currentPage === 1) {
+                    endPage = Math.min(3, totalPages);
+                } else if (currentPage === totalPages) {
+                    startPage = Math.max(1, totalPages - 2);
+                }
+                
+                for (var i = startPage; i <= endPage; i++) { %>
+                    <a href="?page=<%= i %>" class="pagination-number <%= currentPage === i ? 'active' : '' %>">
+                        <%= i %>
+                    </a>
+                <% } %>
+                
+                <% if (currentPage < totalPages) { %>
+                    <a href="?page=<%= currentPage + 1 %>" class="pagination-btn">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                <% } else { %>
+                    <button class="pagination-btn" disabled>
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                <% } %>
+            </div>
+        </div>
+        <% } %>
+    </div>
+
+    <!-- View All Services Modal -->
+    <div id="viewAllModal" class="modal">
+        <div class="modal-content-large">
+            <div class="modal-header">
+                <h2>All Services</h2>
+                <span class="close-modal" onclick="closeViewAllModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <table class="services-table">
+                    <thead>
+                        <tr>
+                            <th>S.No</th>
+                            <th>Service Name</th>
+                            <th>Regular Price</th>
+                            <th>Membership Price</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allServicesTableBody">
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <!-- Delete Confirmation Modal -->
     <div id="deleteConfirmModal">
         <div class="modal-content">
-            <p>Are you sure you want to delete "<span id="deleteServiceName"></span>"?</p>
-            <p style="font-size: 0.9em; color: #666; margin-top: -10px;">This will delete both Regular and Membership prices.</p>
+            <div class="modal-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3>Delete Service?</h3>
+            <p>Are you sure you want to delete "<strong><span id="deleteServiceName"></span></strong>"?<br>This action cannot be undone.</p>
             <form id="deleteForm" action="/delete-service" method="post">
                 <input type="hidden" name="id" id="deleteServiceId">
-                <button type="submit" id="confirmDeleteBtn">Yes</button>
-                <button type="button" id="cancelDeleteBtn">No</button>
+                <div class="modal-actions">
+                    <button type="button" id="cancelDeleteBtn">Cancel</button>
+                    <button type="submit" id="confirmDeleteBtn">Delete</button>
+                </div>
             </form>
         </div>
     </div>
 
     <script>
-        function enableEditing(formId) {
-            const form = document.getElementById(formId);
-            const serviceName = form.querySelector('.service-name');
-            const regularPrice = form.querySelector('.regular-price');
-            const membershipPrice = form.querySelector('.membership-price');
+        function enableEditing(serviceId) {
+            const card = document.getElementById('card-' + serviceId);
+            const form = document.getElementById('form-' + serviceId);
+            const nameEl = document.getElementById('name-' + serviceId);
+            const regularEl = document.getElementById('regular-' + serviceId);
+            const memberEl = document.getElementById('member-' + serviceId);
 
-            serviceName.innerHTML = `<input type="text" name="serviceName" value="${serviceName.textContent.trim()}" required>`;
-            if (regularPrice) {
-                regularPrice.innerHTML = `<input type="number" name="regularPrice" value="${regularPrice.textContent.trim()}" required>`;
-            }
-            if (membershipPrice) {
-                membershipPrice.innerHTML = `<input type="number" name="membershipPrice" value="${membershipPrice.textContent.trim()}" required>`;
-            }
+            const currentName = nameEl.textContent;
+            const currentRegular = regularEl.textContent.replace('₹', '');
+            const currentMember = memberEl.textContent.replace('₹', '');
 
-            const buttonGroup = form.querySelector('.button-group');
-            buttonGroup.innerHTML = `
-                <button type="submit">Update</button>
-                <button type="button" class="cancel-btn" onclick='cancelEdit("${formId}")'>Cancel</button>`;
+            card.classList.add('edit-mode');
+            
+            nameEl.innerHTML = `<input type="text" name="serviceName" value="${currentName}" required>`;
+            regularEl.innerHTML = `<input type="number" name="regularPrice" value="${currentRegular}" required step="0.01">`;
+            memberEl.innerHTML = `<input type="number" name="membershipPrice" value="${currentMember}" required step="0.01">`;
+
+            const actionsDiv = card.querySelector('.service-actions');
+            actionsDiv.innerHTML = `
+                <div class="edit-actions">
+                    <button type="button" class="btn-save" onclick="document.getElementById('form-${serviceId}').submit()">
+                        <i class="fas fa-check"></i> Save
+                    </button>
+                    <button type="button" class="btn-cancel" onclick="cancelEdit('${serviceId}', '${currentName}', '${currentRegular}', '${currentMember}')">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            `;
         }
 
-        function cancelEdit(formId) {
-            const form = document.getElementById(formId);
-            const serviceNameInput = form.querySelector('.service-name input');
-            const regularPriceInput = form.querySelector('.regular-price input');
-            const membershipPriceInput = form.querySelector('.membership-price input');
+        function cancelEdit(serviceId, name, regular, member) {
+            const card = document.getElementById('card-' + serviceId);
+            const nameEl = document.getElementById('name-' + serviceId);
+            const regularEl = document.getElementById('regular-' + serviceId);
+            const memberEl = document.getElementById('member-' + serviceId);
 
-            form.querySelector('.service-name').innerHTML = serviceNameInput ? serviceNameInput.value : '';
-            if (regularPriceInput) {
-                form.querySelector('.regular-price').innerHTML = regularPriceInput.value;
-            }
-            if (membershipPriceInput) {
-                form.querySelector('.membership-price').innerHTML = membershipPriceInput.value;
-            }
+            card.classList.remove('edit-mode');
+            
+            nameEl.innerHTML = name;
+            regularEl.innerHTML = '₹' + regular;
+            memberEl.innerHTML = '₹' + member;
 
-            const buttonGroup = form.querySelector('.button-group') || form.querySelector('button[type="submit"]').parentElement;
-            const serviceId = form.querySelector('input[name="id"]').value;
-            buttonGroup.innerHTML = `
-                <button type="button" class="edit-btn" onclick='enableEditing("${formId}")'>Edit</button>
-                <button type="button" class="delete-btn-yellow" onclick="confirmDelete('${serviceId}', '${serviceNameInput ? serviceNameInput.value : ''}')">Delete</button>`;
+            const actionsDiv = card.querySelector('.service-actions');
+            actionsDiv.innerHTML = `
+                <button class="icon-btn edit" onclick="enableEditing('${serviceId}')">
+                    <i class="fas fa-pen"></i>
+                </button>
+                <button class="icon-btn delete" onclick="confirmDelete('${serviceId}', '${name}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
         }
 
-        // Delete confirmation logic
         function confirmDelete(serviceId, serviceName) {
             document.getElementById('deleteServiceId').value = serviceId;
             document.getElementById('deleteServiceName').textContent = serviceName;
@@ -177,14 +806,51 @@
             document.getElementById('deleteConfirmModal').style.display = 'none';
         };
 
-        // Close modal when clicking outside
         document.getElementById('deleteConfirmModal').onclick = function(e) {
             if (e.target === this) {
                 this.style.display = 'none';
             }
         };
+
+        // View All Services Modal
+        async function showAllServicesModal() {
+            try {
+                const response = await fetch('/api/services');
+                const services = await response.json();
+                
+                const tbody = document.getElementById('allServicesTableBody');
+                tbody.innerHTML = '';
+                
+                services.forEach((service, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${service.serviceName}</td>
+                        <td>₹${service.regularPrice}</td>
+                        <td>₹${service.membershipPrice}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                document.getElementById('viewAllModal').style.display = 'block';
+            } catch (error) {
+                console.error('Error fetching services:', error);
+                alert('Failed to load services');
+            }
+        }
+
+        function closeViewAllModal() {
+            document.getElementById('viewAllModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('viewAllModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
     </script>
     <%- include('partials/globalScripts') %>
-    
 </body>
 </html>

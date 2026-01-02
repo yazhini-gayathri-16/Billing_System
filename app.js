@@ -1764,8 +1764,20 @@ app.post('/validate-membership', async (req, res) => {
 // Route to render the menu management page
 app.get("/menu-management", async (req, res) => {
     try {
-        const services = await Menu.find();
-        res.render("menu", { services });
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+        
+        const totalServices = await Menu.countDocuments();
+        const services = await Menu.find().skip(skip).limit(limit);
+        const totalPages = Math.ceil(totalServices / limit);
+        
+        res.render("menu", { 
+            services, 
+            currentPage: page,
+            totalPages: totalPages,
+            totalServices: totalServices
+        });
     } catch (error) {
         res.status(500).send(error.message);
     }

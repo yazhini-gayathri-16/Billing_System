@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management</title>
+    <link rel="icon" href="/images/logo 3-square.png" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/inventorystyle.css">
+    <style>
+        /* Delete Confirmation Modal Styles (from appointmentstyle.css) */
+        #deleteConfirmModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.3);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        #deleteConfirmModal .modal-content {
+            background: #fff;
+            padding: 30px 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            text-align: center;
+            min-width: 250px;
+        }
+        #deleteConfirmModal p {
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            color: #333;
+        }
+        #deleteConfirmModal button {
+            background-color: #D97C17;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-right: 20px;
+            font-size: 1em;
+        }
+        #deleteConfirmModal button:last-child {
+            margin-right: 0;
+            background-color: #6c757d;
+        }
+        #deleteConfirmModal button:hover {
+            background-color: #A65B0F;
+        }
+        #deleteConfirmModal button#cancelDeleteBtn:hover {
+            background-color: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <% if (userRole === 'admin') { %>
+        <%- include('partials/navbar') %>
+    <% } else { %>
+        <%- include('partials/staffnavbar') %>
+    <% } %>
+    
+    <div class="container">
+        <!-- Form to Add New Inventory Items -->
+        <div class="inventory-form">
+            <h1>Inventory Management</h1>
+            <form action="/inventory" method="post" class="form-inline">
+                <input type="text" name="productName" placeholder="Product Name" autocomplete = "off" required>
+                <input type="number" name="productPrice" placeholder="Price" required>
+                <input type="number" name="stocksPurchased" placeholder="Purchased" required>
+                <input type="number" name="stocksInInventory" placeholder="In Inventory" required>
+                <button type="submit">Add Item</button>
+            </form>
+        </div>
+
+        <!-- Displaying Inventory Items -->
+        <div class="product-container">
+            <% products.forEach(function(product, index) { %>
+                <div class="product-card">
+                    <form id="product-form-<%= index %>" class="product-form" action="/edit-item" method="post">
+                        <input type="hidden" name="id"  autocomplete = "off" value="<%= product._id %>">
+                        <p><strong>Product Name:</strong> <span class="product-name"><%= product.productName %></span></p>
+                        <p><strong>Price:</strong> ₹<span class="product-price"><%= product.productPrice %></span></p>
+                        <p><strong>Purchased:</strong> <span class="stocks-purchased"><%= product.stocksPurchased %></span></p>
+                        <p><strong>In Inventory:</strong> <span class="stocks-inventory"><%= product.stocksInInventory %></span></p>
+                        <button type="button" class="edit-btn" onclick="enableEditing('product-form-<%= index %>')">Edit</button>
+                    </form>
+                    <form action="/delete-item" method="post" class="delete-form">
+                        <input type="hidden" name="id" value="<%= product._id %>">
+                        <button type="submit" class="delete-btn">Delete</button>
+                    </form>
+                </div>
+            <% }); %>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal">
+        <div class="modal-content">
+            <p>Are you sure to delete?</p>
+            <button id="confirmDeleteBtn" style="margin-right:20px;">Yes</button>
+            <button id="cancelDeleteBtn">No</button>
+        </div>
+    </div>
+
+    <script>
+        function enableEditing(formId) {
+            const form = document.getElementById(formId);
+            const productName = form.querySelector('.product-name');
+            const productPrice = form.querySelector('.product-price');
+            const stocksPurchased = form.querySelector('.stocks-purchased');
+            const stocksInventory = form.querySelector('.stocks-inventory');
+
+            productName.innerHTML = `<input type="text" name="productName" value="${productName.textContent.trim()}" required>`;
+            productPrice.innerHTML = `<input type="number" name="productPrice" value="${productPrice.textContent.trim()}" required>`;
+            stocksPurchased.innerHTML = `<input type="number" name="stocksPurchased" value="${stocksPurchased.textContent.trim()}" required>`;
+            stocksInventory.innerHTML = `<input type="number" name="stocksInInventory" value="${stocksInventory.textContent.trim()}" required>`;
+            
+            const editButton = form.querySelector('button');
+            editButton.outerHTML = `<button type='submit'>Update</button>
+                                    <button type='button' class='cancel-btn' onclick='cancelEdit("${formId}")'>Cancel</button>`;
+        }
+
+        function cancelEdit(formId) {
+            const form = document.getElementById(formId);
+            const productNameInput = form.querySelector('.product-name input');
+            const productPriceInput = form.querySelector('.product-price input');
+            const stocksPurchasedInput = form.querySelector('.stocks-purchased input');
+            const stocksInventoryInput = form.querySelector('.stocks-inventory input');
+
+            form.querySelector('.product-name').textContent = productNameInput.value;
+            form.querySelector('.product-price').textContent = productPriceInput.value;
+            form.querySelector('.stocks-purchased').textContent = stocksPurchasedInput.value;
+            form.querySelector('.stocks-inventory').textContent = stocksInventoryInput.value;
+
+            form.querySelector('[type="submit"]').remove();
+            form.querySelector('button').outerHTML = `<button type='button' class='edit-btn' onclick='enableEditing("${formId}")'>Edit</button>`;
+        }
+
+        // Delete confirmation logic (reference: appointment.ejs)
+        let formToDelete = null;
+
+        function attachDeleteConfirmation() {
+            document.querySelectorAll('form.delete-form').forEach(form => {
+                form.removeEventListener('submit', handleDeleteSubmit);
+                form.addEventListener('submit', handleDeleteSubmit);
+            });
+        }
+
+        function handleDeleteSubmit(e) {
+            e.preventDefault();
+            formToDelete = this;
+            document.getElementById('deleteConfirmModal').style.display = 'flex';
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            attachDeleteConfirmation();
+        });
+
+        document.getElementById('confirmDeleteBtn').onclick = function() {
+            if (formToDelete) {
+                formToDelete.submit();
+                formToDelete = null;
+            }
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+        };
+
+        document.getElementById('cancelDeleteBtn').onclick = function() {
+            formToDelete = null;
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+        };
+    </script>
+    <%- include('partials/globalScripts') %>
+</body>
+</html>
