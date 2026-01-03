@@ -1863,6 +1863,296 @@ app.get('/analytics', isAuthenticated, isAdmin, (req, res) => {
     res.render('analytics');
 });
 
+// ============== ANALYTICS API ENDPOINTS ==============
+
+// Helper function to get date range based on period
+function getDateRange(period) {
+    const now = new Date();
+    let startDate, endDate;
+    
+    switch(period) {
+        case 'today':
+            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+            break;
+        case 'week':
+            const dayOfWeek = now.getDay();
+            startDate = new Date(now);
+            startDate.setDate(now.getDate() - dayOfWeek);
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date(now);
+            endDate.setHours(23, 59, 59, 999);
+            break;
+        case 'year':
+            startDate = new Date(now.getFullYear(), 0, 1);
+            endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+            break;
+        case 'month':
+        default:
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+            break;
+    }
+    
+    return { startDate, endDate };
+}
+
+// Key Metrics API
+app.get('/api/analytics/metrics', async (req, res) => {
+    try {
+        const period = req.query.period || 'month';
+        const { startDate, endDate } = getDateRange(period);
+        
+        // Current period data
+        const bills = await Fetch.find({ date: { $gte: startDate, $lte: endDate } });
+        const productBills = await ProductBill.find({ date: { $gte: startDate, $lte: endDate } });
+        const expenses = await Expense.find({ date: { $gte: startDate, $lte: endDate } });
+        const memberships = await Membership.find({ registeredDate: { $gte: startDate, $lte: endDate } });
+        
+        // Calculate current metrics
+        const serviceRevenue = bills.reduce((sum, b) => sum + (b.grandTotal || 0), 0);
+        const productRevenue = productBills.reduce((sum, b) => sum + (b.grandTotal || 0), 0);
+        const revenue = serviceRevenue + productRevenue;
+        const expenseTotal = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+        const profit = revenue - expenseTotal;
+        const totalBills = bills.length + productBills.length;
+        const avgTicket = totalBills > 0 ? Math.round(revenue / totalBills) : 0;
+        const discount = bills.reduce((sum, b) => sum + (b.discount || 0), 0) + productBills.reduce((sum, b) => sum + (b.discount || 0), 0);
+        const membershipRevenue = memberships.reduce((sum, m) => sum + (m.memprice || 0), 0);
+        
+        res.json({
+            revenue,
+            expenses: expenseTotal,
+            profit,
+            avgTicket,
+            discount,
+            membershipRevenue
+        });
+    } catch (error) {
+        console.error('Error fetching metrics:', error);
+        res.status(500).json({ error: 'Failed to fetch metrics' });
+    }
+});
+
+// Revenue Trend API
+app.get('/api/analytics/revenue-trend', async (req, res) => {
+    try {
+        const period = req.query.period || 'month';
+        const { startDate, endDate } = getDateRange(period);
+        
+        const bills = await Fetch.find({ date: { $gte: startDate, $lte: endDate } });
+        const productBills = await ProductBill.find({ date: { $gte: startDate, $lte: endDate } });
+        
+        // Group by date
+        const revenueByDate = {};
+        
+        bills.forEach(bill => {
+            const dateKey = period === 'year' 
+                ? new Date(bill.date).toLocaleDateString('en-US', { month: 'short' })
+                : new Date(bill.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            revenueByDate[dateKey] = (revenueByDate[dateKey] || 0) + (bill.grandTotal || 0);
+        });
+        
+        productBills.forEach(bill => {
+            const dateKey = period === 'year'
+                ? new Date(bill.date).toLocaleDateString('en-US', { month: 'short' })
+                : new Date(bill.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            revenueByDate[dateKey] = (revenueByDate[dateKey] || 0) + (bill.grandTotal || 0);
+        });
+        
+        const sortedDates = Object.keys(revenueByDate).sort((a, b) => new Date(a) - new Date(b));
+        
+        res.json({
+            labels: sortedDates,
+            values: sortedDates.map(date => revenueByDate[date])
+        });
+    } catch (error) {
+        console.error('Error fetching revenue trend:', error);
+        res.status(500).json({ error: 'Failed to fetch revenue trend' });
+    }
+});
+
+// Payment Methods API
+app.get('/api/analytics/payment-methods', async (req, res) => {
+    try {
+        const period = req.query.period || 'month';
+        const { startDate, endDate } = getDateRange(period);
+        
+        const bills = await Fetch.find({ date: { $gte: startDate, $lte: endDate } });
+        const productBills = await ProductBill.find({ date: { $gte: startDate, $lte: endDate } });
+        
+        let upi = 0, cash = 0, card = 0;
+        
+        [...bills, ...productBills].forEach(bill => {
+            const amount = bill.grandTotal || 0;
+            switch(bill.paymentMethod) {
+                case 'UPI': upi += amount; break;
+                case 'Cash': cash += amount; break;
+                case 'Card': card += amount; break;
+            }
+        });
+        
+        res.json({ upi, cash, card });
+    } catch (error) {
+        console.error('Error fetching payment methods:', error);
+        res.status(500).json({ error: 'Failed to fetch payment methods' });
+    }
+});
+
+// Staff Performance API
+app.get('/api/analytics/staff-performance', async (req, res) => {
+    try {
+        const period = req.query.period || 'month';
+        const { startDate, endDate } = getDateRange(period);
+        
+        const bills = await Fetch.find({ date: { $gte: startDate, $lte: endDate } });
+        const staffMembers = await Staff.find({});
+        
+        // Get current month/year for employee targets
+        const now = new Date();
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const currentMonth = monthNames[now.getMonth()];
+        const currentYear = now.getFullYear();
+        
+        const employeeTargets = await EmployeeTarget.find({ month: currentMonth, year: currentYear });
+        
+        // Aggregate revenue by stylist - stylists are inside services array
+        const staffStats = {};
+        
+        bills.forEach(bill => {
+            if (bill.services && bill.services.length > 0) {
+                bill.services.forEach(service => {
+                    const stylists = [service.stylist, service.stylist2].filter(s => s && s !== 'null' && s !== '');
+                    const revenuePerStylist = (service.price || 0) / (stylists.length || 1);
+                    
+                    stylists.forEach(stylist => {
+                        if (!staffStats[stylist]) {
+                            staffStats[stylist] = { services: 0, revenue: 0 };
+                        }
+                        staffStats[stylist].services += 1;
+                        staffStats[stylist].revenue += revenuePerStylist;
+                    });
+                });
+            }
+        });
+        
+        // Build staff performance array
+        const staffPerformance = Object.entries(staffStats).map(([name, stats]) => {
+            const staffMember = staffMembers.find(s => s.name === name);
+            const target = employeeTargets.find(t => t.employeeId && staffMember && t.employeeId.toString() === staffMember._id.toString());
+            const progress = target && target.target > 0 ? Math.round((stats.revenue / target.target) * 100) : 0;
+            
+            return {
+                name,
+                photo: staffMember?.aadhaarPhoto || null,
+                services: stats.services,
+                revenue: Math.round(stats.revenue),
+                progress
+            };
+        });
+        
+        // Sort by revenue descending
+        staffPerformance.sort((a, b) => b.revenue - a.revenue);
+        
+        res.json({ staff: staffPerformance });
+    } catch (error) {
+        console.error('Error fetching staff performance:', error);
+        res.status(500).json({ error: 'Failed to fetch staff performance' });
+    }
+});
+
+// Expense Breakdown API
+app.get('/api/analytics/expense-breakdown', async (req, res) => {
+    try {
+        const period = req.query.period || 'month';
+        const { startDate, endDate } = getDateRange(period);
+        
+        const expenses = await Expense.find({ date: { $gte: startDate, $lte: endDate } });
+        
+        const categoryTotals = {};
+        expenses.forEach(expense => {
+            const category = expense.type || 'Others';
+            categoryTotals[category] = (categoryTotals[category] || 0) + (expense.amount || 0);
+        });
+        
+        const categories = Object.keys(categoryTotals);
+        const amounts = categories.map(cat => categoryTotals[cat]);
+        
+        res.json({ categories, amounts });
+    } catch (error) {
+        console.error('Error fetching expense breakdown:', error);
+        res.status(500).json({ error: 'Failed to fetch expense breakdown' });
+    }
+});
+
+// Inventory Alerts API
+app.get('/api/analytics/inventory-alerts', async (req, res) => {
+    try {
+        // Find products with low stock (less than 10 units)
+        const lowStockThreshold = 10;
+        const inventory = await Product.find({
+            stocksInInventory: { $lt: lowStockThreshold, $gte: 0 }
+        }).sort({ stocksInInventory: 1 }).limit(10);
+        
+        const items = inventory.map(item => ({
+            name: item.productName,
+            available: item.stocksInInventory,
+            minimum: lowStockThreshold
+        }));
+        
+        res.json({ items });
+    } catch (error) {
+        console.error('Error fetching inventory alerts:', error);
+        res.status(500).json({ error: 'Failed to fetch inventory alerts' });
+    }
+});
+
+// Membership Stats API
+app.get('/api/analytics/membership-stats', async (req, res) => {
+    try {
+        const now = new Date();
+        const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        
+        // Active memberships (not expired) - using validTillDate field
+        const active = await Membership.countDocuments({ validTillDate: { $gte: now } });
+        
+        // Expiring within 30 days
+        const expiring = await Membership.countDocuments({
+            validTillDate: { $gte: now, $lte: thirtyDaysFromNow }
+        });
+        
+        // New this month - using registeredDate field
+        const newThisMonth = await Membership.countDocuments({
+            registeredDate: { $gte: startOfMonth }
+        });
+        
+        // Birthday offers used this year
+        const membershipsWithOffers = await Membership.find({
+            'yearlyUsage.year': now.getFullYear()
+        });
+        
+        let birthdayOffersUsed = 0;
+        membershipsWithOffers.forEach(m => {
+            const currentYearUsage = m.yearlyUsage.find(u => u.year === now.getFullYear());
+            if (currentYearUsage && currentYearUsage.usedBirthdayOffer) {
+                birthdayOffersUsed++;
+            }
+        });
+        
+        res.json({
+            active,
+            expiring,
+            newThisMonth,
+            birthdayOffersUsed
+        });
+    } catch (error) {
+        console.error('Error fetching membership stats:', error);
+        res.status(500).json({ error: 'Failed to fetch membership stats' });
+    }
+});
+
+// ============== END ANALYTICS API ENDPOINTS ==============
 
 app.get('/remainders',(req,res)=>{
     res.render('remainders');
