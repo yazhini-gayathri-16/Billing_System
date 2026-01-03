@@ -2642,7 +2642,10 @@ app.get('/topemployees', async (req, res) => {
             { $limit: 1 }
         ]);
 
-        res.render('topemployees', { topOfDay, topOfWeek, topOfMonth });
+        // Fetch staff members to get their photos
+        const staffMembers = await Staff.find({});
+
+        res.render('topemployees', { topOfDay, topOfWeek, topOfMonth, staffMembers });
     } catch (error) {
         console.error('Error fetching top employees:', error);
         res.status(500).send('Error fetching top employees');

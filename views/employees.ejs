@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Salon Dashboard</title>
+    <title>Stylists - Salon Dashboard</title>
     <link rel="icon" href="/images/logo 3-square.png" type="image/x-icon">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
-        
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/navbarstyle.css">
+    <link rel="stylesheet" href="/styles/headerstyle.css">
     <style>
         body {
             font-family: 'Gowun Batang', serif;
@@ -17,95 +19,605 @@
             padding: 0;
         }
 
-        .container {
+        .page-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 40px;
+        }
+
+        /* Page Header */
+        .page-header {
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 24px;
+        }
+
+        .header-left h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a202c;
+            margin: 0 0 6px 0;
+            font-style: italic;
+        }
+
+        .header-left p {
+            font-size: 14px;
+            color: #718096;
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 16px;
             align-items: center;
-            padding: 20px;
         }
 
-        .stylists-container {
-            width: 80%;
-            text-align: center;
+        .search-box {
+            position: relative;
         }
 
-        .stylists-container h2 {
-            font-size: 24px;
-            color: #333;
-            margin-bottom: 20px;
+        .search-box input {
+            width: 200px;
+            padding: 10px 14px 10px 40px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            font-family: 'Gowun Batang', serif;
         }
 
-        .card-grid {
+        .search-box input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #a0aec0;
+        }
+
+        .btn-add-stylist {
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-add-stylist:hover {
+            background: #45a049;
+        }
+
+        /* Filter Tabs */
+        .filter-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .filter-tab {
+            padding: 8px 18px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-tab:hover {
+            border-color: #4CAF50;
+            color: #4CAF50;
+        }
+
+        .filter-tab.active {
+            background: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
+
+        /* Stylists Grid */
+        .stylists-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            width: 100%;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
         }
 
+        /* Stylist Card */
         .stylist-card {
-            background-color: #F5F5DC;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: left;
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .stylist-image {
+        .stylist-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            height: 60px;
+            position: relative;
+        }
+
+        .card-header.pink { background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 100%); }
+        .card-header.orange { background: linear-gradient(135deg, #fff3e0 0%, #ffcc80 100%); }
+        .card-header.green { background: linear-gradient(135deg, #e8f5e9 0%, #a5d6a7 100%); }
+        .card-header.blue { background: linear-gradient(135deg, #e3f2fd 0%, #90caf9 100%); }
+        .card-header.purple { background: linear-gradient(135deg, #f3e5f5 0%, #ce93d8 100%); }
+        .card-header.teal { background: linear-gradient(135deg, #e0f2f1 0%, #80cbc4 100%); }
+
+        .profile-image {
             width: 80px;
             height: 80px;
             border-radius: 50%;
-            margin-bottom: 15px;
+            border: 4px solid white;
+            object-fit: cover;
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #f5f5dc;
         }
 
-        .stylist-details strong {
-            font-weight: bold;
-            color: #000; /* Optional: make bold text a bit darker */
-        }
-
-        .stylist-details h3 {
-            margin: 0;
-            font-size: 18px;
-            font-weight: bold;
-            color: #333;
+        .card-body {
+            padding: 50px 20px 20px 20px;
             text-align: center;
         }
 
-        .stylist-details p {
-            margin: 5px 0;
+        .stylist-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a202c;
+            margin: 0 0 4px 0;
+        }
+
+        .stylist-role {
+            font-size: 12px;
+            font-weight: 600;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0 0 20px 0;
+        }
+
+        .stylist-info {
+            text-align: left;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: #4a5568;
+        }
+
+        .info-item i {
+            color: #4CAF50;
+            width: 16px;
+            margin-top: 2px;
+        }
+
+        .info-item span {
+            flex: 1;
+            word-break: break-word;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 16px 20px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .btn-edit {
+            background: #f7fafc;
+            color: #4a5568;
+        }
+
+        .btn-edit:hover {
+            background: #edf2f7;
+        }
+
+        .btn-delete {
+            background: #fff5f5;
+            color: #e53e3e;
+        }
+
+        .btn-delete:hover {
+            background: #fed7d7;
+        }
+
+        /* Hire New Talent Card */
+        .hire-card {
+            background: rgba(76, 175, 80, 0.08);
+            border: 2px dashed #a8d5ab;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px 20px;
+            min-height: 320px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .hire-card:hover {
+            background: rgba(76, 175, 80, 0.12);
+            border-color: #4CAF50;
+        }
+
+        .hire-card .plus-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(76, 175, 80, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .hire-card .plus-icon i {
+            font-size: 20px;
+            color: #4CAF50;
+        }
+
+        .hire-card h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a202c;
+            margin: 0 0 6px 0;
+        }
+
+        .hire-card p {
+            font-size: 13px;
+            color: #718096;
+            margin: 0;
+        }
+
+        /* Delete Modal */
+        .delete-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .delete-modal.active {
+            display: flex;
+        }
+
+        .delete-modal .modal-content {
+            background: white;
+            padding: 32px 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .delete-modal .modal-icon {
+            width: 60px;
+            height: 60px;
+            background: #FEE2E2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px auto;
+        }
+
+        .delete-modal .modal-icon i {
+            font-size: 28px;
+            color: #EF4444;
+        }
+
+        .delete-modal h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 10px;
+        }
+
+        .delete-modal p {
             font-size: 14px;
-            color: #111;
+            color: #718096;
+            margin-bottom: 24px;
+        }
+
+        .delete-modal .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .delete-modal .btn-cancel {
+            padding: 10px 24px;
+            background: #f7fafc;
+            color: #4b5563;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .delete-modal .btn-cancel:hover {
+            background: #edf2f7;
+        }
+
+        .delete-modal .btn-confirm-delete {
+            padding: 10px 24px;
+            background: #EF4444;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .delete-modal .btn-confirm-delete:hover {
+            background: #DC2626;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .page-container {
+                padding: 20px;
+            }
+
+            .page-header {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .header-actions {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .search-box input {
+                width: 100%;
+            }
+
+            .stylists-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
     <%- include('partials/navbar') %>
     <%- include('partials/second_navbar') %>
-    <div class="container">
-        <!-- New Stylists Section -->
-        <div class="stylists-container">
-            <h2>Stylists</h2>
-            <div class="card-grid">
-                <% staffMembers.forEach((staff) => { %>
-                    <div class="stylist-card">
-                        <!-- <img src="/images/barber.png" alt="Stylist Image" class="stylist-image"> -->
-                        <img src= "<%= staff.aadhaarPhoto %>" alt="Stylist Image" class="stylist-image">
-                        <div class="stylist-details">
-                            <h3><%= staff.name %></h3>
-                            <p><strong>Role:</strong> <%= staff.jobTitle %></p>
-                            <p><strong>Date of joining:</strong> <%= staff.employmentStartDate.toDateString() %></p>
-                            <p><strong>Email ID:</strong> <%= staff.email %></p>
-                            <p><strong>Phone Number:</strong> <%= staff.contactNumber %></p>
-                            <p><strong>Address:</strong> <%= staff.address %></p>
-                            <p><strong>Gender:</strong> <%= staff.gender %></p>
+
+    <div class="page-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="header-left">
+                <h1>Stylists</h1>
+                <p>Manage your team of hair and beauty experts.</p>
+            </div>
+            <div class="header-actions">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Search stylists..." onkeyup="filterStylists()">
+                </div>
+                <a href="/staff" class="btn-add-stylist">
+                    <i class="fas fa-plus"></i>
+                    Add Stylist
+                </a>
+            </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all" onclick="filterByRole('all', this)">All Staff</button>
+            <% 
+                // Get unique job titles
+                const jobTitles = [...new Set(staffMembers.map(s => s.jobTitle))];
+                jobTitles.slice(0, 3).forEach(function(title) {
+            %>
+                <button class="filter-tab" data-filter="<%= title.toLowerCase() %>" onclick="filterByRole('<%= title.toLowerCase() %>', this)"><%= title %></button>
+            <% }); %>
+        </div>
+
+        <!-- Stylists Grid -->
+        <div class="stylists-grid" id="stylistsGrid">
+            <% 
+                const cardColors = ['pink', 'orange', 'green', 'blue', 'purple', 'teal'];
+                staffMembers.forEach(function(staff, index) { 
+                    const cardColor = cardColors[index % cardColors.length];
+                    const joinDate = staff.employmentStartDate.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: '2-digit', 
+                        year: 'numeric' 
+                    });
+            %>
+                <div class="stylist-card" data-name="<%= staff.name.toLowerCase() %>" data-role="<%= staff.jobTitle.toLowerCase() %>">
+                    <div class="card-header <%= cardColor %>">
+                        <% if (staff.aadhaarPhoto) { %>
+                            <img src="<%= staff.aadhaarPhoto %>" alt="<%= staff.name %>" class="profile-image">
+                        <% } else { %>
+                            <img src="/images/default-avatar.png" alt="<%= staff.name %>" class="profile-image">
+                        <% } %>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="stylist-name"><%= staff.name %></h3>
+                        <p class="stylist-role"><%= staff.jobTitle %></p>
+                        
+                        <div class="stylist-info">
+                            <div class="info-item">
+                                <i class="fas fa-envelope"></i>
+                                <span><%= staff.email %></span>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-phone"></i>
+                                <span><%= staff.contactNumber %></span>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-calendar"></i>
+                                <span>Joined <%= joinDate %></span>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span><%= staff.address %></span>
+                            </div>
                         </div>
                     </div>
-                <% }) %>
+                    <div class="card-footer">
+                        <button class="btn-icon btn-edit" onclick="editStylist('<%= staff._id %>')" title="Edit">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <button class="btn-icon btn-delete" onclick="confirmDelete('<%= staff._id %>', '<%= staff.name %>')" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            <% }); %>
+
+            <!-- Hire New Talent Card -->
+            <div class="hire-card" onclick="window.location.href='/staff'">
+                <div class="plus-icon">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <h3>Hire New Talent</h3>
+                <p>Add a new stylist to your growing team.</p>
             </div>
         </div>
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="delete-modal">
+        <div class="modal-content">
+            <div class="modal-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3>Delete Stylist?</h3>
+            <p>Are you sure you want to remove <strong id="deleteStaffName"></strong> from your team? This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeDeleteModal()">Cancel</button>
+                <form id="deleteForm" action="/delete-staff" method="POST" style="margin: 0;">
+                    <input type="hidden" name="id" id="deleteStaffId">
+                    <button type="submit" class="btn-confirm-delete">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Search functionality
+        function filterStylists() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toLowerCase();
+            const cards = document.querySelectorAll('.stylist-card');
+
+            cards.forEach(card => {
+                const name = card.getAttribute('data-name');
+                const role = card.getAttribute('data-role');
+                if (name.includes(filter) || role.includes(filter)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Filter by role
+        function filterByRole(role, btn) {
+            // Update active tab
+            document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
+            btn.classList.add('active');
+
+            const cards = document.querySelectorAll('.stylist-card');
+            cards.forEach(card => {
+                if (role === 'all') {
+                    card.style.display = '';
+                } else {
+                    const cardRole = card.getAttribute('data-role');
+                    if (cardRole === role) {
+                        card.style.display = '';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        // Edit stylist - redirect to staff page with edit mode
+        function editStylist(staffId) {
+            // For now, redirect to staff management page
+            window.location.href = '/staff?edit=' + staffId;
+        }
+
+        // Delete confirmation
+        let staffToDelete = null;
+
+        function confirmDelete(staffId, staffName) {
+            document.getElementById('deleteStaffId').value = staffId;
+            document.getElementById('deleteStaffName').textContent = staffName;
+            document.getElementById('deleteModal').classList.add('active');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.remove('active');
+        }
+
+        // Close modal on outside click
+        document.getElementById('deleteModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDeleteModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDeleteModal();
+            }
+        });
+    </script>
     <%- include('partials/globalScripts') %>
 </body>
 </html>

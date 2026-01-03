@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salon Dashboard</title>
+    <link rel="icon" href="/images/logo 3-square.png" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
+        
+    <style>
+        body {
+            font-family: 'Gowun Batang', serif;
+            background-color: #D3E4CD;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .stylists-container {
+            width: 80%;
+            text-align: center;
+        }
+
+        .stylists-container h2 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            width: 100%;
+        }
+
+        .stylist-card {
+            background-color: #F5F5DC;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: left;
+        }
+
+        .stylist-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin-bottom: 15px;
+        }
+
+        .stylist-details strong {
+            font-weight: bold;
+            color: #000; /* Optional: make bold text a bit darker */
+        }
+
+        .stylist-details h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+        }
+
+        .stylist-details p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #111;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+    <%- include('partials/second_navbar') %>
+    <div class="container">
+        <!-- New Stylists Section -->
+        <div class="stylists-container">
+            <h2>Stylists</h2>
+            <div class="card-grid">
+                <% staffMembers.forEach((staff) => { %>
+                    <div class="stylist-card">
+                        <!-- <img src="/images/barber.png" alt="Stylist Image" class="stylist-image"> -->
+                        <img src= "<%= staff.aadhaarPhoto %>" alt="Stylist Image" class="stylist-image">
+                        <div class="stylist-details">
+                            <h3><%= staff.name %></h3>
+                            <p><strong>Role:</strong> <%= staff.jobTitle %></p>
+                            <p><strong>Date of joining:</strong> <%= staff.employmentStartDate.toDateString() %></p>
+                            <p><strong>Email ID:</strong> <%= staff.email %></p>
+                            <p><strong>Phone Number:</strong> <%= staff.contactNumber %></p>
+                            <p><strong>Address:</strong> <%= staff.address %></p>
+                            <p><strong>Gender:</strong> <%= staff.gender %></p>
+                        </div>
+                    </div>
+                <% }) %>
+            </div>
+        </div>
+    </div>
+    <%- include('partials/globalScripts') %>
+</body>
+</html>

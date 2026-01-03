@@ -3,83 +3,706 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Top Employees</title>
+    <title>Top Employees - Salon Dashboard</title>
     <link rel="icon" href="/images/logo 3-square.png" type="image/x-icon">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles/topemployeestyle.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/navbarstyle.css">
+    <link rel="stylesheet" href="/styles/headerstyle.css">
+    <style>
+        body {
+            font-family: 'Gowun Batang', serif;
+            background-color: #D3E4CD;
+            margin: 0;
+            padding: 0;
+        }
+
+        .page-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 40px;
+        }
+
+        /* Page Header */
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .page-header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #4CAF50;
+            margin: 0 0 10px 0;
+            font-style: italic;
+        }
+
+        .page-header p {
+            font-size: 15px;
+            color: #718096;
+            margin: 0;
+        }
+
+        /* Recognition Cards */
+        .recognition-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 50px;
+        }
+
+        .recognition-card {
+            background: white;
+            border-radius: 12px;
+            padding: 28px 24px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .recognition-card.featured {
+            border-color: #4CAF50;
+        }
+
+        .recognition-card .best-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #4CAF50;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 12px;
+            text-transform: uppercase;
+        }
+
+        .recognition-card .avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            margin: 0 auto 16px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f7fafc;
+            overflow: hidden;
+        }
+
+        .recognition-card .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .recognition-card .avatar i {
+            font-size: 28px;
+            color: #a0aec0;
+        }
+
+        .recognition-card .avatar.has-image {
+            border: 3px solid #4CAF50;
+        }
+
+        .recognition-card h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a202c;
+            margin: 0 0 4px 0;
+        }
+
+        .recognition-card .employee-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #4a5568;
+            margin: 0 0 12px 0;
+        }
+
+        .recognition-card .subtitle {
+            font-size: 11px;
+            font-weight: 600;
+            color: #a0aec0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 4px 0 0 0;
+        }
+
+        .recognition-card .stats {
+            font-size: 13px;
+            color: #718096;
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .recognition-card .stats i {
+            color: #4CAF50;
+        }
+
+        .recognition-card .no-data {
+            font-size: 13px;
+            color: #a0aec0;
+            font-style: italic;
+            margin-top: 8px;
+        }
+
+        /* Top Stylists Section */
+        .stylists-section {
+            margin-top: 40px;
+        }
+
+        .stylists-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .stylists-header-left h2 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1a202c;
+            margin: 0 0 4px 0;
+        }
+
+        .stylists-header-left p {
+            font-size: 13px;
+            color: #718096;
+            margin: 0;
+        }
+
+        .period-selector {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+        }
+
+        .period-selector label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .period-select {
+            padding: 10px 36px 10px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Gowun Batang', serif;
+            background: white;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23718096' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            min-width: 160px;
+        }
+
+        .period-select:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        /* Table Card */
+        .table-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .stylists-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .stylists-table th {
+            padding: 16px 24px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: #f7fafc;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .stylists-table th:nth-child(2) {
+            text-align: center;
+        }
+
+        .stylists-table th:nth-child(3) {
+            text-align: center;
+        }
+
+        .stylists-table th:last-child {
+            text-align: center;
+            width: 50px;
+        }
+
+        .stylists-table td {
+            padding: 16px 24px;
+            font-size: 14px;
+            color: #1a202c;
+            border-bottom: 1px solid #f0f0f0;
+            vertical-align: middle;
+        }
+
+        .stylists-table tbody tr:hover {
+            background: #f7fafc;
+        }
+
+        .stylists-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Stylist Cell */
+        .stylist-cell {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .stylist-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e8f5e9 0%, #a5d6a7 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: #4CAF50;
+            overflow: hidden;
+        }
+
+        .stylist-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .stylist-info h4 {
+            margin: 0 0 2px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a202c;
+        }
+
+        .stylist-info p {
+            margin: 0;
+            font-size: 12px;
+            color: #718096;
+        }
+
+        /* Services Cell */
+        .services-cell {
+            text-align: center;
+        }
+
+        .services-count {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a202c;
+        }
+
+        /* Status Cell */
+        .status-cell {
+            text-align: center;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-badge.top {
+            background: #e8f5e9;
+            color: #4CAF50;
+        }
+
+        /* Actions Cell */
+        .actions-cell {
+            text-align: center;
+        }
+
+        .btn-more {
+            background: transparent;
+            border: none;
+            color: #a0aec0;
+            cursor: pointer;
+            padding: 8px;
+            font-size: 16px;
+        }
+
+        .btn-more:hover {
+            color: #4a5568;
+        }
+
+        /* Table Footer */
+        .table-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            border-top: 1px solid #f0f0f0;
+            background: #f7fafc;
+        }
+
+        .results-info {
+            font-size: 13px;
+            color: #4CAF50;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pagination-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #4a5568;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            border-color: #4CAF50;
+            color: #4CAF50;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* No Data State */
+        .no-data-row td {
+            text-align: center;
+            padding: 40px 24px;
+            color: #a0aec0;
+            font-style: italic;
+        }
+
+        /* Loading State */
+        .loading-row td {
+            text-align: center;
+            padding: 40px 24px;
+            color: #718096;
+        }
+
+        .loading-row i {
+            margin-right: 8px;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .recognition-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .page-container {
+                padding: 20px;
+            }
+
+            .stylists-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .period-selector {
+                align-items: flex-start;
+            }
+
+            .stylists-table th,
+            .stylists-table td {
+                padding: 12px 16px;
+            }
+
+            .stylist-avatar {
+                width: 36px;
+                height: 36px;
+            }
+
+            .table-footer {
+                flex-direction: column;
+                gap: 12px;
+            }
+        }
+    </style>
 </head>
 <body>
     <%- include('partials/navbar') %>
     <%- include('partials/second_navbar') %>
-    <h1>Top Employees</h1>
-    <div class="cards">
-        <div class="card">
-            <h2>Employee of the Day</h2>
-            <p><%= topOfDay && topOfDay.length ? `${topOfDay[0]._id} with ${topOfDay[0].count} services` : 'No data available' %></p>
+
+    <div class="page-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1>Top Employees</h1>
+            <p>Recognizing outstanding performance and dedication.</p>
         </div>
-        <div class="card">
-            <h2>Employee of the Week</h2>
-            <p><%= topOfWeek && topOfWeek.length ? `${topOfWeek[0]._id} with ${topOfWeek[0].count} services` : 'No data available' %></p>
+
+        <!-- Recognition Cards -->
+        <div class="recognition-cards">
+            <!-- Employee of the Day -->
+            <div class="recognition-card">
+                <% 
+                    const dayEmployee = topOfDay && topOfDay.length ? topOfDay[0]._id : null;
+                    const dayStaff = dayEmployee ? staffMembers.find(s => s.name === dayEmployee) : null;
+                %>
+                <div class="avatar <%= dayStaff && dayStaff.aadhaarPhoto ? 'has-image' : '' %>">
+                    <% if (dayStaff && dayStaff.aadhaarPhoto) { %>
+                        <img src="<%= dayStaff.aadhaarPhoto %>" alt="<%= dayEmployee %>">
+                    <% } else { %>
+                        <i class="far fa-calendar-alt"></i>
+                    <% } %>
+                </div>
+                <h3>Employee of the Day</h3>
+                <p class="subtitle">Daily Performance</p>
+                <% if (topOfDay && topOfDay.length) { %>
+                    <p class="employee-name" style="margin-top: 12px;"><%= topOfDay[0]._id %></p>
+                    <div class="stats">
+                        <i class="fas fa-scissors"></i>
+                        <span><%= topOfDay[0].count %> services completed</span>
+                    </div>
+                <% } else { %>
+                    <p class="no-data">No data available yet</p>
+                <% } %>
+            </div>
+
+            <!-- Employee of the Week -->
+            <div class="recognition-card featured">
+                <span class="best-badge">Best</span>
+                <% 
+                    const weekEmployee = topOfWeek && topOfWeek.length ? topOfWeek[0]._id : null;
+                    const weekStaff = weekEmployee ? staffMembers.find(s => s.name === weekEmployee) : null;
+                %>
+                <div class="avatar <%= weekStaff && weekStaff.aadhaarPhoto ? 'has-image' : '' %>">
+                    <% if (weekStaff && weekStaff.aadhaarPhoto) { %>
+                        <img src="<%= weekStaff.aadhaarPhoto %>" alt="<%= weekEmployee %>">
+                    <% } else if (topOfWeek && topOfWeek.length) { %>
+                        <i class="fas fa-user"></i>
+                    <% } else { %>
+                        <i class="far fa-calendar-alt"></i>
+                    <% } %>
+                </div>
+                <h3>Employee of the Week</h3>
+                <% if (topOfWeek && topOfWeek.length) { %>
+                    <p class="employee-name"><%= topOfWeek[0]._id %></p>
+                    <div class="stats">
+                        <i class="fas fa-scissors"></i>
+                        <span><%= topOfWeek[0].count %> services completed</span>
+                    </div>
+                <% } else { %>
+                    <p class="no-data">No data available yet</p>
+                <% } %>
+            </div>
+
+            <!-- Employee of the Month -->
+            <div class="recognition-card">
+                <% 
+                    const monthEmployee = topOfMonth && topOfMonth.length ? topOfMonth[0]._id : null;
+                    const monthStaff = monthEmployee ? staffMembers.find(s => s.name === monthEmployee) : null;
+                %>
+                <div class="avatar <%= monthStaff && monthStaff.aadhaarPhoto ? 'has-image' : '' %>">
+                    <% if (monthStaff && monthStaff.aadhaarPhoto) { %>
+                        <img src="<%= monthStaff.aadhaarPhoto %>" alt="<%= monthEmployee %>">
+                    <% } else if (topOfMonth && topOfMonth.length) { %>
+                        <i class="fas fa-user"></i>
+                    <% } else { %>
+                        <i class="far fa-calendar-alt"></i>
+                    <% } %>
+                </div>
+                <h3>Employee of the Month</h3>
+                <% if (topOfMonth && topOfMonth.length) { %>
+                    <p class="employee-name"><%= topOfMonth[0]._id %></p>
+                    <div class="stats">
+                        <i class="fas fa-trophy"></i>
+                        <span><%= topOfMonth[0].count %> services (Current)</span>
+                    </div>
+                <% } else { %>
+                    <p class="no-data">No data available yet</p>
+                <% } %>
+            </div>
         </div>
-        <div class="card">
-            <h2>Employee of the Month</h2>
-            <p><%= topOfMonth && topOfMonth.length ? `${topOfMonth[0]._id} with ${topOfMonth[0].count} services` : 'No data available' %></p>
+
+        <!-- Top Stylists Section -->
+        <div class="stylists-section">
+            <div class="stylists-header">
+                <div class="stylists-header-left">
+                    <h2>Top Stylists</h2>
+                    <p>Review performance metrics for the selected period.</p>
+                </div>
+                <div class="period-selector">
+                    <label>Select Period</label>
+                    <select id="periodSelect" class="period-select">
+                        <option value="week" selected>Current Week</option>
+                        <option value="day">Today</option>
+                        <option value="month">This Month</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-card">
+                <table class="stylists-table">
+                    <thead>
+                        <tr>
+                            <th>Stylist Name</th>
+                            <th>Services Provided</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="stylistTable">
+                        <tr class="loading-row">
+                            <td colspan="4">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                Loading stylists...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="table-footer">
+                    <div class="results-info" id="resultsInfo">
+                        Loading...
+                    </div>
+                    <div class="pagination">
+                        <button class="pagination-btn" id="prevBtn" disabled>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="pagination-btn" id="nextBtn" disabled>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-
-    <h1>Top Stylists</h1>
-    <label for="periodSelect">Select Period:</label>
-    <select id="periodSelect">
-        <option value="day">Day</option>
-        <option value="week">Week</option>
-        <option value="month">Month</option>
-    </select>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Stylist Name</th>
-                <th>Services Provided</th>
-            </tr>
-        </thead>
-        <tbody id="stylistTable">
-            <!-- Rows will be added here -->
-        </tbody>
-    </table>
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const tableBody = document.getElementById('stylistTable');
         const periodSelect = document.getElementById('periodSelect');
+        const resultsInfo = document.getElementById('resultsInfo');
+
+        // Staff members data for photos
+        const staffMembers = <%- JSON.stringify(staffMembers) %>;
+
+        function getInitials(name) {
+            return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+        }
+
+        function getStaffByName(name) {
+            return staffMembers.find(s => s.name === name);
+        }
 
         function fetchTopStylists(period) {
+            tableBody.innerHTML = `
+                <tr class="loading-row">
+                    <td colspan="4">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        Loading stylists...
+                    </td>
+                </tr>
+            `;
+            resultsInfo.textContent = 'Loading...';
+
             fetch(`/top-stylists?period=${period}`)
                 .then(response => response.json())
                 .then(data => {
-                    tableBody.innerHTML = ''; // Clear existing rows
+                    tableBody.innerHTML = '';
+                    
                     if (data && data.length > 0) {
-                        data.forEach(stylist => {
-                            const row = tableBody.insertRow();
-                            const cell1 = row.insertCell(0);
-                            const cell2 = row.insertCell(1);
-                            cell1.textContent = stylist._id;
-                            cell2.textContent = stylist.count;
+                        data.forEach((stylist, index) => {
+                            const staff = getStaffByName(stylist._id);
+                            const initials = getInitials(stylist._id);
+                            const jobTitle = staff ? staff.jobTitle : 'Stylist';
+                            const hasPhoto = staff && staff.aadhaarPhoto;
+                            const isTop = index === 0;
+                            
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>
+                                    <div class="stylist-cell">
+                                        <div class="stylist-avatar">
+                                            ${hasPhoto ? `<img src="${staff.aadhaarPhoto}" alt="${stylist._id}">` : initials}
+                                        </div>
+                                        <div class="stylist-info">
+                                            <h4>${stylist._id}</h4>
+                                            <p>${jobTitle}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="services-cell">
+                                    <span class="services-count">${stylist.count}</span>
+                                </td>
+                                <td class="status-cell">
+                                    ${isTop ? '<span class="status-badge top">Top</span>' : ''}
+                                </td>
+                                <td class="actions-cell">
+                                    <button class="btn-more" title="More options">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </td>
+                            `;
+                            tableBody.appendChild(row);
                         });
+                        
+                        resultsInfo.textContent = `Showing ${data.length} results`;
                     } else {
-                        tableBody.innerHTML = '<tr><td colspan="2">No data available for this period</td></tr>';
+                        tableBody.innerHTML = `
+                            <tr class="no-data-row">
+                                <td colspan="4">No data available for this period</td>
+                            </tr>
+                        `;
+                        resultsInfo.textContent = 'No results';
                     }
                 })
                 .catch(error => {
                     console.error('Fetch error:', error);
-                    tableBody.innerHTML = '<tr><td colspan="2">Error loading data</td></tr>';
+                    tableBody.innerHTML = `
+                        <tr class="no-data-row">
+                            <td colspan="4">Error loading data. Please try again.</td>
+                        </tr>
+                    `;
+                    resultsInfo.textContent = 'Error loading data';
                 });
         }
 
-        fetchTopStylists('day'); // Initial fetch for the current day
+        // Initial fetch for current week
+        fetchTopStylists('week');
+
+        // Event listener for dropdown changes
         periodSelect.addEventListener('change', function() {
-            fetchTopStylists(this.value); // Event listener for dropdown changes
+            fetchTopStylists(this.value);
         });
     });
     </script>

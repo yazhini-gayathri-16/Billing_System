@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top Employees</title>
+    <link rel="icon" href="/images/logo 3-square.png" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/topemployeestyle.css">
+</head>
+<body>
+    <%- include('partials/navbar') %>
+    <%- include('partials/second_navbar') %>
+    <h1>Top Employees</h1>
+    <div class="cards">
+        <div class="card">
+            <h2>Employee of the Day</h2>
+            <p><%= topOfDay && topOfDay.length ? `${topOfDay[0]._id} with ${topOfDay[0].count} services` : 'No data available' %></p>
+        </div>
+        <div class="card">
+            <h2>Employee of the Week</h2>
+            <p><%= topOfWeek && topOfWeek.length ? `${topOfWeek[0]._id} with ${topOfWeek[0].count} services` : 'No data available' %></p>
+        </div>
+        <div class="card">
+            <h2>Employee of the Month</h2>
+            <p><%= topOfMonth && topOfMonth.length ? `${topOfMonth[0]._id} with ${topOfMonth[0].count} services` : 'No data available' %></p>
+        </div>
+    </div>
+
+    <h1>Top Stylists</h1>
+    <label for="periodSelect">Select Period:</label>
+    <select id="periodSelect">
+        <option value="day">Day</option>
+        <option value="week">Week</option>
+        <option value="month">Month</option>
+    </select>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Stylist Name</th>
+                <th>Services Provided</th>
+            </tr>
+        </thead>
+        <tbody id="stylistTable">
+            <!-- Rows will be added here -->
+        </tbody>
+    </table>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tableBody = document.getElementById('stylistTable');
+        const periodSelect = document.getElementById('periodSelect');
+
+        function fetchTopStylists(period) {
+            fetch(`/top-stylists?period=${period}`)
+                .then(response => response.json())
+                .then(data => {
+                    tableBody.innerHTML = ''; // Clear existing rows
+                    if (data && data.length > 0) {
+                        data.forEach(stylist => {
+                            const row = tableBody.insertRow();
+                            const cell1 = row.insertCell(0);
+                            const cell2 = row.insertCell(1);
+                            cell1.textContent = stylist._id;
+                            cell2.textContent = stylist.count;
+                        });
+                    } else {
+                        tableBody.innerHTML = '<tr><td colspan="2">No data available for this period</td></tr>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    tableBody.innerHTML = '<tr><td colspan="2">Error loading data</td></tr>';
+                });
+        }
+
+        fetchTopStylists('day'); // Initial fetch for the current day
+        periodSelect.addEventListener('change', function() {
+            fetchTopStylists(this.value); // Event listener for dropdown changes
+        });
+    });
+    </script>
+    <%- include('partials/globalScripts') %>
+</body>
+</html>
