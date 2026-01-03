@@ -2,14 +2,445 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Client Information</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Membership Management</title>
     <link rel="icon" href="/images/logo 3-square.png" type="image/x-icon">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles/clientstyle.css">
-    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css"> -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/navbarstyle.css">
+    <link rel="stylesheet" href="/styles/headerstyle.css">
+    <style>
+        body {
+            font-family: 'Gowun Batang', serif;
+            background-color: #D3E4CD;
+            margin: 0;
+            padding: 0;
+        }
 
+        .page-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 15px 20px;
+        }
+
+        /* Page Header */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .header-left h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a202c;
+            margin: 0 0 6px 0;
+        }
+
+        .header-left p {
+            font-size: 14px;
+            color: #718096;
+            margin: 0;
+        }
+
+        .btn-new-membership {
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-new-membership:hover {
+            background: #45a049;
+        }
+
+        /* Add Membership Section */
+        .add-membership-section {
+            background: #F5F5DC;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .add-membership-section.active {
+            display: block;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .section-header i {
+            color: #4CAF50;
+            font-size: 18px;
+        }
+
+        .section-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a202c;
+            margin: 0;
+        }
+
+        .form-section {
+            margin-bottom: 20px;
+        }
+
+        .form-section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .form-section-title i {
+            font-size: 14px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .form-row.two-col {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .form-row.four-col {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .form-group {
+            min-width: 0;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: #4a5568;
+            margin-bottom: 6px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: 'Gowun Batang', serif;
+            transition: all 0.2s;
+            box-sizing: border-box;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+
+        .payment-methods {
+            display: flex;
+            gap: 12px;
+            margin-top: 6px;
+        }
+
+        .payment-option {
+            flex: 1;
+        }
+
+        .payment-option input[type="radio"] {
+            display: none;
+        }
+
+        .payment-option label {
+            display: block;
+            padding: 10px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+            font-size: 13px;
+        }
+
+        .payment-option input[type="radio"]:checked + label {
+            background: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
+
+        .payment-option label:hover {
+            border-color: #4CAF50;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .btn-cancel {
+            padding: 10px 24px;
+            background: white;
+            color: #4a5568;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-cancel:hover {
+            background: #f7fafc;
+        }
+
+        .btn-submit {
+            padding: 10px 24px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-submit:hover {
+            background: #45a049;
+        }
+
+        /* Search Sections */
+        .search-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .search-card {
+            background: #F5F5DC;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .search-header i {
+            font-size: 18px;
+        }
+
+        .search-header.blue i {
+            color: #3b82f6;
+        }
+
+        .search-header.purple i {
+            color: #8b5cf6;
+        }
+
+        .search-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a202c;
+            margin: 0;
+        }
+
+        .search-description {
+            font-size: 13px;
+            color: #718096;
+            margin-bottom: 16px;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .search-form input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: 'Gowun Batang', serif;
+        }
+
+        .search-form input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .btn-find {
+            padding: 10px 24px;
+            background: #1a202c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-find:hover {
+            background: #2d3748;
+        }
+
+        .btn-find-membership {
+            background: #4CAF50;
+        }
+
+        .btn-find-membership:hover {
+            background: #45a049;
+        }
+
+        .search-results {
+            min-height: 60px;
+            font-size: 13px;
+            color: #718096;
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 6px;
+        }
+
+        /* Result Display Styles */
+        .customer-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 16px;
+        }
+
+        .customer-info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .info-card {
+            background: white;
+            padding: 12px 16px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .info-card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .info-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a202c;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-available {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-unavailable {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        /* Membership Details Display */
+        .membership-details {
+            background: white;
+            padding: 16px;
+            border-radius: 6px;
+        }
+
+        .membership-details p {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        .membership-details strong {
+            color: #4a5568;
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .search-container {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row,
+            .form-row.four-col {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row.two-col {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
     <% if (userRole === 'admin') { %>
@@ -18,308 +449,366 @@
         <%- include('partials/staffnavbar') %>
     <% } %>
 
-    <div class="container">
+    <div class="page-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="header-left">
+                <h1>Membership Management</h1>
+                <p>Create new memberships and manage existing clients.</p>
+            </div>
+            <button class="btn-new-membership" onclick="toggleMembershipForm()">
+                <i class="fas fa-plus"></i>
+                New Membership
+            </button>
+        </div>
 
         <!-- Add New Membership Section -->
-        <button type="button" onclick="toggleMembershipForm()">Add New Membership</button>
-        <div id="membershipForm" class="add-membership-form">
+        <div id="membershipForm" class="add-membership-section">
+            <div class="section-header">
+                <i class="fas fa-user-plus"></i>
+                <h2>Add New Membership</h2>
+            </div>
+
             <form id="newMembershipForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="customername">Customer Name:</label>
-                        <input type="text" autocomplete="off" name="customername" placeholder="Customer Name" required>
+                <!-- Client Details Section -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-user"></i>
+                        Client Details
                     </div>
-                    <div class="form-group">
-                        <label for="membershipID">Card Number:</label>
-                        <input type="text" autocomplete="off" name="membershipID" placeholder="Card Number" required>
-                    </div>                    
-                </div>    
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="phoneNumber">Phone Number:</label>
-                        <input type="number" autocomplete="off" name="phoneNumber" placeholder="Phone Number" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="birthMonth">Birth Month:</label>
-                        <select name="birthMonth" required>
-                            <option value="">Select Month</option>
-                            <option value="1">January</option>
-                            <option value="2">February</option>
-                            <option value="3">March</option>
-                            <option value="4">April</option>
-                            <option value="5">May</option>
-                            <option value="6">June</option>
-                            <option value="7">July</option>
-                            <option value="8">August</option>
-                            <option value="9">September</option>
-                            <option value="10">October</option>
-                            <option value="11">November</option>
-                            <option value="12">December</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                <div class="form-group">
-                    <label for="anniversaryMonth">Anniversary Month:</label>
-                    <select name="anniversaryMonth">
-                        <option value="">Select Month</option>
-                        <option value="1">January</option>
-                        <option value="2">February</option>
-                        <option value="3">March</option>
-                        <option value="4">April</option>
-                        <option value="5">May</option>
-                        <option value="6">June</option>
-                        <option value="7">July</option>
-                        <option value="8">August</option>
-                        <option value="9">September</option>
-                        <option value="10">October</option>
-                        <option value="11">November</option>
-                        <option value="12">December</option>
-                    </select>
-                </div>
-
-                <label for="registeredDate">Registered Date:</label>
-                <input type="date" autocomplete="off" id="registeredDate" name="registeredDate" required onchange="setValidTillDate()">
-
-                <label for="validTillDate">Valid Till Date:</label>
-                <input type="date" autocomplete="off" id="validTillDate" name="validTillDate" readonly>
-                </div>
-
-                <!-- Add Price and Payment Method Section -->
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="memprice">Price:</label>
-                        <input type="number" autocomplete="off" name="memprice" placeholder="Membership Price" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="mempaymentMethod">Payment Method:</label>
-                        <div>
-                            <input type="radio" id="paymentUPI" name="mempaymentMethod" value="UPI" required  checked="checked"><label for="paymentUPI">UPI</label>
-                            <input type="radio" id="paymentCash" name="mempaymentMethod" value="Cash" required><label for="paymentCash">Cash</label>
-                            <input type="radio" id="paymentCard" name="mempaymentMethod" value="Card" required><label for="paymentCard">Card</label>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="customername">Customer Name</label>
+                            <input type="text" autocomplete="off" name="customername" id="customername" placeholder="Jane Doe" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phoneNumber">Phone Number</label>
+                            <input type="tel" autocomplete="off" name="phoneNumber" id="phoneNumber" placeholder="+1 (555) 000-0000" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="membershipID">Card Number</label>
+                            <input type="text" autocomplete="off" name="membershipID" id="membershipID" placeholder="XXXX-XXXX-XXXX" required>
                         </div>
                     </div>
                 </div>
 
-                
-                <button type="button" onclick="addMembership()">Add</button>
+                <!-- Important Dates Section -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <i class="fas fa-calendar"></i>
+                        Important Dates
+                    </div>
+                    <div class="form-row four-col">
+                        <div class="form-group">
+                            <label for="birthMonth">Birth Month</label>
+                            <select name="birthMonth" id="birthMonth" required>
+                                <option value="">Select Month</option>
+                                <option value="1">January</option>
+                                <option value="2">February</option>
+                                <option value="3">March</option>
+                                <option value="4">April</option>
+                                <option value="5">May</option>
+                                <option value="6">June</option>
+                                <option value="7">July</option>
+                                <option value="8">August</option>
+                                <option value="9">September</option>
+                                <option value="10">October</option>
+                                <option value="11">November</option>
+                                <option value="12">December</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="anniversaryMonth">Anniversary Month</label>
+                            <select name="anniversaryMonth" id="anniversaryMonth">
+                                <option value="">Select Month</option>
+                                <option value="1">January</option>
+                                <option value="2">February</option>
+                                <option value="3">March</option>
+                                <option value="4">April</option>
+                                <option value="5">May</option>
+                                <option value="6">June</option>
+                                <option value="7">July</option>
+                                <option value="8">August</option>
+                                <option value="9">September</option>
+                                <option value="10">October</option>
+                                <option value="11">November</option>
+                                <option value="12">December</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="registeredDate">Registered Date</label>
+                            <input type="date" autocomplete="off" id="registeredDate" name="registeredDate" required onchange="setValidTillDate()">
+                        </div>
+                        <div class="form-group">
+                            <label for="validTillDate">Valid Till Date</label>
+                            <input type="date" autocomplete="off" id="validTillDate" name="validTillDate" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Price and Payment Section -->
+                <div class="form-section">
+                    <div class="form-row two-col">
+                        <div class="form-group">
+                            <label for="memprice">Membership Price</label>
+                            <input type="number" autocomplete="off" name="memprice" id="memprice" placeholder="0.00" step="0.01" required>
+                            <small style="font-size: 11px; color: #718096; margin-top: 4px; display: block;">USD</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Payment Method</label>
+                            <div class="payment-methods">
+                                <div class="payment-option">
+                                    <input type="radio" id="paymentUPI" name="mempaymentMethod" value="UPI" required checked>
+                                    <label for="paymentUPI">UPI / Digital</label>
+                                </div>
+                                <div class="payment-option">
+                                    <input type="radio" id="paymentCash" name="mempaymentMethod" value="Cash" required>
+                                    <label for="paymentCash">Cash</label>
+                                </div>
+                                <div class="payment-option">
+                                    <input type="radio" id="paymentCard" name="mempaymentMethod" value="Card" required>
+                                    <label for="paymentCard">Card</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="toggleMembershipForm()">Cancel</button>
+                    <button type="button" class="btn-submit" onclick="addMembership()">ADD MEMBERSHIP</button>
+                </div>
             </form>
         </div>
 
-        <!-- Client Search Form -->
-        <div class="search-section">
-            <h1>Search for Client</h1>
-            <form id="searchForm" class="form-inline">
-                <label for="customerNumber">Customer Number:</label>
-                <input type="text" autocomplete="off" id="customerNumber" name="customerNumber" placeholder="Customer Phone Number" required>
-                
-                <button type="button" onclick="searchCustomer()">Find</button>
-            </form>
-            <div id="result" class="result"></div>
-        </div>
+        <!-- Search Sections -->
+        <div class="search-container">
+            <!-- Search Client -->
+            <div class="search-card">
+                <div class="search-header blue">
+                    <i class="fas fa-search"></i>
+                    <h3>Search Client</h3>
+                </div>
+                <p class="search-description">Find existing clients by their unique customer number.</p>
+                <div class="search-form">
+                    <input type="text" autocomplete="off" id="customerNumber" placeholder="Enter Customer Number" />
+                    <button class="btn-find" onclick="searchCustomer()">Find</button>
+                </div>
+                <div id="result" class="search-results">Search results will appear here</div>
+            </div>
 
-        <!-- Membership Search Section -->
-        <div class="search-membership">
-            <h2>Search Membership</h2>
-            <form id="findMembershipForm" class="form-inline">
-                <label for="searchMembershipID">Membership ID:</label>
-                <input type="text" autocomplete="off" id="searchMembershipID" name="searchMembershipID" placeholder="Membership ID" required>
-                <button type="button" onclick="findMembership()">Find Membership</button>
-            </form>
-            <div id="membershipDetails" class="result"></div>
+            <!-- Search Membership -->
+            <div class="search-card">
+                <div class="search-header purple">
+                    <i class="fas fa-id-card"></i>
+                    <h3>Search Membership</h3>
+                </div>
+                <p class="search-description">Lookup details using a specific Membership ID.</p>
+                <div class="search-form">
+                    <input type="text" autocomplete="off" id="searchMembershipID" placeholder="Enter Membership ID" />
+                    <button class="btn-find btn-find-membership" onclick="findMembership()">Find Membership</button>
+                </div>
+                <div id="membershipDetails" class="search-results">Search results will appear here</div>
+            </div>
         </div>
-    
-        
     </div>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-        // Function to search for a customer
-        function searchCustomer() {
-            const customerNumber = document.getElementById("customerNumber").value;
-            
-            fetch('/search-customer', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({customerNumber})
-            })
-            .then(response => response.json())
-            .then(data => {
-                const resultDiv = document.getElementById('result');
-                
-                if (data.success) {
-                    // Format services and products arrays
-                    const servicesDisplay = data.services.length > 0 ? data.services.join(', ') : 'No services';
-                    const productsDisplay = data.products.length > 0 ? data.products.join(', ') : 'No products';
-                    
-                    // Format membership display
-                    const membershipDisplay = data.membership === 'Active' 
-                        ? `${data.membership} (ID: ${data.membershipID})`
-                        : data.membership;
-
-                    // Format currency
-                    const formattedSpent = new Intl.NumberFormat('en-IN', {
-                        style: 'currency',
-                        currency: 'INR'
-                    }).format(data.totalSpent);
-
-                    resultDiv.innerHTML = `
-                        <div class="customer-name">${data.cust_name}</div>
-                        <div class="customer-info-grid">
-                            <div class="info-card">
-                                <div class="info-label">Customer Type</div>
-                                <div class="info-value">${data.customerType}</div>
-                            </div>
-                            
-                            <div class="info-card">
-                                <div class="info-label">Last Visit</div>
-                                <div class="info-value">${data.lastVisit}</div>
-                            </div>
-                            
-                            <div class="info-card">
-                                <div class="info-label">Total Visits</div>
-                                <div class="info-value">${data.visits}</div>
-                            </div>
-                            
-                            <div class="info-card">
-                                <div class="info-label">Total Spendings</div>
-                                <div class="info-value">${formattedSpent}</div>
-                            </div>
-                            
-                            <div class="info-card full-width">
-                                <div class="info-label">Previous Services</div>
-                                <div class="info-value">${servicesDisplay}</div>
-                            </div>
-                            
-                            <div class="info-card full-width">
-                                <div class="info-label">Previous Products</div>
-                                <div class="info-value">${productsDisplay}</div>
-                            </div>
-                            
-                            <div class="info-card">
-                                <div class="info-label">Membership Status</div>
-                                <div class="info-value">
-                                    <span class="status-badge ${data.membership === 'Active' ? 'status-active' : 'status-inactive'}">
-                                        ${data.membership}
-                                        ${data.membership === 'Active' ? `(ID: ${data.membershipID})` : ''}
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            <div class="info-card">
-                                <div class="info-label">Offers Available</div>
-                                <div class="info-value">
-                                    <div>Birthday: 
-                                        <span class="status-badge ${data.canUseBirthdayOffer ? 'status-available' : 'status-unavailable'}">
-                                            ${data.canUseBirthdayOffer ? 'Available' : 'Not Available'}
-                                        </span>
-                                    </div>
-                                    <div style="margin-top: 5px;">Anniversary: 
-                                        <span class="status-badge ${data.canUseAnniversaryOffer ? 'status-available' : 'status-unavailable'}">
-                                            ${data.canUseAnniversaryOffer ? 'Available' : 'Not Available'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    resultDiv.innerHTML = `<p>No customer found with that information.</p>`;
+            // Toggle membership form
+            window.toggleMembershipForm = function() {
+                const form = document.getElementById('membershipForm');
+                form.classList.toggle('active');
+                if (form.classList.contains('active')) {
+                    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                document.getElementById('result').innerHTML = `<p>Error searching for customer.</p>`;
-            });
-        }
-    // Toggle the visibility of the Add Membership form
-    function toggleMembershipForm() {
-        const form = document.getElementById('membershipForm');
-        form.style.display = form.style.display === 'none' ? 'block' : 'none';
-    }
+            };
 
-    // Find Membership Details
-    function findMembership() {
-        const searchMembershipID = document.getElementById("searchMembershipID").value;
+            // Search for a customer
+            window.searchCustomer = function() {
+                const customerNumber = document.getElementById("customerNumber").value;
+                
+                if (!customerNumber) {
+                    document.getElementById('result').innerHTML = '<p style="color: #ef4444;">Please enter a customer number</p>';
+                    return;
+                }
 
-        fetch('/find-membership', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({searchMembershipID})
-        })
-        .then(response => response.json())
-        .then(data => {
-            const detailsDiv = document.getElementById('membershipDetails');
-            if (data.success) {
-                detailsDiv.innerHTML = `
-                    <p><strong>Member Name:</strong> ${data.name}</p>
-                    <p><strong>Card Number:</strong> ${data.membershipID}</p>
-                    <p><strong>Phone Number:</strong> ${data.phoneNumber}</p>
-                    <p><strong>Birth Month:</strong> ${data.birthMonth}</p>
-                    <p><strong>Anniversary Month:</strong> ${data.anniversaryMonth || 'N/A'}</p>
-                    <p><strong>Yearly Usage:</strong> ${JSON.stringify(data.yearlyUsage)}</p>
-                `;
-            } else {
-                detailsDiv.innerHTML = `<p>No membership found with that information.</p>`;
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            document.getElementById('membershipDetails').innerHTML = `<p>Error searching for membership.</p>`;
+                document.getElementById('result').innerHTML = '<p>Searching...</p>';
+                
+                fetch('/search-customer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({customerNumber})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const resultDiv = document.getElementById('result');
+                    
+                    if (data.success) {
+                        const servicesDisplay = data.services.length > 0 ? data.services.join(', ') : 'No services';
+                        const productsDisplay = data.products.length > 0 ? data.products.join(', ') : 'No products';
+                        
+                        const membershipDisplay = data.membership === 'Active' 
+                            ? `${data.membership} (ID: ${data.membershipID})`
+                            : data.membership;
+
+                        const formattedSpent = new Intl.NumberFormat('en-IN', {
+                            style: 'currency',
+                            currency: 'INR'
+                        }).format(data.totalSpent);
+
+                        resultDiv.innerHTML = `
+                            <div class="customer-name">${data.cust_name}</div>
+                            <div class="customer-info-grid">
+                                <div class="info-card">
+                                    <div class="info-label">Customer Type</div>
+                                    <div class="info-value">${data.customerType}</div>
+                                </div>
+                                
+                                <div class="info-card">
+                                    <div class="info-label">Last Visit</div>
+                                    <div class="info-value">${data.lastVisit}</div>
+                                </div>
+                                
+                                <div class="info-card">
+                                    <div class="info-label">Total Visits</div>
+                                    <div class="info-value">${data.visits}</div>
+                                </div>
+                                
+                                <div class="info-card">
+                                    <div class="info-label">Total Spendings</div>
+                                    <div class="info-value">${formattedSpent}</div>
+                                </div>
+                                
+                                <div class="info-card full-width">
+                                    <div class="info-label">Previous Services</div>
+                                    <div class="info-value">${servicesDisplay}</div>
+                                </div>
+                                
+                                <div class="info-card full-width">
+                                    <div class="info-label">Previous Products</div>
+                                    <div class="info-value">${productsDisplay}</div>
+                                </div>
+                                
+                                <div class="info-card">
+                                    <div class="info-label">Membership Status</div>
+                                    <div class="info-value">
+                                        <span class="status-badge ${data.membership === 'Active' ? 'status-active' : 'status-inactive'}">
+                                            ${data.membership === 'Active' ? `Active (ID: ${data.membershipID})` : data.membership}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="info-card">
+                                    <div class="info-label">Offers Available</div>
+                                    <div class="info-value">
+                                        <div>Birthday: 
+                                            <span class="status-badge ${data.canUseBirthdayOffer ? 'status-available' : 'status-unavailable'}">
+                                                ${data.canUseBirthdayOffer ? 'Available' : 'Not Available'}
+                                            </span>
+                                        </div>
+                                        <div style="margin-top: 5px;">Anniversary: 
+                                            <span class="status-badge ${data.canUseAnniversaryOffer ? 'status-available' : 'status-unavailable'}">
+                                                ${data.canUseAnniversaryOffer ? 'Available' : 'Not Available'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        resultDiv.innerHTML = `<p style="color: #ef4444;">No customer found with that information.</p>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('result').innerHTML = `<p style="color: #ef4444;">Error searching for customer.</p>`;
+                });
+            };
+
+            // Find Membership Details
+            window.findMembership = function() {
+                const searchMembershipID = document.getElementById("searchMembershipID").value;
+
+                if (!searchMembershipID) {
+                    document.getElementById('membershipDetails').innerHTML = '<p style="color: #ef4444;">Please enter a membership ID</p>';
+                    return;
+                }
+
+                document.getElementById('membershipDetails').innerHTML = '<p>Searching...</p>';
+
+                fetch('/find-membership', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({searchMembershipID})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const detailsDiv = document.getElementById('membershipDetails');
+                    if (data.success) {
+                        const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 
+                                          'July', 'August', 'September', 'October', 'November', 'December'];
+                        
+                        detailsDiv.innerHTML = `
+                            <div class="membership-details">
+                                <p><strong>Member Name:</strong> ${data.name}</p>
+                                <p><strong>Card Number:</strong> ${data.membershipID}</p>
+                                <p><strong>Phone Number:</strong> ${data.phoneNumber}</p>
+                                <p><strong>Birth Month:</strong> ${monthNames[data.birthMonth]}</p>
+                                <p><strong>Anniversary Month:</strong> ${data.anniversaryMonth ? monthNames[data.anniversaryMonth] : 'N/A'}</p>
+                            </div>
+                        `;
+                    } else {
+                        detailsDiv.innerHTML = `<p style="color: #ef4444;">No membership found with that information.</p>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('membershipDetails').innerHTML = `<p style="color: #ef4444;">Error searching for membership.</p>`;
+                });
+            };
+
+            // Add a new membership
+            window.addMembership = function() {
+                const form = document.getElementById('newMembershipForm');
+                const formData = new FormData(form);
+                const membershipData = {};
+                formData.forEach((value, key) => {
+                    membershipData[key] = value;
+                });
+
+                fetch('/add-membership', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(membershipData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    if (data.success) {
+                        form.reset();
+                        toggleMembershipForm();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error adding membership');
+                });
+            };
+
+            // Automatically set the "Valid Till Date" based on the "Registered Date"
+            window.setValidTillDate = function() {
+                const registeredDate = document.getElementById('registeredDate').value;
+                if (registeredDate) {
+                    const date = new Date(registeredDate);
+                    date.setFullYear(date.getFullYear() + 2); // Add 2 years
+                    date.setDate(date.getDate() - 1); // Subtract 1 day
+                    document.getElementById('validTillDate').value = date.toISOString().split('T')[0];
+                }
+            };
         });
-    }
-
-    // Add a new membership
-    function addMembership() {
-        const form = document.getElementById('newMembershipForm');
-        const formData = new FormData(form);
-        const membershipData = {};
-        formData.forEach((value, key) => {
-            membershipData[key] = value;
-        });
-
-        fetch('/add-membership', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(membershipData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            alert(data.message);
-            if (data.success) {
-                form.reset();
-                toggleMembershipForm();
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error adding membership');
-        });
-    }
-
-    // Automatically set the "Valid Till Date" based on the "Registered Date"
-    function setValidTillDate() {
-        const registeredDate = document.getElementById('registeredDate').value;
-        if (registeredDate) {
-            const date = new Date(registeredDate);
-            date.setFullYear(date.getFullYear() + 2); // Add 2 years
-            date.setDate(date.getDate() - 1); // Subtract 1 day to make it valid till 1 day earlier
-            document.getElementById('validTillDate').value = date.toISOString().split('T')[0];
-        }
-    }
-
-    // Assign functions to global scope
-    window.searchCustomer = searchCustomer;
-    window.findMembership = findMembership;
-    window.addMembership = addMembership;
-    window.toggleMembershipForm = toggleMembershipForm;
-    window.setValidTillDate = setValidTillDate;
-});
-
     </script>
     <%- include('partials/globalScripts') %>
 </body>

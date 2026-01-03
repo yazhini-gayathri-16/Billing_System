@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Client Information</title>
+    <link rel="icon" href="/images/logo 3-square.png" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/clientstyle.css">
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css"> -->
+
+</head>
+<body>
+    <% if (userRole === 'admin') { %>
+        <%- include('partials/navbar') %>
+    <% } else { %>
+        <%- include('partials/staffnavbar') %>
+    <% } %>
+
+    <div class="container">
+
+        <!-- Add New Membership Section -->
+        <button type="button" onclick="toggleMembershipForm()">Add New Membership</button>
+        <div id="membershipForm" class="add-membership-form">
+            <form id="newMembershipForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="customername">Customer Name:</label>
+                        <input type="text" autocomplete="off" name="customername" placeholder="Customer Name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="membershipID">Card Number:</label>
+                        <input type="text" autocomplete="off" name="membershipID" placeholder="Card Number" required>
+                    </div>                    
+                </div>    
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="phoneNumber">Phone Number:</label>
+                        <input type="number" autocomplete="off" name="phoneNumber" placeholder="Phone Number" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="birthMonth">Birth Month:</label>
+                        <select name="birthMonth" required>
+                            <option value="">Select Month</option>
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                <div class="form-group">
+                    <label for="anniversaryMonth">Anniversary Month:</label>
+                    <select name="anniversaryMonth">
+                        <option value="">Select Month</option>
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                </div>
+
+                <label for="registeredDate">Registered Date:</label>
+                <input type="date" autocomplete="off" id="registeredDate" name="registeredDate" required onchange="setValidTillDate()">
+
+                <label for="validTillDate">Valid Till Date:</label>
+                <input type="date" autocomplete="off" id="validTillDate" name="validTillDate" readonly>
+                </div>
+
+                <!-- Add Price and Payment Method Section -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="memprice">Price:</label>
+                        <input type="number" autocomplete="off" name="memprice" placeholder="Membership Price" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="mempaymentMethod">Payment Method:</label>
+                        <div>
+                            <input type="radio" id="paymentUPI" name="mempaymentMethod" value="UPI" required  checked="checked"><label for="paymentUPI">UPI</label>
+                            <input type="radio" id="paymentCash" name="mempaymentMethod" value="Cash" required><label for="paymentCash">Cash</label>
+                            <input type="radio" id="paymentCard" name="mempaymentMethod" value="Card" required><label for="paymentCard">Card</label>
+                        </div>
+                    </div>
+                </div>
+
+                
+                <button type="button" onclick="addMembership()">Add</button>
+            </form>
+        </div>
+
+        <!-- Client Search Form -->
+        <div class="search-section">
+            <h1>Search for Client</h1>
+            <form id="searchForm" class="form-inline">
+                <label for="customerNumber">Customer Number:</label>
+                <input type="text" autocomplete="off" id="customerNumber" name="customerNumber" placeholder="Customer Phone Number" required>
+                
+                <button type="button" onclick="searchCustomer()">Find</button>
+            </form>
+            <div id="result" class="result"></div>
+        </div>
+
+        <!-- Membership Search Section -->
+        <div class="search-membership">
+            <h2>Search Membership</h2>
+            <form id="findMembershipForm" class="form-inline">
+                <label for="searchMembershipID">Membership ID:</label>
+                <input type="text" autocomplete="off" id="searchMembershipID" name="searchMembershipID" placeholder="Membership ID" required>
+                <button type="button" onclick="findMembership()">Find Membership</button>
+            </form>
+            <div id="membershipDetails" class="result"></div>
+        </div>
+    
+        
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+        // Function to search for a customer
+        function searchCustomer() {
+            const customerNumber = document.getElementById("customerNumber").value;
+            
+            fetch('/search-customer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({customerNumber})
+            })
+            .then(response => response.json())
+            .then(data => {
+                const resultDiv = document.getElementById('result');
+                
+                if (data.success) {
+                    // Format services and products arrays
+                    const servicesDisplay = data.services.length > 0 ? data.services.join(', ') : 'No services';
+                    const productsDisplay = data.products.length > 0 ? data.products.join(', ') : 'No products';
+                    
+                    // Format membership display
+                    const membershipDisplay = data.membership === 'Active' 
+                        ? `${data.membership} (ID: ${data.membershipID})`
+                        : data.membership;
+
+                    // Format currency
+                    const formattedSpent = new Intl.NumberFormat('en-IN', {
+                        style: 'currency',
+                        currency: 'INR'
+                    }).format(data.totalSpent);
+
+                    resultDiv.innerHTML = `
+                        <div class="customer-name">${data.cust_name}</div>
+                        <div class="customer-info-grid">
+                            <div class="info-card">
+                                <div class="info-label">Customer Type</div>
+                                <div class="info-value">${data.customerType}</div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <div class="info-label">Last Visit</div>
+                                <div class="info-value">${data.lastVisit}</div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <div class="info-label">Total Visits</div>
+                                <div class="info-value">${data.visits}</div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <div class="info-label">Total Spendings</div>
+                                <div class="info-value">${formattedSpent}</div>
+                            </div>
+                            
+                            <div class="info-card full-width">
+                                <div class="info-label">Previous Services</div>
+                                <div class="info-value">${servicesDisplay}</div>
+                            </div>
+                            
+                            <div class="info-card full-width">
+                                <div class="info-label">Previous Products</div>
+                                <div class="info-value">${productsDisplay}</div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <div class="info-label">Membership Status</div>
+                                <div class="info-value">
+                                    <span class="status-badge ${data.membership === 'Active' ? 'status-active' : 'status-inactive'}">
+                                        ${data.membership}
+                                        ${data.membership === 'Active' ? `(ID: ${data.membershipID})` : ''}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <div class="info-label">Offers Available</div>
+                                <div class="info-value">
+                                    <div>Birthday: 
+                                        <span class="status-badge ${data.canUseBirthdayOffer ? 'status-available' : 'status-unavailable'}">
+                                            ${data.canUseBirthdayOffer ? 'Available' : 'Not Available'}
+                                        </span>
+                                    </div>
+                                    <div style="margin-top: 5px;">Anniversary: 
+                                        <span class="status-badge ${data.canUseAnniversaryOffer ? 'status-available' : 'status-unavailable'}">
+                                            ${data.canUseAnniversaryOffer ? 'Available' : 'Not Available'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p>No customer found with that information.</p>`;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = `<p>Error searching for customer.</p>`;
+            });
+        }
+    // Toggle the visibility of the Add Membership form
+    function toggleMembershipForm() {
+        const form = document.getElementById('membershipForm');
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // Find Membership Details
+    function findMembership() {
+        const searchMembershipID = document.getElementById("searchMembershipID").value;
+
+        fetch('/find-membership', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({searchMembershipID})
+        })
+        .then(response => response.json())
+        .then(data => {
+            const detailsDiv = document.getElementById('membershipDetails');
+            if (data.success) {
+                detailsDiv.innerHTML = `
+                    <p><strong>Member Name:</strong> ${data.name}</p>
+                    <p><strong>Card Number:</strong> ${data.membershipID}</p>
+                    <p><strong>Phone Number:</strong> ${data.phoneNumber}</p>
+                    <p><strong>Birth Month:</strong> ${data.birthMonth}</p>
+                    <p><strong>Anniversary Month:</strong> ${data.anniversaryMonth || 'N/A'}</p>
+                    <p><strong>Yearly Usage:</strong> ${JSON.stringify(data.yearlyUsage)}</p>
+                `;
+            } else {
+                detailsDiv.innerHTML = `<p>No membership found with that information.</p>`;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('membershipDetails').innerHTML = `<p>Error searching for membership.</p>`;
+        });
+    }
+
+    // Add a new membership
+    function addMembership() {
+        const form = document.getElementById('newMembershipForm');
+        const formData = new FormData(form);
+        const membershipData = {};
+        formData.forEach((value, key) => {
+            membershipData[key] = value;
+        });
+
+        fetch('/add-membership', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(membershipData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            if (data.success) {
+                form.reset();
+                toggleMembershipForm();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error adding membership');
+        });
+    }
+
+    // Automatically set the "Valid Till Date" based on the "Registered Date"
+    function setValidTillDate() {
+        const registeredDate = document.getElementById('registeredDate').value;
+        if (registeredDate) {
+            const date = new Date(registeredDate);
+            date.setFullYear(date.getFullYear() + 2); // Add 2 years
+            date.setDate(date.getDate() - 1); // Subtract 1 day to make it valid till 1 day earlier
+            document.getElementById('validTillDate').value = date.toISOString().split('T')[0];
+        }
+    }
+
+    // Assign functions to global scope
+    window.searchCustomer = searchCustomer;
+    window.findMembership = findMembership;
+    window.addMembership = addMembership;
+    window.toggleMembershipForm = toggleMembershipForm;
+    window.setValidTillDate = setValidTillDate;
+});
+
+    </script>
+    <%- include('partials/globalScripts') %>
+</body>
+</html>

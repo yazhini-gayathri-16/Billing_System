@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff</title>
+    <link rel="icon" href="/images/logo 3-square.png" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/staffstyle.css">
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <div class="container">
+        <% if (userRole === 'admin') { %>
+            <div class="actions-bar">
+                <a href="/signup" class="btn-primary">Add Credentials</a>
+            </div>
+        <% } %>
+        <!-- Add Staff Form -->
+        <div class="staff-form">
+            <h1>Add New Staff</h1>
+            <form action="/add-staff" method="post" id="staffForm" enctype="multipart/form-data">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="name">Name:</label>
+                        <input type="text" autocomplete="off" id="name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="birthdate">Birthdate:</label>
+                        <input type="date" autocomplete="off" id="birthdate" name="birthdate" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" name="email" autocomplete="off" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="contactNumber">Contact Number:</label>
+                        <input type="text" id="contactNumber" autocomplete="off" name="contactNumber" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="gender">Gender:</label>
+                        <select name="gender" id="gender" required>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="address">Address:</label>
+                        <textarea id="address" name="address" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="jobTitle">Job Title:</label>
+                        <input type="text" id="jobTitle" autocomplete="off" name="jobTitle" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="employmentStartDate">Employment Start Date:</label>
+                        <input type="date" id="employmentStartDate" name="employmentStartDate" autocomplete="off" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="aadhaarId">Aadhaar ID:</label>
+                        <input type="text" id="aadhaarId" name="aadhaarId" autocomplete="off" maxlength="12" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="aadhaarPhoto">Staff Photo:</label>
+                        <input type="file" id="aadhaarPhoto" name="aadhaarPhoto" accept="image/png, image/jpeg, image/jpg" required>
+                    </div>
+                </div>
+
+                <button type="submit">Add Staff</button>
+            </form>
+        </div>
+
+        <!-- Staff List Table -->
+        <div class="staff-list">
+            <h2>List of Staff Members</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Sl.no</th>
+                        <th>Staff Name</th>
+                        <th>Contact Number</th>
+                        <th>Job Title</th>
+                        <th>Employment Start Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% staffMembers.forEach(function(staff, index) { %>
+                    <tr id="staff-<%= staff._id %>">
+                        <td><%= index + 1 %></td>
+                        <td><%= staff.name %></td>
+                        <td><%= staff.contactNumber %></td>
+                        <td><%= staff.jobTitle %></td>
+                        <td><%= new Date(staff.employmentStartDate).toISOString().slice(0,10) %></td>
+                        <td>
+                            <button type="button" class="preview-btn" onclick="showPreview('<%= staff._id %>')">Preview</button>
+                            <form action="/delete-staff" method="post" style="display: inline;">
+                                <input type="hidden" name="id" value="<%= staff._id %>">
+                                <button type="submit" class="delete-btn">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Staff Preview Modal -->
+    <div id="staffPreviewModal" class="modal-overlay">
+        <div class="modal-content preview-modal">
+            <span class="modal-close" onclick="closePreview()">&times;</span>
+            <h2>Staff Details</h2>
+            <div id="previewContent" class="preview-content">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+            <div class="preview-actions">
+                <button type="button" id="editPreviewBtn" class="edit-btn" onclick="enablePreviewEditing()">Edit</button>
+                <button type="button" id="savePreviewBtn" class="save-btn" style="display:none;" onclick="savePreviewChanges()">Save</button>
+                <button type="button" id="cancelEditBtn" class="cancel-btn" style="display:none;" onclick="cancelPreviewEditing()">Cancel</button>
+                <button type="button" class="close-modal-btn" onclick="closePreview()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" class="modal-overlay">
+        <div class="modal-content">
+            <p>Are you sure to delete?</p>
+            <button id="confirmDeleteBtn">Yes</button>
+            <button id="cancelDeleteBtn">No</button>
+        </div>
+    </div>
+
+    <script>
+        // Store all staff data for preview
+        const staffData = <%- JSON.stringify(staffMembers) %>;
+        let currentStaffId = null;
+        let originalPreviewData = null;
+
+        // Show staff preview modal
+        function showPreview(staffId) {
+            currentStaffId = staffId;
+            const staff = staffData.find(s => s._id === staffId);
+            if (!staff) return;
+
+            // Store original data for cancel functionality
+            originalPreviewData = { ...staff };
+
+            const birthdate = new Date(staff.birthdate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+            const employmentStartDate = new Date(staff.employmentStartDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+
+            const previewHtml = `
+                <div class="preview-photo">
+                    ${staff.aadhaarPhoto ? `<img src="${staff.aadhaarPhoto}" alt="Staff Photo">` : '<div class="no-photo">No Photo</div>'}
+                </div>
+                <div class="preview-details">
+                    <div class="detail-row">
+                        <label>Name:</label>
+                        <span class="detail-value" data-field="name">${staff.name}</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>Email:</label>
+                        <span class="detail-value" data-field="email">${staff.email}</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>Birthdate:</label>
+                        <span class="detail-value" data-field="birthdate" data-raw="${new Date(staff.birthdate).toISOString().slice(0,10)}">${birthdate}</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>Contact Number:</label>
+                        <span class="detail-value" data-field="contactNumber">${staff.contactNumber}</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>Gender:</label>
+                        <span class="detail-value" data-field="gender">${staff.gender}</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>Address:</label>
+                        <span class="detail-value" data-field="address">${staff.address}</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>Job Title:</label>
+                        <span class="detail-value" data-field="jobTitle">${staff.jobTitle}</span>
+                    </div>
+                    <div class="detail-row non-editable">
+                        <label>Employment Start Date:</label>
+                        <span class="detail-value" data-field="employmentStartDate">${employmentStartDate}</span>
+                    </div>
+                    <div class="detail-row non-editable">
+                        <label>Aadhaar ID:</label>
+                        <span class="detail-value" data-field="aadhaarId">${staff.aadhaarId}</span>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('previewContent').innerHTML = previewHtml;
+            document.getElementById('staffPreviewModal').style.display = 'flex';
+            
+            // Reset buttons
+            document.getElementById('editPreviewBtn').style.display = 'inline-block';
+            document.getElementById('savePreviewBtn').style.display = 'none';
+            document.getElementById('cancelEditBtn').style.display = 'none';
+        }
+
+        // Close preview modal
+        function closePreview() {
+            document.getElementById('staffPreviewModal').style.display = 'none';
+            currentStaffId = null;
+            originalPreviewData = null;
+        }
+
+        // Enable editing in preview modal
+        function enablePreviewEditing() {
+            const editableFields = document.querySelectorAll('.detail-value:not(.non-editable *)');
+            
+            editableFields.forEach(span => {
+                const field = span.dataset.field;
+                const value = span.dataset.raw || span.textContent;
+                
+                // Skip non-editable fields
+                if (field === 'employmentStartDate' || field === 'aadhaarId') return;
+                
+                let inputHtml = '';
+                if (field === 'birthdate') {
+                    inputHtml = `<input type="date" class="edit-input" data-field="${field}" value="${value}">`;
+                } else if (field === 'gender') {
+                    inputHtml = `
+                        <select class="edit-input" data-field="${field}">
+                            <option value="Male" ${value === 'Male' ? 'selected' : ''}>Male</option>
+                            <option value="Female" ${value === 'Female' ? 'selected' : ''}>Female</option>
+                            <option value="Other" ${value === 'Other' ? 'selected' : ''}>Other</option>
+                        </select>
+                    `;
+                } else if (field === 'address') {
+                    inputHtml = `<textarea class="edit-input" data-field="${field}">${value}</textarea>`;
+                } else {
+                    inputHtml = `<input type="text" class="edit-input" data-field="${field}" value="${value}">`;
+                }
+                
+                span.innerHTML = inputHtml;
+            });
+
+            // Toggle buttons
+            document.getElementById('editPreviewBtn').style.display = 'none';
+            document.getElementById('savePreviewBtn').style.display = 'inline-block';
+            document.getElementById('cancelEditBtn').style.display = 'inline-block';
+        }
+
+        // Cancel editing and restore original values
+        function cancelPreviewEditing() {
+            if (originalPreviewData) {
+                showPreview(currentStaffId);
+            }
+        }
+
+        // Save changes from preview modal
+        function savePreviewChanges() {
+            const formData = { id: currentStaffId };
+            
+            document.querySelectorAll('.edit-input').forEach(input => {
+                formData[input.dataset.field] = input.value;
+            });
+
+            fetch('/update-staff', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Staff details updated successfully!');
+                    location.reload();
+                } else {
+                    alert('Failed to update staff details');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating staff details');
+            });
+        }
+
+        // Delete confirmation logic
+        let formToDelete = null;
+
+        function attachDeleteConfirmation() {
+            document.querySelectorAll('form[action="/delete-staff"]').forEach(form => {
+                form.removeEventListener('submit', handleDeleteSubmit);
+                form.addEventListener('submit', handleDeleteSubmit);
+            });
+        }
+
+        function handleDeleteSubmit(e) {
+            e.preventDefault();
+            formToDelete = this;
+            document.getElementById('deleteConfirmModal').style.display = 'flex';
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            attachDeleteConfirmation();
+        });
+
+        document.getElementById('confirmDeleteBtn').onclick = function() {
+            if (formToDelete) {
+                formToDelete.submit();
+                formToDelete = null;
+            }
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+        };
+
+        document.getElementById('cancelDeleteBtn').onclick = function() {
+            formToDelete = null;
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+        };
+
+        // Close modal when clicking outside
+        document.getElementById('staffPreviewModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePreview();
+            }
+        });
+    </script>
+    <%- include('partials/globalScripts') %>
+</body>
+</html>

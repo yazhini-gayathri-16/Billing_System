@@ -897,10 +897,13 @@ app.get("/api/packages", async (req, res) => {
 
 
 // Route for getting package management page
-app.get('/packages', async (req, res) => {
+app.get('/packages', isAuthenticated, async (req, res) => {
     try {
         const packages = await Package.find();
-        res.render('packages', { packages });
+        res.render('packages', { 
+            packages,
+            userRole: req.session.user.role
+        });
     } catch (error) {
         res.status(500).send('Error accessing package management page');
     }
@@ -2429,10 +2432,13 @@ app.post('/update-employee-achievements', async (req, res) => {
 });
 
 // Route to fetch all staff members
-app.get('/staff', async (req, res) => {
+app.get('/staff', isAuthenticated, async (req, res) => {
     try {
         const staffMembers = await Staff.find({});
-        res.render('staff', { staffMembers });
+        res.render('staff', { 
+            staffMembers,
+            userRole: req.session.user.role
+        });
     } catch (err) {
         console.error('Error fetching staff members:', err);
         res.status(500).send('Error fetching staff members');

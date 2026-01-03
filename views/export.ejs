@@ -8,7 +8,166 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/styles/exportstyle.css">
+    <style>
+        /* Bills Modal */
+        .bills-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            overflow: auto;
+        }
+
+        .bills-modal.active {
+            display: block;
+        }
+
+        .modal-content-large {
+            background-color: #F5F5DC;
+            margin: 3% auto;
+            width: 95%;
+            max-width: 1100px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #4CAF50;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .modal-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: white;
+            margin: 0;
+        }
+
+        .modal-header .record-count {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-left: 12px;
+        }
+
+        .close-modal {
+            font-size: 28px;
+            font-weight: 300;
+            color: white;
+            cursor: pointer;
+            line-height: 1;
+            transition: opacity 0.2s;
+        }
+
+        .close-modal:hover {
+            opacity: 0.8;
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .bills-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .bills-table thead {
+            background: #f7fafc;
+            position: sticky;
+            top: 0;
+        }
+
+        .bills-table th {
+            padding: 14px 16px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: #4a5568;
+            border-bottom: 2px solid #e2e8f0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .bills-table tbody tr {
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.2s;
+        }
+
+        .bills-table tbody tr:hover {
+            background-color: #f7fafc;
+        }
+
+        .bills-table td {
+            padding: 14px 16px;
+            font-size: 14px;
+            color: #1a202c;
+        }
+
+        .bills-table td.price {
+            font-weight: 600;
+            color: #4CAF50;
+        }
+
+        .bills-table .services-cell {
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .bills-table .preview-btn {
+            background-color: #D97C17;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            font-size: 13px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .bills-table .preview-btn:hover {
+            background-color: #c26a0f;
+        }
+
+        .no-records {
+            text-align: center;
+            padding: 40px 20px;
+            color: #718096;
+        }
+
+        .no-records i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: #cbd5e0;
+        }
+
+        .no-records p {
+            font-size: 16px;
+        }
+    </style>
 </head>
 <body>
     <% if (userRole === 'admin') { %>
@@ -40,32 +199,41 @@
                     </div>
                 </div>
                 <div class="button-row">
-                    <button type="button" id="fetchBtn" onclick="fetchBills()">Fetch Bills</button>
-                    <button type="button" id="downloadBtn" onclick="downloadPDF()" disabled>Download Summary PDF</button>
+                    <button type="button" id="fetchBtn" onclick="fetchBills()"><i class="fas fa-search"></i> Fetch Bills</button>
+                    <button type="button" id="downloadBtn" onclick="downloadPDF()" disabled><i class="fas fa-file-pdf"></i> Download Summary PDF</button>
                 </div>
             </form>
         </div>
+    </div>
 
-        <!-- Bills Table -->
-        <div id="billsTableContainer" class="billing-data-table" style="display: none;">
-            <h3>Billing Records</h3>
-            <p id="recordCount"></p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Sl.No</th>
-                        <th>Customer Name</th>
-                        <th>Invoice Number</th>
-                        <th>Services</th>
-                        <th>Customer Number</th>
-                        <th>Date</th>
-                        <th>Total Price</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="billsTableBody">
-                </tbody>
-            </table>
+    <!-- Bills Modal -->
+    <div id="billsModal" class="bills-modal">
+        <div class="modal-content-large">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center;">
+                    <h2>Billing Records</h2>
+                    <span class="record-count" id="recordCount"></span>
+                </div>
+                <span class="close-modal" onclick="closeBillsModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <table class="bills-table">
+                    <thead>
+                        <tr>
+                            <th>Sl.No</th>
+                            <th>Customer Name</th>
+                            <th>Invoice Number</th>
+                            <th>Services</th>
+                            <th>Customer Number</th>
+                            <th>Date</th>
+                            <th>Total</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="billsTableBody">
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -95,9 +263,9 @@
                     fetchedBills = data.bills;
                     displayBills(data.bills);
                     document.getElementById('downloadBtn').disabled = false;
+                    openBillsModal();
                 } else {
                     alert(data.message || 'Failed to fetch bills');
-                    document.getElementById('billsTableContainer').style.display = 'none';
                     document.getElementById('downloadBtn').disabled = true;
                 }
             } catch (error) {
@@ -106,19 +274,43 @@
             }
         }
 
+        function openBillsModal() {
+            document.getElementById('billsModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeBillsModal() {
+            document.getElementById('billsModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close modal on outside click
+        document.getElementById('billsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeBillsModal();
+            }
+        });
+
         function displayBills(bills) {
             const tbody = document.getElementById('billsTableBody');
-            const container = document.getElementById('billsTableContainer');
             const countEl = document.getElementById('recordCount');
 
             if (bills.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No records found</td></tr>';
-                container.style.display = 'block';
-                countEl.textContent = '0 records found';
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8">
+                            <div class="no-records">
+                                <i class="fas fa-file-invoice"></i>
+                                <p>No records found for the selected date range</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                countEl.textContent = '(0 records)';
                 return;
             }
 
-            countEl.textContent = `${bills.length} record(s) found`;
+            countEl.textContent = `(${bills.length} record${bills.length > 1 ? 's' : ''})`;
 
             tbody.innerHTML = bills.map((bill, index) => {
                 const invoiceNumber = 'NE' + bill._id.slice(-8).toUpperCase();
@@ -142,15 +334,15 @@
                         <td class="services-cell" title="${servicesDisplay}">${servicesDisplay}</td>
                         <td>${bill.customer_number}</td>
                         <td>${date}</td>
-                        <td>₹${bill.grandTotal.toFixed(2)}</td>
+                        <td class="price">₹${bill.grandTotal.toFixed(2)}</td>
                         <td>
-                            <button class="preview-btn" onclick="previewBill('${bill._id}')">Preview</button>
+                            <button class="preview-btn" onclick="previewBill('${bill._id}')">
+                                <i class="fas fa-eye"></i> Preview
+                            </button>
                         </td>
                     </tr>
                 `;
             }).join('');
-
-            container.style.display = 'block';
         }
 
         function previewBill(billId) {
@@ -193,6 +385,13 @@
                 alert('Failed to download report');
             }
         }
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeBillsModal();
+            }
+        });
     </script>
     <%- include('partials/globalScripts') %>
 </body>

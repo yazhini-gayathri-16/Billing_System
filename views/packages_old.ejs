@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Package Management</title>
+    <link rel="icon" href="/images/logo 3-square.png" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/menustyle.css">
+    <style>
+        /* Delete Confirmation Modal Styles (from appointmentstyle.css) */
+        #deleteConfirmModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.3);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        #deleteConfirmModal .modal-content {
+            background: #fff;
+            padding: 30px 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            text-align: center;
+            min-width: 250px;
+        }
+        #deleteConfirmModal p {
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            color: #333;
+        }
+        #deleteConfirmModal button {
+            background-color: #D97C17;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-right: 20px;
+            font-size: 1em;
+        }
+        #deleteConfirmModal button:last-child {
+            margin-right: 0;
+            background-color: #6c757d;
+        }
+        #deleteConfirmModal button:hover {
+            background-color: #A65B0F;
+        }
+        #deleteConfirmModal button#cancelDeleteBtn:hover {
+            background-color: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <% if (userRole === 'admin') { %>
+        <%- include('partials/navbar') %>
+    <% } else { %>
+        <%- include('partials/staffnavbar') %>
+    <% } %>
+
+    <div class="container">
+        <div class="menu-form">
+            <h1>Package Management</h1>
+            <form action="/add-package" method="post" class="form-inline">
+                <input type="text" name="packageName" autocomplete="off" placeholder="Enter package name" required>
+                <input type="number" name="packagePrice" autocomplete="off" placeholder="Price" required>
+                <textarea name="includedServices" placeholder="Enter services separated by commas" required></textarea>
+                <select name="gender" required>
+                    <option value="Men">Men</option>
+                    <option value="Women">Women</option>
+                    <option value="Unisex">Unisex</option>
+                </select>
+                <button type="submit">Add Package</button>
+            </form>
+        </div>
+
+        <div class="service-container">
+            <% packages.forEach(function(package) { %>
+                <div class="service-card">
+                    <form id="package-form-<%= package._id %>" class="service-form" action="/edit-package" method="post">
+                        <input type="hidden" name="id" value="<%= package._id %>">
+                        <p><strong>Package Name:</strong> <span class="package-name"><%= package.packageName %></span></p>
+                        <p><strong>Price:</strong> ₹<span class="package-price"><%= package.packagePrice %></span></p>
+                        <p><strong>Services:</strong> <span class="included-services"><%= package.includedServices.join(", ") %></span></p>
+                        <p><strong>Gender:</strong> <span class="package-gender"><%= package.gender %></span></p>
+                        <button type="button" class="edit-btn" onclick="enableEditing('<%= package._id %>')">Edit</button>
+                    </form>
+                    <form action="/delete-package" method="post" class="delete-form">
+                        <input type="hidden" name="id" value="<%= package._id %>">
+                        <button type="submit" class="delete-btn">Delete</button>
+                    </form>
+                </div>
+            <% }); %>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal">
+        <div class="modal-content">
+            <p>Are you sure to delete?</p>
+            <button id="confirmDeleteBtn" style="margin-right:20px;">Yes</button>
+            <button id="cancelDeleteBtn">No</button>
+        </div>
+    </div>
+
+    <script>
+        function enableEditing(id) {
+            const form = document.getElementById('package-form-' + id);
+            const packageName = form.querySelector('.package-name');
+            const packagePrice = form.querySelector('.package-price');
+            const includedServices = form.querySelector('.included-services');
+            const packageGender = form.querySelector('.package-gender');
+
+            packageName.innerHTML = `<input type="text" name="packageName" value="${packageName.textContent.trim()}" required>`;
+            packagePrice.innerHTML = `<input type="number" name="packagePrice" value="${packagePrice.textContent.trim()}" required>`;
+            includedServices.innerHTML = `<textarea name="includedServices" required>${includedServices.textContent.trim()}</textarea>`;
+            packageGender.innerHTML = `<select name="gender" required>
+                <option value="Men" ${packageGender.textContent.trim() === 'Men' ? 'selected' : ''}>Men</option>
+                <option value="Women" ${packageGender.textContent.trim() === 'Women' ? 'selected' : ''}>Women</option>
+                <option value="Unisex" ${packageGender.textContent.trim() === 'Unisex' ? 'selected' : ''}>Unisex</option>
+            </select>`;
+
+            const editButton = form.querySelector('.edit-btn');
+            editButton.outerHTML = `
+                <button type="submit">Update</button>
+                <button type="button" class="cancel-btn" onclick='cancelEdit("${id}")'>Cancel</button>`;
+        }
+
+        function cancelEdit(id) {
+            const form = document.getElementById('package-form-' + id);
+            const packageNameInput = form.querySelector('.package-name input');
+            const packagePriceInput = form.querySelector('.package-price input');
+            const includedServicesTextarea = form.querySelector('.included-services textarea');
+            const packageGenderSelect = form.querySelector('.package-gender select');
+
+            form.querySelector('.package-name').innerHTML = packageNameInput.value;
+            form.querySelector('.package-price').innerHTML = packagePriceInput.value;
+            form.querySelector('.included-services').innerHTML = includedServicesTextarea.value;
+            form.querySelector('.package-gender').innerHTML = packageGenderSelect.options[packageGenderSelect.selectedIndex].text;
+
+            form.querySelector('[type="submit"]').remove();
+            form.querySelector('.cancel-btn').outerHTML = `<button type="button" class="edit-btn" onclick='enableEditing("${id}")'>Edit</button>`;
+        }
+
+        // Delete confirmation logic (reference: appointment.ejs)
+        let formToDelete = null;
+
+        function attachDeleteConfirmation() {
+            document.querySelectorAll('form.delete-form').forEach(form => {
+                form.removeEventListener('submit', handleDeleteSubmit);
+                form.addEventListener('submit', handleDeleteSubmit);
+            });
+        }
+
+        function handleDeleteSubmit(e) {
+            e.preventDefault();
+            formToDelete = this;
+            document.getElementById('deleteConfirmModal').style.display = 'flex';
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            attachDeleteConfirmation();
+        });
+
+        document.getElementById('confirmDeleteBtn').onclick = function() {
+            if (formToDelete) {
+                formToDelete.submit();
+                formToDelete = null;
+            }
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+        };
+
+        document.getElementById('cancelDeleteBtn').onclick = function() {
+            formToDelete = null;
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+        };
+    </script>
+    <%- include('partials/globalScripts') %>
+</body>
+</html>

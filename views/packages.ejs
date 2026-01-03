@@ -7,54 +7,566 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles/menustyle.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/navbarstyle.css">
+    <link rel="stylesheet" href="/styles/headerstyle.css">
     <style>
-        /* Delete Confirmation Modal Styles (from appointmentstyle.css) */
-        #deleteConfirmModal {
+        body {
+            font-family: 'Gowun Batang', serif;
+            background-color: #D3E4CD;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .page-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 40px;
+        }
+
+        /* Page Header */
+        .page-header {
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 8px;
+        }
+
+        .page-header p {
+            font-size: 14px;
+            color: #718096;
+        }
+
+        /* Add Package Form Section */
+        .add-package-section {
+            background: #F5F5DC;
+            border-radius: 12px;
+            padding: 28px 32px;
+            margin-bottom: 40px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .section-header i {
+            color: #4CAF50;
+            font-size: 18px;
+        }
+
+        .section-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a202c;
+        }
+
+        .package-form {
+            display: flex;
+            align-items: flex-end;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 10px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            color: #2d3748;
+            font-family: 'Gowun Batang', serif;
+            box-sizing: border-box;
+            height: 42px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: #a0aec0;
+        }
+
+        .form-group.name-field input {
+            width: 180px;
+        }
+
+        .form-group.price-field input {
+            width: 100px;
+        }
+
+        .form-group.services-field {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .form-group.services-field input {
+            width: 100%;
+        }
+
+        .form-group.gender-field select {
+            width: 120px;
+            height: 42px;
+        }
+
+        .input-hint {
+            font-size: 11px;
+            color: #a0aec0;
+            margin-top: -4px;
+        }
+
+        .btn-add {
+            padding: 10px 24px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.3s ease;
+            height: 42px;
+        }
+
+        .btn-add:hover {
+            background: #45a049;
+        }
+
+        /* Active Packages Divider */
+        .packages-divider {
+            text-align: center;
+            margin: 40px 0 30px 0;
+            position: relative;
+        }
+
+        .packages-divider::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            height: 1px;
+            background: #cbd5e0;
+        }
+
+        .packages-divider span {
+            background: #D3E4CD;
+            padding: 0 20px;
+            position: relative;
+            font-size: 12px;
+            font-weight: 600;
+            color: #a0aec0;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Package Cards Grid */
+        .packages-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+
+        .package-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            position: relative;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .package-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .gender-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .gender-badge.men {
+            background: #E3F2FD;
+            color: #1565C0;
+        }
+
+        .gender-badge.women {
+            background: #FCE4EC;
+            color: #C2185B;
+        }
+
+        .gender-badge.unisex {
+            background: #F3E5F5;
+            color: #7B1FA2;
+        }
+
+        .package-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 8px;
+        }
+
+        .package-price {
+            font-size: 22px;
+            font-weight: 700;
+            color: #4CAF50;
+            margin-bottom: 16px;
+        }
+
+        .services-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #a0aec0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .services-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .services-list li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #4a5568;
+            margin-bottom: 8px;
+            padding-left: 0;
+        }
+
+        .services-list li i {
+            color: #4CAF50;
+            font-size: 12px;
+        }
+
+        /* Card Action Buttons */
+        .card-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #f0f0f0;
+            align-items: center;
+        }
+
+        .btn-edit {
+            flex: 1;
+            padding: 8px 16px;
+            background: #F5F5DC;
+            color: #4a5568;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-edit:hover {
+            background: #e8e8c8;
+        }
+
+        .btn-delete {
+            padding: 8px 16px;
+            background: white;
+            color: #e53e3e;
+            border: 1px solid #fed7d7;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-delete:hover {
+            background: #fff5f5;
+            border-color: #fc8181;
+        }
+
+        /* Create Another Package Card */
+        .create-package-card {
+            background: rgba(76, 175, 80, 0.08);
+            border: 2px dashed #a8d5ab;
+            border-radius: 12px;
+            padding: 40px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 200px;
+        }
+
+        .create-package-card:hover {
+            background: rgba(76, 175, 80, 0.12);
+            border-color: #4CAF50;
+        }
+
+        .create-package-card .plus-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(76, 175, 80, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .create-package-card .plus-icon i {
+            font-size: 20px;
+            color: #4CAF50;
+        }
+
+        .create-package-card h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 6px;
+        }
+
+        .create-package-card p {
+            font-size: 13px;
+            color: #718096;
+        }
+
+        /* Edit Mode Styles */
+        .package-card.editing .package-name,
+        .package-card.editing .package-price,
+        .package-card.editing .services-list,
+        .package-card.editing .services-label,
+        .package-card.editing .gender-badge {
+            display: none;
+        }
+
+        .edit-form {
+            display: none;
+        }
+
+        .package-card.editing .edit-form {
+            display: block;
+        }
+
+        .edit-form .form-group {
+            margin-bottom: 12px;
+        }
+
+        .edit-form .form-group input,
+        .edit-form .form-group select,
+        .edit-form .form-group textarea {
+            width: 100%;
+        }
+
+        .edit-form textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .edit-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .btn-save {
+            flex: 1;
+            padding: 10px 16px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-save:hover {
+            background: #45a049;
+        }
+
+        .btn-cancel {
+            padding: 10px 16px;
+            background: #f7fafc;
+            color: #4a5568;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cancel:hover {
+            background: #edf2f7;
+        }
+
+        /* Delete Modal */
+        .delete-modal {
             display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(0,0,0,0.3);
+            background: rgba(0, 0, 0, 0.4);
             z-index: 1000;
             align-items: center;
             justify-content: center;
         }
-        #deleteConfirmModal .modal-content {
-            background: #fff;
-            padding: 30px 40px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+
+        .delete-modal.active {
+            display: flex;
+        }
+
+        .delete-modal .modal-content {
+            background: white;
+            padding: 32px 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
             text-align: center;
-            min-width: 250px;
+            max-width: 400px;
         }
-        #deleteConfirmModal p {
-            margin-bottom: 20px;
-            font-size: 1.1em;
-            color: #333;
+
+        .delete-modal .modal-icon {
+            width: 60px;
+            height: 60px;
+            background: #FEE2E2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px auto;
         }
-        #deleteConfirmModal button {
-            background-color: #D97C17;
+
+        .delete-modal .modal-icon i {
+            font-size: 28px;
+            color: #EF4444;
+        }
+
+        .delete-modal h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 10px;
+        }
+
+        .delete-modal p {
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 24px;
+        }
+
+        .delete-modal .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .delete-modal #confirmDeleteBtn {
+            padding: 10px 24px;
+            background: #EF4444;
             color: white;
-            padding: 10px 20px;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
             transition: background-color 0.3s ease;
-            margin-right: 20px;
-            font-size: 1em;
         }
-        #deleteConfirmModal button:last-child {
-            margin-right: 0;
-            background-color: #6c757d;
+
+        .delete-modal #confirmDeleteBtn:hover {
+            background: #DC2626;
         }
-        #deleteConfirmModal button:hover {
-            background-color: #A65B0F;
+
+        .delete-modal #cancelDeleteBtn {
+            padding: 10px 24px;
+            background: #f7fafc;
+            color: #4b5563;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
-        #deleteConfirmModal button#cancelDeleteBtn:hover {
-            background-color: #5a6268;
+
+        .delete-modal #cancelDeleteBtn:hover {
+            background: #edf2f7;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .page-container {
+                padding: 20px;
+            }
+
+            .package-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .form-group.name-field input,
+            .form-group.price-field input,
+            .form-group.gender-field select {
+                width: 100%;
+            }
+
+            .packages-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -65,91 +577,176 @@
         <%- include('partials/staffnavbar') %>
     <% } %>
 
-    <div class="container">
-        <div class="menu-form">
+    <div class="page-container">
+        <!-- Page Header -->
+        <div class="page-header">
             <h1>Package Management</h1>
-            <form action="/add-package" method="post" class="form-inline">
-                <input type="text" name="packageName" autocomplete="off" placeholder="Enter package name" required>
-                <input type="number" name="packagePrice" autocomplete="off" placeholder="Price" required>
-                <textarea name="includedServices" placeholder="Enter services separated by commas" required></textarea>
-                <select name="gender" required>
-                    <option value="Men">Men</option>
-                    <option value="Women">Women</option>
-                    <option value="Unisex">Unisex</option>
-                </select>
-                <button type="submit">Add Package</button>
+            <p>Create, edit, and organize your salon service packages.</p>
+        </div>
+
+        <!-- Add New Package Section -->
+        <div class="add-package-section">
+            <div class="section-header">
+                <i class="fas fa-plus-circle"></i>
+                <h2>Add New Package</h2>
+            </div>
+            
+            <form action="/add-package" method="post" class="package-form">
+                <div class="form-group name-field">
+                    <label for="packageName">Package Name</label>
+                    <input type="text" id="packageName" name="packageName" autocomplete="off" placeholder="e.g. Golden Facial" required>
+                </div>
+                
+                <div class="form-group price-field">
+                    <label for="packagePrice">Price (₹)</label>
+                    <input type="number" id="packagePrice" name="packagePrice" autocomplete="off" placeholder="₹ 0.00" required>
+                </div>
+                
+                <div class="form-group services-field">
+                    <label for="includedServices">Services Included</label>
+                    <input type="text" id="includedServices" name="includedServices" autocomplete="off" placeholder="Comma separated (e.g. facial, massage)" required>
+                    <span class="input-hint">Separate multiple services with commas</span>
+                </div>
+                
+                <div class="form-group gender-field">
+                    <label for="gender">Gender</label>
+                    <select id="gender" name="gender" required>
+                        <option value="Unisex">Unisex</option>
+                        <option value="Men">Men</option>
+                        <option value="Women">Women</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn-add">
+                    <i class="fas fa-plus"></i>
+                    Add
+                </button>
             </form>
         </div>
 
-        <div class="service-container">
-            <% packages.forEach(function(package) { %>
-                <div class="service-card">
-                    <form id="package-form-<%= package._id %>" class="service-form" action="/edit-package" method="post">
-                        <input type="hidden" name="id" value="<%= package._id %>">
-                        <p><strong>Package Name:</strong> <span class="package-name"><%= package.packageName %></span></p>
-                        <p><strong>Price:</strong> ₹<span class="package-price"><%= package.packagePrice %></span></p>
-                        <p><strong>Services:</strong> <span class="included-services"><%= package.includedServices.join(", ") %></span></p>
-                        <p><strong>Gender:</strong> <span class="package-gender"><%= package.gender %></span></p>
-                        <button type="button" class="edit-btn" onclick="enableEditing('<%= package._id %>')">Edit</button>
+        <!-- Divider -->
+        <div class="packages-divider">
+            <span>Active Packages</span>
+        </div>
+
+        <!-- Package Cards Grid -->
+        <div class="packages-grid">
+            <% packages.forEach(function(pkg) { %>
+                <div class="package-card" id="package-<%= pkg._id %>">
+                    <!-- Display Mode -->
+                    <span class="gender-badge <%= pkg.gender.toLowerCase() %>"><%= pkg.gender %></span>
+                    <h3 class="package-name"><%= pkg.packageName %></h3>
+                    <div class="package-price">₹<%= pkg.packagePrice.toLocaleString('en-IN') %></div>
+                    
+                    <div class="services-label">Included Services</div>
+                    <ul class="services-list">
+                        <% pkg.includedServices.forEach(function(service) { %>
+                            <li><i class="fas fa-check-circle"></i> <%= service.trim() %></li>
+                        <% }); %>
+                    </ul>
+
+                    <!-- Edit Form (Hidden by default) -->
+                    <form class="edit-form" action="/edit-package" method="post">
+                        <input type="hidden" name="id" value="<%= pkg._id %>">
+                        
+                        <div class="form-group">
+                            <label>Package Name</label>
+                            <input type="text" name="packageName" value="<%= pkg.packageName %>" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Price (₹)</label>
+                            <input type="number" name="packagePrice" value="<%= pkg.packagePrice %>" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Services (comma separated)</label>
+                            <textarea name="includedServices" required><%= pkg.includedServices.join(', ') %></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Gender</label>
+                            <select name="gender" required>
+                                <option value="Men" <%= pkg.gender === 'Men' ? 'selected' : '' %>>Men</option>
+                                <option value="Women" <%= pkg.gender === 'Women' ? 'selected' : '' %>>Women</option>
+                                <option value="Unisex" <%= pkg.gender === 'Unisex' ? 'selected' : '' %>>Unisex</option>
+                            </select>
+                        </div>
+                        
+                        <div class="edit-actions">
+                            <button type="submit" class="btn-save">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                            <button type="button" class="btn-cancel" onclick="cancelEdit('<%= pkg._id %>')">Cancel</button>
+                        </div>
                     </form>
-                    <form action="/delete-package" method="post" class="delete-form">
-                        <input type="hidden" name="id" value="<%= package._id %>">
-                        <button type="submit" class="delete-btn">Delete</button>
-                    </form>
+
+                    <!-- Card Actions -->
+                    <div class="card-actions">
+                        <button type="button" class="btn-edit" onclick="enableEdit('<%= pkg._id %>')">
+                            <i class="fas fa-pen"></i> Edit
+                        </button>
+                        <form action="/delete-package" method="post" class="delete-form" style="margin: 0;">
+                            <input type="hidden" name="id" value="<%= pkg._id %>">
+                            <button type="submit" class="btn-delete">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </form>
+                    </div>
                 </div>
             <% }); %>
+
+            <!-- Create Another Package Card -->
+            <div class="create-package-card" onclick="scrollToAddForm()">
+                <div class="plus-icon">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <h3>Create Another Package</h3>
+                <p>Add a new service bundle to your offerings.</p>
+            </div>
         </div>
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div id="deleteConfirmModal">
+    <div id="deleteConfirmModal" class="delete-modal">
         <div class="modal-content">
-            <p>Are you sure to delete?</p>
-            <button id="confirmDeleteBtn" style="margin-right:20px;">Yes</button>
-            <button id="cancelDeleteBtn">No</button>
+            <div class="modal-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3>Delete Package?</h3>
+            <p>This action cannot be undone. The package will be permanently removed.</p>
+            <div class="modal-actions">
+                <button id="cancelDeleteBtn">Cancel</button>
+                <button id="confirmDeleteBtn">Delete</button>
+            </div>
         </div>
     </div>
 
     <script>
-        function enableEditing(id) {
-            const form = document.getElementById('package-form-' + id);
-            const packageName = form.querySelector('.package-name');
-            const packagePrice = form.querySelector('.package-price');
-            const includedServices = form.querySelector('.included-services');
-            const packageGender = form.querySelector('.package-gender');
-
-            packageName.innerHTML = `<input type="text" name="packageName" value="${packageName.textContent.trim()}" required>`;
-            packagePrice.innerHTML = `<input type="number" name="packagePrice" value="${packagePrice.textContent.trim()}" required>`;
-            includedServices.innerHTML = `<textarea name="includedServices" required>${includedServices.textContent.trim()}</textarea>`;
-            packageGender.innerHTML = `<select name="gender" required>
-                <option value="Men" ${packageGender.textContent.trim() === 'Men' ? 'selected' : ''}>Men</option>
-                <option value="Women" ${packageGender.textContent.trim() === 'Women' ? 'selected' : ''}>Women</option>
-                <option value="Unisex" ${packageGender.textContent.trim() === 'Unisex' ? 'selected' : ''}>Unisex</option>
-            </select>`;
-
-            const editButton = form.querySelector('.edit-btn');
-            editButton.outerHTML = `
-                <button type="submit">Update</button>
-                <button type="button" class="cancel-btn" onclick='cancelEdit("${id}")'>Cancel</button>`;
+        // Enable edit mode for a package card
+        function enableEdit(id) {
+            const card = document.getElementById('package-' + id);
+            card.classList.add('editing');
+            card.querySelector('.card-actions').style.display = 'none';
         }
 
+        // Cancel edit mode
         function cancelEdit(id) {
-            const form = document.getElementById('package-form-' + id);
-            const packageNameInput = form.querySelector('.package-name input');
-            const packagePriceInput = form.querySelector('.package-price input');
-            const includedServicesTextarea = form.querySelector('.included-services textarea');
-            const packageGenderSelect = form.querySelector('.package-gender select');
-
-            form.querySelector('.package-name').innerHTML = packageNameInput.value;
-            form.querySelector('.package-price').innerHTML = packagePriceInput.value;
-            form.querySelector('.included-services').innerHTML = includedServicesTextarea.value;
-            form.querySelector('.package-gender').innerHTML = packageGenderSelect.options[packageGenderSelect.selectedIndex].text;
-
-            form.querySelector('[type="submit"]').remove();
-            form.querySelector('.cancel-btn').outerHTML = `<button type="button" class="edit-btn" onclick='enableEditing("${id}")'>Edit</button>`;
+            const card = document.getElementById('package-' + id);
+            card.classList.remove('editing');
+            card.querySelector('.card-actions').style.display = 'flex';
         }
 
-        // Delete confirmation logic (reference: appointment.ejs)
+        // Scroll to add form
+        function scrollToAddForm() {
+            document.querySelector('.add-package-section').scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'center'
+            });
+            document.getElementById('packageName').focus();
+        }
+
+        // Delete confirmation logic
         let formToDelete = null;
 
         function attachDeleteConfirmation() {
@@ -162,7 +759,7 @@
         function handleDeleteSubmit(e) {
             e.preventDefault();
             formToDelete = this;
-            document.getElementById('deleteConfirmModal').style.display = 'flex';
+            document.getElementById('deleteConfirmModal').classList.add('active');
         }
 
         document.addEventListener("DOMContentLoaded", function() {
@@ -174,13 +771,21 @@
                 formToDelete.submit();
                 formToDelete = null;
             }
-            document.getElementById('deleteConfirmModal').style.display = 'none';
+            document.getElementById('deleteConfirmModal').classList.remove('active');
         };
 
         document.getElementById('cancelDeleteBtn').onclick = function() {
             formToDelete = null;
-            document.getElementById('deleteConfirmModal').style.display = 'none';
+            document.getElementById('deleteConfirmModal').classList.remove('active');
         };
+
+        // Close modal on outside click
+        document.getElementById('deleteConfirmModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                formToDelete = null;
+                this.classList.remove('active');
+            }
+        });
     </script>
     <%- include('partials/globalScripts') %>
 </body>

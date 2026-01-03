@@ -8,7 +8,271 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles/expenses.css"> <!-- Ensure the path to your CSS file is correct -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/navbarstyle.css">
+    <link rel="stylesheet" href="/styles/headerstyle.css">
+    <style>
+        body {
+            font-family: 'Gowun Batang', serif;
+            background-color: #D3E4CD;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .page-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .expense-card {
+            background: #F5F5DC;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 480px;
+            overflow: hidden;
+        }
+
+        /* Card Header */
+        .card-header {
+            background: #4CAF50;
+            padding: 24px 28px;
+            text-align: center;
+            position: relative;
+        }
+
+        .card-header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 4px;
+            position: relative;
+        }
+
+        .card-header p {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.85);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+        }
+
+        /* Card Body */
+        .card-body {
+            padding: 24px 28px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #a0aec0;
+            font-size: 14px;
+        }
+
+        .input-wrapper.textarea-wrapper i {
+            top: 14px;
+            transform: none;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 12px 12px 40px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #2d3748;
+            background: white;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            font-family: 'Gowun Batang', serif;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: #a0aec0;
+        }
+
+        .form-group select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23a0aec0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 18px;
+            padding-right: 44px;
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        /* Submit Button */
+        .btn-submit {
+            width: 100%;
+            padding: 14px 24px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            margin-top: 8px;
+        }
+
+        .btn-submit:hover {
+            background: #45a049;
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .btn-submit i {
+            font-size: 16px;
+        }
+
+        /* Success Animation */
+        .success-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .success-overlay.active {
+            display: flex;
+        }
+
+        .success-modal {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .success-modal .success-icon {
+            width: 70px;
+            height: 70px;
+            background: #E8F5E9;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px auto;
+        }
+
+        .success-modal .success-icon i {
+            font-size: 32px;
+            color: #4CAF50;
+        }
+
+        .success-modal h3 {
+            font-size: 20px;
+            color: #1a202c;
+            margin-bottom: 8px;
+        }
+
+        .success-modal p {
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 24px;
+        }
+
+        .success-modal button {
+            padding: 12px 32px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .success-modal button:hover {
+            background: #45a049;
+        }
+
+        /* Responsive */
+        @media (max-width: 520px) {
+            .page-container {
+                padding: 16px;
+            }
+
+            .card-header {
+                padding: 20px;
+            }
+
+            .card-header h1 {
+                font-size: 22px;
+            }
+
+            .card-body {
+                padding: 20px;
+            }
+        }
+    </style>
 </head>
 <body>
     <% if (userRole === 'admin') { %>
@@ -16,37 +280,88 @@
     <% } else { %>
         <%- include('partials/staffnavbar') %>
     <% } %>
-    <div class="container">
-        <h1>Expense Entry Form</h1>
-        <div class="inventory-form">
-            <form id="expenseForm" class="form-inline">
-                <label for="type">Expense Type:</label>
-                <select id="type" name="type" required>
-                    <option value="Tea/Coffee">Tea/Coffee</option>
-                    <option value="Lunch">Lunch</option>
-                    <option value="Breakfast">Breakfast</option>
-                    <option value="Snacks">Snacks</option>
-                    <option value="Dinner">Dinner</option>
-                    <option value="Others">Others</option>
-                </select>
 
-                <label for="date">Date:</label>
-                <input type="date" id="date" name="date" required>
+    <div class="page-container">
+        <div class="expense-card">
+            <!-- Card Header -->
+            <div class="card-header">
+                <h1>Expense Entry</h1>
+                <p>Salon Management</p>
+            </div>
 
-                <label for="amount">Amount:</label>
-                <input type="number" id="amount" name="amount" required>
+            <!-- Card Body -->
+            <div class="card-body">
+                <form id="expenseForm">
+                    <div class="form-group">
+                        <label for="type">Expense Type</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-tags"></i>
+                            <select id="type" name="type" required>
+                                <option value="" disabled selected>Select a category</option>
+                                <option value="Tea/Coffee">Tea/Coffee</option>
+                                <option value="Lunch">Lunch</option>
+                                <option value="Breakfast">Breakfast</option>
+                                <option value="Snacks">Snacks</option>
+                                <option value="Dinner">Dinner</option>
+                                <option value="Others">Others</option>
+                            </select>
+                        </div>
+                    </div>
 
-                <label for="description">Description:</label>
-                <textarea id="description" name="description" required></textarea>
+                    <div class="form-group">
+                        <label for="date">Date</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-calendar-alt"></i>
+                            <input type="date" id="date" name="date" required>
+                        </div>
+                    </div>
 
-                <button type="submit">Submit</button>
-            </form>
+                    <div class="form-group">
+                        <label for="amount">Amount</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-rupee-sign"></i>
+                            <input type="number" id="amount" name="amount" placeholder="0.00" step="0.01" min="0" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <div class="input-wrapper textarea-wrapper">
+                            <i class="fas fa-file-alt"></i>
+                            <textarea id="description" name="description" placeholder="Enter details about the expense..." required></textarea>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-check-circle"></i>
+                        Submit Expense
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="success-overlay" id="successOverlay">
+        <div class="success-modal">
+            <div class="success-icon">
+                <i class="fas fa-check"></i>
+            </div>
+            <h3>Expense Added!</h3>
+            <p>Your expense has been successfully recorded.</p>
+            <button onclick="closeSuccessModal()">Continue</button>
         </div>
     </div>
 
     <script>
+        // Set today's date as default
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('date').value = today;
+        });
+
         document.getElementById('expenseForm').addEventListener('submit', function(e) {
-            e.preventDefault(); // Prevent the form from submitting through the browser
+            e.preventDefault();
 
             let expenseData = {
                 type: document.getElementById('type').value,
@@ -64,13 +379,28 @@
             })
             .then(response => response.json())
             .then(data => {
-                alert(data.message); // Display success message from server response
-                document.getElementById('expenseForm').reset(); // Reset the form after submission
+                // Show success modal
+                document.getElementById('successOverlay').classList.add('active');
+                document.getElementById('expenseForm').reset();
+                // Reset date to today
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('date').value = today;
             })
             .catch(error => {
                 console.error('Error adding expense:', error);
                 alert('Error adding expense: ' + error);
             });
+        });
+
+        function closeSuccessModal() {
+            document.getElementById('successOverlay').classList.remove('active');
+        }
+
+        // Close modal on outside click
+        document.getElementById('successOverlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSuccessModal();
+            }
         });
     </script>
     <%- include('partials/globalScripts') %>
