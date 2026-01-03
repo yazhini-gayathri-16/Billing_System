@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salon Dashboard</title>
+    <link rel="icon" href="/images/logo 3-square.png" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Gowun Batang', serif;
+            background-color: #D3E4CD;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h2 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Adjusted for smaller cards */
+            gap: 20px;
+            width: 100%;
+            justify-content: center; /* Centers cards when fewer than max per row */
+        }
+
+
+        .appointment-card {
+            background-color: #F5F5DC;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            width: 150px; /* Adjusted width to make it smaller */
+            height: 200px; /* Fixed height for uniformity */
+        }
+
+        .appointment-image {
+            width: 80px; /* Adjusted size */
+            height: 80px; /* Adjusted size */
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 10px;
+        }
+
+        .appointment-details h3 {
+            margin: 0;
+            font-size: 16px; /* Slightly smaller font size */
+            font-weight: bold;
+            color: #333;
+        }
+
+        .appointment-details p {
+            margin: 5px 0;
+            font-size: 12px; /* Smaller font size */
+            color: #555;
+        }
+
+
+        .calendar-header {
+            display: flex;
+            align-items: center;
+            justify-content: start;
+            gap: 10px;
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .calendar-icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        .date-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .date-card {
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            width: 60px;
+            transition: background-color 0.3s ease;
+        }
+
+        .date-card.active {
+            background-color: #0066ff;
+            color: white;
+        }
+
+        .date-card p {
+            margin: 0;
+            font-size: 12px;
+        }
+
+        .date-card .day {
+            font-weight: bold;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+    <%- include('partials/second_navbar') %>
+    <div class="container">
+        <h2>Upcoming Appointments</h2>
+        <div class="calendar-header">
+            <img src="/images/appointment.png" alt="Calendar Icon" class="calendar-icon">
+            <span id="currentMonth"></span>
+        </div>
+        <div id="dateSelector" class="date-selector">
+            <!-- Date cards will be dynamically generated here -->
+        </div>
+        <div class="card-grid" id="appointmentsList">
+            <!-- Appointment cards will be populated here -->
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            generateDateCards();
+            fetchAppointmentsForDate(getTodayDateString()); // Fetch appointments for today on load
+        });
+
+        function getTodayDateString() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function generateDateCards() {
+            const dateSelector = document.getElementById('dateSelector');
+            const currentMonth = document.getElementById('currentMonth');
+            const today = new Date();
+
+            // Display current month
+            const monthOptions = { month: 'long', year: 'numeric' };
+            currentMonth.innerText = today.toLocaleDateString('en-US', monthOptions);
+
+            // Generate date cards for the next 7 days
+            dateSelector.innerHTML = '';
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(today);
+                date.setDate(today.getDate() + i);
+
+                const dateCard = document.createElement('div');
+                dateCard.className = 'date-card';
+
+                const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'short' });
+                const dateOfMonth = date.getDate();
+
+                dateCard.innerHTML = `<p class="day">${dayOfWeek}</p><p>${dateOfMonth}</p>`;
+
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const localDateString = `${year}-${month}-${day}`;
+                dateCard.dataset.date = localDateString;
+
+                dateCard.addEventListener('click', () => {
+                    document.querySelectorAll('.date-card').forEach(card => card.classList.remove('active'));
+                    dateCard.classList.add('active');
+                    fetchAppointmentsForDate(localDateString);
+                });
+
+                dateSelector.appendChild(dateCard);
+
+                if (i === 0) {
+                    dateCard.classList.add('active');
+                }
+            }
+        }
+
+        async function fetchAppointmentsForDate(date) {
+            try {
+                const response = await fetch(`/appointments/${date}`);
+                const appointments = await response.json();
+                const appointmentsList = document.getElementById('appointmentsList');
+                appointmentsList.innerHTML = '';
+
+                if (appointments.length === 0) {
+                    const noAppointmentsMessage = document.createElement('p');
+                    noAppointmentsMessage.textContent = 'No appointments for today';
+                    noAppointmentsMessage.style.color = '#777';
+                    noAppointmentsMessage.style.textAlign = 'center';
+                    appointmentsList.appendChild(noAppointmentsMessage);
+                } else {
+                    appointments.forEach(appointment => {
+                        const appointmentCard = document.createElement('div');
+                        appointmentCard.className = 'appointment-card';
+
+                        const appointmentDate = new Date(appointment.dateTime);
+                        let hours = appointmentDate.getUTCHours();
+                        const minutes = appointmentDate.getUTCMinutes().toString().padStart(2, '0');
+                        const period = hours >= 12 ? 'p.m.' : 'a.m.';
+                        hours = hours % 12 || 12;
+
+                        const formattedTime = `${hours}:${minutes} ${period}`;
+
+                        appointmentCard.innerHTML = `
+                            <div class="appointment-details">
+                                <img src="/images/shampoo.png" alt="Client" class="appointment-image">
+                                <h3>${appointment.customerName}</h3>
+                                <p>${appointment.serviceType}</p>
+                                <p>${formattedTime}</p>
+                            </div>
+                        `;
+                        appointmentsList.appendChild(appointmentCard);
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching appointments:", error);
+            }
+        }
+    </script>
+    <%- include('partials/globalScripts') %>
+</body>
+</html>
