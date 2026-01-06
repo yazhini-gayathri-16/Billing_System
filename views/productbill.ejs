@@ -131,6 +131,18 @@
                     <input type="number" name="grandTotal" id="grandTotal" readonly>
                 </div>
 
+                <!-- GST Number Toggle -->
+                <div style="display: flex; justify-content: flex-start; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 10px; flex: none;">
+                        <label for="showGstNumber" style="margin: 0; font-weight: bold;">Show GST Number on Bill:</label>
+                        <label class="gst-toggle-switch">
+                            <input type="checkbox" id="showGstNumber" name="showGstNumber">
+                            <span class="gst-toggle-slider"></span>
+                        </label>
+                        <span id="gstToggleStatus" style="font-size: 12px; color: #666;">OFF</span>
+                    </div>
+                </div>
+
                 <div class="button-row">
                     <button type="button" class="button-generate" onclick="showBillPreview()">Preview Bill</button>
                     <button type="submit" class="button-generate">Generate Bill</button>
@@ -194,12 +206,23 @@
             updateDateTime();
             setInterval(updateDateTime, 1000);
             setupEventListeners();
+            setupGstToggle(); // Setup GST toggle
 
             fetch("/api/products")
                 .then(response => response.json())
                 .then(data => { products = data; })
                 .catch(error => console.error('Error:', error));
         };
+
+        function setupGstToggle() {
+            const gstToggle = document.getElementById('showGstNumber');
+            const gstStatus = document.getElementById('gstToggleStatus');
+            
+            gstToggle.addEventListener('change', function() {
+                gstStatus.textContent = this.checked ? 'ON' : 'OFF';
+                gstStatus.style.color = this.checked ? '#4CAF50' : '#666';
+            });
+        }
 
         // Add all the required functions similar to index.ejs but modified for products
         // Include: updateDateTime, filterProducts, addMore, removeProduct, updateSubtotal, 
@@ -444,6 +467,9 @@
         formObject[key] = value;
     });
 
+    // Add GST Number toggle value
+    formObject.showGstNumber = document.getElementById('showGstNumber').checked;
+
     const discountType = formObject.discountType;
     const subtotal = parseFloat(formObject.subtotal) || 0;
 
@@ -568,6 +594,10 @@
             document.getElementById('previewGrandTotal').textContent = netTotal.toFixed(2);
             document.getElementById('previewPaymentMethod').textContent = document.querySelector('input[name="paymentMethod"]:checked').value;
             
+            // Show/hide GST Number based on toggle
+            const showGstNumber = document.getElementById('showGstNumber').checked;
+            document.getElementById('previewGstNumber').style.display = showGstNumber ? 'block' : 'none';
+            
             // Show modal
             document.getElementById('billPreviewModal').style.display = 'block';
         }
@@ -595,6 +625,7 @@
                 <div class="preview-header">
                     <h1 class="preview-salon-name">NOBLE EVERGREEN UNISEX SALON</h1>
                     <p class="preview-phone">7349661676</p>
+                    <p class="preview-gst" id="previewGstNumber" style="display: none; font-size: 12px; color: #333; margin: 5px 0 0 0;">GST No: 12345678901112</p>
                 </div>
 
                 <!-- Customer Details -->
@@ -849,6 +880,46 @@
             font-size: 12px;
             color: #666;
             margin: 0;
+        }
+        /* GST Toggle Switch Styles */
+        .gst-toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+        .gst-toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .gst-toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 26px;
+        }
+        .gst-toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+        .gst-toggle-switch input:checked + .gst-toggle-slider {
+            background-color: #4CAF50;
+        }
+        .gst-toggle-switch input:checked + .gst-toggle-slider:before {
+            transform: translateX(24px);
         }
     </style>
 

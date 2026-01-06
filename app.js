@@ -178,7 +178,8 @@ app.post("/bill", async (req, res) => {
             paymentMethod,
             billType,
             birthdayDiscountApplied,
-            anniversaryDiscountApplied
+            anniversaryDiscountApplied,
+            showGstNumber
         } = req.body;
 
         let finalDiscount = parseFloat(subtotal) - parseFloat(grandTotal);
@@ -246,7 +247,8 @@ app.post("/bill", async (req, res) => {
             services,
             billType,
             birthdayDiscountApplied,
-            anniversaryDiscountApplied
+            anniversaryDiscountApplied,
+            showGstNumber: showGstNumber === true || showGstNumber === 'true'
         });
 
         const currentMonth = new Date().toLocaleString('default', { month: 'short' });
@@ -372,8 +374,14 @@ app.post("/bill", async (req, res) => {
             })
             .moveDown(0.5)
             .text('Email: nobleevergreen01@gmail.com', doc.page.margins.left, doc.y, { align: 'left' }) // Add email
-            .text('Phone: 91104 33853 / 82969 39896', doc.page.margins.left, doc.y, { align: 'left' }) // Add phone numbers
-            .moveDown(1);
+            .text('Phone: 91104 33853 / 82969 39896', doc.page.margins.left, doc.y, { align: 'left' }); // Add phone numbers
+        
+        // Add GST Number if toggle is on
+        if (showGstNumber === true || showGstNumber === 'true') {
+            doc.text('GST No: 12345678901112', doc.page.margins.left, doc.y, { align: 'left' });
+        }
+        
+        doc.moveDown(1);
 
         // Invoice Info
         doc
@@ -520,7 +528,8 @@ app.post("/packageBill", async (req, res) => {
             paymentMethod,
             billType,
             birthdayDiscountApplied,      // <-- Add this
-            anniversaryDiscountApplied    // <-- And this
+            anniversaryDiscountApplied,    // <-- And this
+            showGstNumber
         } = req.body;
 
         let finalDiscount = 0;
@@ -584,7 +593,8 @@ app.post("/packageBill", async (req, res) => {
             services,
             billType,
             birthdayDiscountApplied,
-            anniversaryDiscountApplied
+            anniversaryDiscountApplied,
+            showGstNumber: showGstNumber === true || showGstNumber === 'true'
         });
 
         if (user) {
@@ -639,8 +649,14 @@ app.post("/packageBill", async (req, res) => {
                 .moveDown(0.5)
                 .fontSize(10)
                 .font('Helvetica')
-                .text('Leelavathi Achaer Complex Opp. Muthoot Finance Immadihalli Main Road, Hagadur, Whitefiled, Bangalore - 560066', { align: 'center' })
-                .moveDown(1);
+                .text('Leelavathi Achaer Complex Opp. Muthoot Finance Immadihalli Main Road, Hagadur, Whitefiled, Bangalore - 560066', { align: 'center' });
+            
+            // Add GST Number if toggle is on
+            if (showGstNumber === true || showGstNumber === 'true') {
+                doc.text('GST No: 12345678901112', { align: 'center' });
+            }
+            
+            doc.moveDown(1);
 
             doc
                 .moveDown(0.5)
@@ -3016,7 +3032,8 @@ app.post("/productbill", async (req, res) => {
             discountType,
             discount,
             grandTotal,
-            paymentMethod
+            paymentMethod,
+            showGstNumber
         } = req.body;
 
         // Parse products array from request body
@@ -3051,7 +3068,8 @@ app.post("/productbill", async (req, res) => {
             discountType,
             discount,
             grandTotal,
-            paymentMethod
+            paymentMethod,
+            showGstNumber: showGstNumber === true || showGstNumber === 'true'
         });
 
         // --- PDF Generation ---
@@ -3105,8 +3123,14 @@ app.post("/productbill", async (req, res) => {
             .moveDown(0.5)
             .fontSize(10)
             .font('Helvetica')
-            .text(address, { align: 'center' })
-            .moveDown(1);
+            .text(address, { align: 'center' });
+        
+        // Add GST Number if toggle is on
+        if (showGstNumber === true || showGstNumber === 'true') {
+            doc.text('GST No: 12345678901112', { align: 'center' });
+        }
+        
+        doc.moveDown(1);
 
         doc
             .moveDown(0.5)
@@ -3314,6 +3338,12 @@ app.get("/bill-preview/:id", async (req, res) => {
         doc.fontSize(10)
            .font('Helvetica')
            .text('7349661676', { align: 'center' });
+        
+        // Show GST Number if stored on bill
+        if (bill.showGstNumber) {
+            doc.text('GST No: 12345678901112', { align: 'center' });
+        }
+        
         doc.moveDown(0.5);
 
         // Customer Details Section

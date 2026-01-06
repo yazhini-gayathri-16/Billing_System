@@ -61,6 +61,10 @@ const customer_id_schema = new mongoose.Schema({
     billType:{
         type : String,
         required : true,
+    },
+    showGstNumber: {
+        type: Boolean,
+        default: false
     }
 });
 

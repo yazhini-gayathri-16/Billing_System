@@ -45,6 +45,10 @@ const productBillSchema = new mongoose.Schema({
         type: String,
         required: true,
         enum: ['UPI', 'Card', 'Cash']
+    },
+    showGstNumber: {
+        type: Boolean,
+        default: false
     }
 }, {
     timestamps: true
