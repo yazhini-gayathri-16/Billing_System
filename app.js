@@ -2393,6 +2393,58 @@ app.post("/add-signup", isAuthenticated, isAdmin, async (req, res) => {
     }
 });
 
+// API route to get all credentials (admin only)
+app.get("/api/credentials", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+        const users = await Signup.find({}, { mail: 1, password: 1, role: 1 });
+        res.json({ success: true, users });
+    } catch (error) {
+        console.error('Error fetching credentials:', error);
+        res.status(500).json({ success: false, message: 'Error fetching credentials' });
+    }
+});
+
+// API route to update user credentials (admin only)
+app.put("/api/credentials/:id", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { mail, password } = req.body;
+        
+        const updatedUser = await Signup.findByIdAndUpdate(
+            id,
+            { mail, password },
+            { new: true }
+        );
+        
+        if (updatedUser) {
+            res.json({ success: true, message: 'Credentials updated successfully' });
+        } else {
+            res.status(404).json({ success: false, message: 'User not found' });
+        }
+    } catch (error) {
+        console.error('Error updating credentials:', error);
+        res.status(500).json({ success: false, message: 'Error updating credentials' });
+    }
+});
+
+// API route to delete user credentials (admin only)
+app.delete("/api/credentials/:id", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const deletedUser = await Signup.findByIdAndDelete(id);
+        
+        if (deletedUser) {
+            res.json({ success: true, message: 'User deleted successfully' });
+        } else {
+            res.status(404).json({ success: false, message: 'User not found' });
+        }
+    } catch (error) {
+        console.error('Error deleting credentials:', error);
+        res.status(500).json({ success: false, message: 'Error deleting credentials' });
+    }
+});
+
 app.get("/signin", (req, res) => {
     res.render("signin", {
         errorMessage: null,
