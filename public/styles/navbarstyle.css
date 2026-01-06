@@ -47,12 +47,14 @@ body {
 
 .navbar-lower nav a {
     color: #333;
-    height: 25px;
     text-decoration: none;
     font-weight: bold;
-    padding: 10px 10px;
+    padding: 10px 15px;
     transition: all 0.3s ease;
-    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
 }
 
 .navbar-lower nav a:hover {
