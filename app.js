@@ -179,7 +179,8 @@ app.post("/bill", async (req, res) => {
             billType,
             birthdayDiscountApplied,
             anniversaryDiscountApplied,
-            showGstNumber
+            addGstToBill,
+            gstPercentage
         } = req.body;
 
         let finalDiscount = parseFloat(subtotal) - parseFloat(grandTotal);
@@ -248,7 +249,8 @@ app.post("/bill", async (req, res) => {
             billType,
             birthdayDiscountApplied,
             anniversaryDiscountApplied,
-            showGstNumber: showGstNumber === true || showGstNumber === 'true'
+            addGstToBill: addGstToBill === true || addGstToBill === 'true',
+            gstPercentage: parseFloat(gstPercentage) || 0
         });
 
         const currentMonth = new Date().toLocaleString('default', { month: 'short' });
@@ -376,10 +378,8 @@ app.post("/bill", async (req, res) => {
             .text('Email: nobleevergreen01@gmail.com', doc.page.margins.left, doc.y, { align: 'left' }) // Add email
             .text('Phone: 91104 33853 / 82969 39896', doc.page.margins.left, doc.y, { align: 'left' }); // Add phone numbers
         
-        // Add GST Number if toggle is on
-        if (showGstNumber === true || showGstNumber === 'true') {
-            doc.text('GST No: 12345678901112', doc.page.margins.left, doc.y, { align: 'left' });
-        }
+        // GST Number is always displayed
+        doc.text('GST No: 29AALFN5861B1ZN', doc.page.margins.left, doc.y, { align: 'left' });
         
         doc.moveDown(1);
 
@@ -527,9 +527,10 @@ app.post("/packageBill", async (req, res) => {
             grandTotal,
             paymentMethod,
             billType,
-            birthdayDiscountApplied,      // <-- Add this
-            anniversaryDiscountApplied,    // <-- And this
-            showGstNumber
+            birthdayDiscountApplied,
+            anniversaryDiscountApplied,
+            addGstToBill,
+            gstPercentage
         } = req.body;
 
         let finalDiscount = 0;
@@ -594,7 +595,8 @@ app.post("/packageBill", async (req, res) => {
             billType,
             birthdayDiscountApplied,
             anniversaryDiscountApplied,
-            showGstNumber: showGstNumber === true || showGstNumber === 'true'
+            addGstToBill: addGstToBill === true || addGstToBill === 'true',
+            gstPercentage: parseFloat(gstPercentage) || 0
         });
 
         if (user) {
@@ -651,10 +653,8 @@ app.post("/packageBill", async (req, res) => {
                 .font('Helvetica')
                 .text('Leelavathi Achaer Complex Opp. Muthoot Finance Immadihalli Main Road, Hagadur, Whitefiled, Bangalore - 560066', { align: 'center' });
             
-            // Add GST Number if toggle is on
-            if (showGstNumber === true || showGstNumber === 'true') {
-                doc.text('GST No: 12345678901112', { align: 'center' });
-            }
+            // GST Number is always displayed
+            doc.text('GST No: 29AALFN5861B1ZN', { align: 'center' });
             
             doc.moveDown(1);
 
@@ -3085,7 +3085,8 @@ app.post("/productbill", async (req, res) => {
             discount,
             grandTotal,
             paymentMethod,
-            showGstNumber
+            addGstToBill,
+            gstPercentage
         } = req.body;
 
         // Parse products array from request body
@@ -3121,7 +3122,8 @@ app.post("/productbill", async (req, res) => {
             discount,
             grandTotal,
             paymentMethod,
-            showGstNumber: showGstNumber === true || showGstNumber === 'true'
+            addGstToBill: addGstToBill === true || addGstToBill === 'true',
+            gstPercentage: parseFloat(gstPercentage) || 0
         });
 
         // --- PDF Generation ---
@@ -3177,10 +3179,8 @@ app.post("/productbill", async (req, res) => {
             .font('Helvetica')
             .text(address, { align: 'center' });
         
-        // Add GST Number if toggle is on
-        if (showGstNumber === true || showGstNumber === 'true') {
-            doc.text('GST No: 12345678901112', { align: 'center' });
-        }
+        // GST Number is always displayed
+        doc.text('GST No: 29AALFN5861B1ZN', { align: 'center' });
         
         doc.moveDown(1);
 
@@ -3383,77 +3383,107 @@ app.get("/bill-preview/:id", async (req, res) => {
         const formattedDate = billDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' });
         const formattedTime = bill.time || billDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-        // Header - Salon Name
-        doc.fontSize(20)
+        const leftCol = 40;
+        const pageWidth = doc.page.width - 80;
+        let yPos = 40;
+
+        // ============ SECTION 1: Logo + INVOICE ============
+        // Add Logo (bigger size, maintain aspect ratio)
+        const logoPath = path.join(__dirname, 'public', 'images', 'logo1.png');
+        try {
+            doc.image(logoPath, (doc.page.width - 120) / 2, yPos, { fit: [120, 120], align: 'center', valign: 'center' });
+            yPos += 130;
+        } catch (err) {
+            console.log('Logo not found, skipping');
+            yPos += 10;
+        }
+
+        // INVOICE title
+        doc.fontSize(18)
            .font('Helvetica-Bold')
-           .text('NOBLE EVERGREEN UNISEX SALON', { align: 'center' });
+           .text('INVOICE', leftCol, yPos, { align: 'center', width: pageWidth });
+        yPos = doc.y + 10;
+
+        // Draw line below Section 1
+        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#000');
+        yPos += 15;
+
+        // ============ SECTION 2: Address & Phone ============
+        doc.fontSize(12)
+           .font('Helvetica-Bold')
+           .text('NOBLE EVERGREEN UNISEX SALON', leftCol, yPos, { align: 'center', width: pageWidth });
+        yPos = doc.y + 5;
+
         doc.fontSize(10)
            .font('Helvetica')
-           .text('7349661676', { align: 'center' });
-        
-        // Show GST Number if stored on bill
-        if (bill.showGstNumber) {
-            doc.text('GST No: 12345678901112', { align: 'center' });
-        }
-        
-        doc.moveDown(0.5);
-
-        // Customer Details Section
-        const leftCol = 40;
-        const rightCol = 200;
-        let yPos = doc.y;
-
-        doc.fontSize(11).font('Helvetica');
-        doc.text('Customer Name', leftCol, yPos);
-        doc.text(`: ${bill.customer_name}`, rightCol, yPos);
-        
-        yPos += 18;
-        doc.text('Bill Number', leftCol, yPos);
-        doc.text(`: ${invoiceNumber}`, rightCol, yPos);
-        
-        yPos += 18;
-        doc.text('Date', leftCol, yPos);
-        doc.text(`: ${formattedDate}, ${formattedTime}`, rightCol, yPos);
-
-        doc.moveDown(1);
-
-        // Draw line
+           .text('1st Floor, Leelavathi Achar Complex, Opp. Muthoot Finance,', leftCol, yPos, { align: 'center', width: pageWidth });
         yPos = doc.y;
+        doc.text('Immadihalli Main Road, Hagadur, Whitefield, Bangalore - 560066', leftCol, yPos, { align: 'center', width: pageWidth });
+        yPos = doc.y + 5;
+
+        doc.text('Phone: 91104 33853 / 82969 39896', leftCol, yPos, { align: 'center', width: pageWidth });
+        yPos = doc.y;
+        doc.text('GST No: 29AALFN5861B1ZN', leftCol, yPos, { align: 'center', width: pageWidth });
+        yPos = doc.y + 10;
+
+        // Draw line below Section 2
         doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#000');
-        doc.moveDown(0.5);
+        yPos += 15;
 
-        // Services Table Header
-        yPos = doc.y;
+        // ============ SECTION 3: Date, Invoice No, Customer Details ============
+        doc.fontSize(10).font('Helvetica');
+        
+        const labelWidth = 100;
+        const valueX = leftCol + labelWidth;
+
+        doc.text('Date:', leftCol, yPos);
+        doc.text(formattedDate + ', ' + formattedTime, valueX, yPos);
+        yPos += 18;
+
+        doc.text('Invoice No:', leftCol, yPos);
+        doc.text(invoiceNumber, valueX, yPos);
+        yPos += 18;
+
+        doc.text('Customer Name:', leftCol, yPos);
+        doc.text(bill.customer_name, valueX, yPos);
+        yPos += 18;
+
+        doc.text('Phone Number:', leftCol, yPos);
+        doc.text(bill.customer_number, valueX, yPos);
+        yPos += 15;
+
+        // Draw line below Section 3
+        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#000');
+        yPos += 15;
+
+        // ============ SECTION 4: Items Table ============
         const colItem = leftCol;
-        const colGross = 320;
-        const colQty = 390;
-        const colDisc = 440;
-        const colNet = 500;
+        const colGross = 280;
+        const colQty = 350;
+        const colDisc = 410;
+        const colAmount = 480;
 
+        // Table Header
         doc.font('Helvetica-Bold').fontSize(10);
-        doc.text('Item', colItem, yPos);
+        doc.text('Particular (Item)', colItem, yPos);
         doc.text('Gross', colGross, yPos);
         doc.text('Qty', colQty, yPos);
         doc.text('Disc', colDisc, yPos);
-        doc.text('Net', colNet, yPos);
+        doc.text('Amount', colAmount, yPos);
 
-        // Draw line under header
         yPos += 15;
-        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#000');
-        
+        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#ccc');
         yPos += 8;
-        doc.font('Helvetica').fontSize(10);
 
-        // Combine all services for this bill
+        // Table Body - Services/Items
+        doc.font('Helvetica').fontSize(10);
         let totalGross = 0;
-        let totalDiscount = 0;
 
         enrichedServices.forEach(service => {
             const servicePrice = service.price || 0;
             totalGross += servicePrice;
             
-            // Calculate dynamic row height based on text length
-            const itemWidth = 270;
+            const itemWidth = 220;
             const textHeight = doc.heightOfString(service.name, { width: itemWidth });
             const rowHeight = Math.max(textHeight + 8, 20);
             
@@ -3461,59 +3491,62 @@ app.get("/bill-preview/:id", async (req, res) => {
             doc.text(servicePrice.toFixed(2), colGross, yPos);
             doc.text('1', colQty, yPos);
             doc.text('0.00', colDisc, yPos);
-            doc.text(servicePrice.toFixed(2), colNet, yPos);
+            doc.text(servicePrice.toFixed(2), colAmount, yPos);
             yPos += rowHeight;
         });
 
-        // Draw line before total
-        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#000');
-        yPos += 8;
+        // Draw line before totals
+        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#ccc');
+        yPos += 10;
 
-        // Total row
-        doc.font('Helvetica-Bold');
-        doc.text('Total', colItem, yPos);
-        doc.text(totalGross.toFixed(2), colGross, yPos);
-        doc.text('', colQty, yPos);
+        // Calculate values
+        const discountAmount = bill.discount || 0;
+        const subtotalAfterDiscount = totalGross - discountAmount;
         
-        // Calculate discount
-        const discountAmount = bill.discountType === 'percentage' 
-            ? (totalGross * bill.discount / 100) 
-            : (bill.discount || 0);
-        doc.text(discountAmount.toFixed(2), colDisc, yPos);
-        doc.text(bill.grandTotal.toFixed(2), colNet, yPos);
+        // GST calculation - handle both boolean and string values
+        const gstApplied = bill.addGstToBill === true || bill.addGstToBill === 'true';
+        const gstPercentage = bill.gstPercentage || 0;
+        const gstAmount = gstApplied && gstPercentage > 0 ? (subtotalAfterDiscount * gstPercentage / 100) : 0;
+        const netAmount = subtotalAfterDiscount;
+        // Grand Total = Net Amount + GST
+        const grandTotal = netAmount + gstAmount;
 
-        // Draw line after total
+        // Summary Section (right aligned)
+        const summaryLabelX = 350;
+        const summaryValueX = 480;
+
+        doc.font('Helvetica').fontSize(10);
+        
+        doc.text('Subtotal:', summaryLabelX, yPos);
+        doc.text(totalGross.toFixed(2), summaryValueX, yPos);
         yPos += 18;
+
+        doc.text('Discount:', summaryLabelX, yPos);
+        doc.text('-' + discountAmount.toFixed(2), summaryValueX, yPos);
+        yPos += 18;
+
+        doc.text('Net Amount:', summaryLabelX, yPos);
+        doc.text(netAmount.toFixed(2), summaryValueX, yPos);
+        yPos += 18;
+
+        if (gstApplied && gstPercentage > 0) {
+            doc.text(`GST (${gstPercentage}%):`, summaryLabelX, yPos);
+            doc.text(gstAmount.toFixed(2), summaryValueX, yPos);
+            yPos += 18;
+        }
+
+        doc.font('Helvetica-Bold').fontSize(12);
+        doc.text('Grand Total:', summaryLabelX, yPos);
+        doc.text(grandTotal.toFixed(2), summaryValueX, yPos);
+        yPos += 20;
+
+        // Draw line below Section 4
         doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#000');
-        
-        doc.moveDown(1.5);
-        yPos = doc.y;
+        yPos += 20;
 
-        // Summary section on right side
-        const summaryLeft = 350;
-        const summaryRight = 500;
-
-        doc.font('Helvetica').fontSize(10);
-        doc.text('Gross Total', summaryLeft, yPos);
-        doc.text(totalGross.toFixed(2), summaryRight, yPos);
-        
-        yPos += 15;
-        doc.text('Discount', summaryLeft, yPos);
-        doc.text(discountAmount.toFixed(2), summaryRight, yPos);
-        
-        yPos += 15;
-        doc.font('Helvetica-Bold');
-        doc.text('Net Total (after disc)', summaryLeft, yPos);
-        doc.text(bill.grandTotal.toFixed(2), summaryRight, yPos);
-        
-        yPos += 15;
-        doc.text('Net Payable', summaryLeft, yPos);
-        doc.text(bill.grandTotal.toFixed(2), summaryRight, yPos);
-
-        // Footer
-        doc.moveDown(2);
-        doc.font('Helvetica').fontSize(10);
-        doc.text('Thank you. Please visit again', { align: 'center' });
+        // ============ SECTION 5: Thank You ============
+        doc.font('Helvetica').fontSize(11);
+        doc.text('Thank you. Please visit again.', leftCol, yPos, { align: 'center', width: pageWidth });
 
         doc.end();
     } catch (error) {

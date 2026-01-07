@@ -3,186 +3,338 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Billing Records</title>
+    <title>Invoice</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
-        .container {
-            max-width: 800px;
-            margin: auto;
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f5f5f5;
             padding: 20px;
+        }
+        .invoice-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
             border-radius: 8px;
-            position: relative;
-            background-color: white;
-        }
-        .container::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: url('/images/logo3.png');
-            background-repeat: no-repeat;
-            background-position: center;
-            background-size: 300px 300px;
-            opacity: 0.1;
-            z-index: 0;
-        }
-        .header {
-            display: flex;
-            justify-content: flex-end;
-            align-items: flex-start;
-            margin-bottom: 20px;
-            position: relative;
-            z-index: 2;
-        }
-        .invoice-info {
-            text-align: right;
-            min-width: 180px;
-            margin-right: 80px;
-        }
-        .invoice-info .invoice-label {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #333;
-        }
-        .salon-title-block {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 0;
-            margin-top: 30px;
-        }
-        .salon-title-row {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .salon-logo {
-            height: 60px;
-            width: 60px;
-            margin-right: 15px;
-        }
-        .salon-title-text {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .salon-title-text .name {
-            font-size: 1.7em;
-            font-weight: bold;
-            margin-bottom: 5px;
-            text-align: center;
-        }
-        .salon-title-text .address {
-            font-size: 1em;
-            font-weight: normal;
-            margin-bottom: 0;
-            text-align: center;
-            max-width: 500px;
-        }
-        .content {
-            position: relative;
-            z-index: 1;
-            border-radius: 5px;
-            background-color: #8DBE50;
-            padding: 30px;
-            margin: 30px 50px 0 50px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
             page-break-after: always;
         }
-        h2 {
+        
+        /* Section 1: Logo + INVOICE */
+        .header-section {
             text-align: center;
-            color: #333;
-            margin-top: 0;
+            padding: 25px 20px 15px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
         }
-        table {
+        .logo {
+            width: 70px;
+            height: auto;
+            max-height: 70px;
+            object-fit: contain;
+            margin-bottom: 10px;
+        }
+        .invoice-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2c3e50;
+            letter-spacing: 3px;
+        }
+        .section-divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #8DBE50, transparent);
+            margin: 0 20px;
+        }
+        .section-divider-dark {
+            height: 1px;
+            background: #dee2e6;
+            margin: 0 20px;
+        }
+        
+        /* Section 2: Address & Phone */
+        .address-section {
+            text-align: center;
+            padding: 15px 20px;
+        }
+        .salon-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        .address-text {
+            font-size: 11px;
+            color: #6c757d;
+            line-height: 1.5;
+            margin-bottom: 5px;
+        }
+        .contact-text {
+            font-size: 11px;
+            color: #495057;
+        }
+        .gst-text {
+            font-size: 11px;
+            color: #8DBE50;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+        
+        /* Section 3: Customer Details */
+        .details-section {
+            padding: 15px 25px;
+            background: #fafafa;
+        }
+        .detail-row {
+            display: flex;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+        .detail-label {
+            width: 120px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        .detail-value {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        /* Section 4: Items Table */
+        .items-section {
+            padding: 15px 20px;
+        }
+        .items-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            font-size: 11px;
         }
-        table, th, td {
-            border: 1px solid #ddd;
-        }
-        th, td {
-            padding: 12px;
+        .items-table th {
+            background: #8DBE50;
+            color: white;
+            padding: 10px 8px;
             text-align: left;
+            font-weight: 600;
         }
-        th {
-            background-color: #f2f2f2;
-        }
-        .service-table {
-            margin-top: 20px;
-        }
-        .total {
+        .items-table th:last-child,
+        .items-table td:last-child {
             text-align: right;
-            font-weight: bold;
-            margin-top: 20px;
-            page-break-inside: avoid;
+        }
+        .items-table th:nth-child(2),
+        .items-table td:nth-child(2),
+        .items-table th:nth-child(3),
+        .items-table td:nth-child(3),
+        .items-table th:nth-child(4),
+        .items-table td:nth-child(4) {
+            text-align: center;
+        }
+        .items-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #eee;
+            color: #495057;
+        }
+        .items-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        /* Summary Section */
+        .summary-section {
+            padding: 15px 25px;
+            background: #f8f9fa;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+        .summary-label {
+            width: 150px;
+            color: #6c757d;
+        }
+        .summary-value {
+            width: 100px;
+            text-align: right;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        .grand-total-row {
+            border-top: 2px solid #8DBE50;
+            padding-top: 10px;
+            margin-top: 5px;
+        }
+        .grand-total-row .summary-label,
+        .grand-total-row .summary-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        
+        /* Section 5: Footer */
+        .footer-section {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #8DBE50 0%, #6fa03d 100%);
+            color: white;
+        }
+        .thank-you {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .visit-again {
+            font-size: 11px;
+            opacity: 0.9;
+            margin-top: 3px;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .invoice-container {
+                box-shadow: none;
+                border-radius: 0;
+            }
         }
     </style>
 </head>
 <body>
-
     <% data.forEach(function(record) { %>
-        <div class="container">
-            <div class="salon-title-block">
-                <div class="salon-title-row">
-                    <!-- <img src="/images/logo_3_square.png" alt="Salon Logo" class="salon-logo" /> -->
-                    <div class="salon-title-text">
-                        <div class="name">NOBLE EVERGREEN UNISEX SALON</div>
-                        <div class="address">
-                            1st Floor, Leelavathi Achar Complex, Opp. Muthoot Finance, Immadihalli Main Road, Hagadur, Whitefield, Bangalore - 560066.
-                        </div>
-                        <% if (record.showGstNumber) { %>
-                        <div class="gst-number" style="font-size: 0.9em; margin-top: 5px;">GST No: 12345678901112</div>
-                        <% } %>
-                    </div>
+        <div class="invoice-container">
+            <!-- Section 1: Logo + INVOICE -->
+            <div class="header-section">
+                <img src="/images/logo1.png" alt="Logo" class="logo" onerror="this.style.display='none'">
+                <div class="invoice-title">INVOICE</div>
+            </div>
+            <div class="section-divider"></div>
+            
+            <!-- Section 2: Address & Phone -->
+            <div class="address-section">
+                <div class="salon-name">NOBLE EVERGREEN UNISEX SALON</div>
+                <div class="address-text">
+                    1st Floor, Leelavathi Achar Complex, Opp. Muthoot Finance,<br>
+                    Immadihalli Main Road, Hagadur, Whitefield, Bangalore - 560066
+                </div>
+                <div class="contact-text">Phone: 91104 33853 / 82969 39896</div>
+                <div class="gst-text">GST No: 29AALFN5861B1ZN</div>
+            </div>
+            <div class="section-divider-dark"></div>
+            
+            <!-- Section 3: Customer Details -->
+            <div class="details-section">
+                <div class="detail-row">
+                    <span class="detail-label">Date:</span>
+                    <span class="detail-value"><%= new Date(record.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) %><%= record.time ? ', ' + record.time : '' %></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Invoice No:</span>
+                    <span class="detail-value">NE<%= record._id ? record._id.toString().slice(-8).toUpperCase() : 'XXXXXXXX' %></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Customer Name:</span>
+                    <span class="detail-value"><%= record.customer_name %></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Phone Number:</span>
+                    <span class="detail-value"><%= record.customer_number %></span>
                 </div>
             </div>
-            <div class="header">
-                <div class="invoice-info">
-                    <div class="invoice-label">INVOICE</div>
-                    <div><strong>Date:</strong> <%= new Date(record.date).toISOString().split('T')[0] %></div>
-                    <div><strong>Time:</strong> <%= record.time %></div>
-                </div>
-            </div>
-            <div class="content">
-                <h2>Billing Receipt</h2>
-                <h3>Customer Details</h3>
-                <p><strong>Name:</strong> <%= record.customer_name %></p>
-                <p><strong>Phone Number:</strong> <%= record.customer_number %></p>
-                <p><strong>Gender:</strong> <%= record.gender %></p>
-
-                <h3>Services</h3>
-                <table class="service-table">
-                    <tr>
-                        <th>Service Name</th>
-                        <th>Price</th>
-                        <th>Stylist</th>
-                        <!-- <th>Start Time</th>
-                        <th>End Time</th> -->
-                    </tr>
-                    <% record.services.forEach(function(service) { %>
+            <div class="section-divider-dark"></div>
+            
+            <!-- Section 4: Items Table -->
+            <div class="items-section">
+                <table class="items-table">
+                    <thead>
                         <tr>
-                            <td><%= service.name %></td>
-                            <td>₹<%= service.price.toFixed(2) %></td>
-                            <td><%= service.stylist %></td>
-                            <!-- <td><%= service.startTime %></td>
-                            <td><%= service.endTime %></td> -->
+                            <th>Particular (Item)</th>
+                            <th>Gross</th>
+                            <th>Qty</th>
+                            <th>Disc</th>
+                            <th>Amount</th>
                         </tr>
-                    <% }); %>
+                    </thead>
+                    <tbody>
+                        <% 
+                        let totalGross = 0;
+                        if (record.services && record.services.length > 0) {
+                            record.services.forEach(function(service) { 
+                                totalGross += service.price || 0;
+                        %>
+                            <tr>
+                                <td><%= service.name %></td>
+                                <td>₹<%= (service.price || 0).toFixed(2) %></td>
+                                <td>1</td>
+                                <td>₹0.00</td>
+                                <td>₹<%= (service.price || 0).toFixed(2) %></td>
+                            </tr>
+                        <% 
+                            }); 
+                        } else if (record.products && record.products.length > 0) {
+                            record.products.forEach(function(product) { 
+                                const productTotal = (product.price || 0) * (product.quantity || 1);
+                                totalGross += productTotal;
+                        %>
+                            <tr>
+                                <td><%= product.name %></td>
+                                <td>₹<%= (product.price || 0).toFixed(2) %></td>
+                                <td><%= product.quantity || 1 %></td>
+                                <td>₹0.00</td>
+                                <td>₹<%= productTotal.toFixed(2) %></td>
+                            </tr>
+                        <% 
+                            }); 
+                        }
+                        %>
+                    </tbody>
                 </table>
-
-                <div class="total">
-                    <p><strong>Subtotal:</strong> ₹<%= record.subtotal %></p>
-                    <p><strong>Discount:</strong> <%= record.discountType === 'percentage' ? '₹' + record.discount : '₹' + record.discount %></p>
-                    <p><strong>Grand Total:</strong> ₹<%= record.grandTotal %></p>
+            </div>
+            
+            <!-- Summary Section -->
+            <div class="summary-section">
+                <% 
+                const discountAmount = record.discount || 0;
+                const subtotalAfterDiscount = totalGross - discountAmount;
+                const gstApplied = record.addGstToBill === true;
+                const gstPercentage = record.gstPercentage || 0;
+                const gstAmount = gstApplied ? (subtotalAfterDiscount * gstPercentage / 100) : 0;
+                const netAmount = subtotalAfterDiscount;
+                // Grand Total = Net Amount + GST
+                const grandTotal = netAmount + gstAmount;
+                %>
+                
+                <div class="summary-row">
+                    <span class="summary-label">Subtotal:</span>
+                    <span class="summary-value">₹<%= totalGross.toFixed(2) %></span>
                 </div>
-                <p>Bill Type: <%= record.billType %></p>
+                <div class="summary-row">
+                    <span class="summary-label">Discount Applied:</span>
+                    <span class="summary-value">₹<%= discountAmount.toFixed(2) %></span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Net Amount:</span>
+                    <span class="summary-value">₹<%= netAmount.toFixed(2) %></span>
+                </div>
+                <% if (gstApplied && gstAmount > 0) { %>
+                <div class="summary-row">
+                    <span class="summary-label">GST (<%= gstPercentage %>%):</span>
+                    <span class="summary-value">₹<%= gstAmount.toFixed(2) %></span>
+                </div>
+                <% } %>
+                <div class="summary-row grand-total-row">
+                    <span class="summary-label">Grand Total:</span>
+                    <span class="summary-value">₹<%= grandTotal.toFixed(2) %></span>
+                </div>
+            </div>
+            <div class="section-divider-dark"></div>
+            
+            <!-- Section 5: Footer -->
+            <div class="footer-section">
+                <div class="thank-you">Thank you.</div>
+                <div class="visit-again">Please visit again.</div>
             </div>
         </div>
     <% }); %>
