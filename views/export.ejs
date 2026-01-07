@@ -313,7 +313,7 @@
             countEl.textContent = `(${bills.length} record${bills.length > 1 ? 's' : ''})`;
 
             tbody.innerHTML = bills.map((bill, index) => {
-                const invoiceNumber = 'NE' + bill._id.slice(-8).toUpperCase();
+                const invoiceNumber = bill.invoiceNumber || ('NE' + bill._id.slice(-8).toUpperCase());
                 const billDate = new Date(bill.date);
                 const date = String(billDate.getDate()).padStart(2, '0') + '-' + 
                              String(billDate.getMonth() + 1).padStart(2, '0') + '-' + 

@@ -60,8 +60,12 @@
                     </div>
                 </div>
                 
-                <!-- Membership Checkbox and Membership ID on the same line -->
+                <!-- Invoice Number and Membership Row -->
                 <div class="form-row">
+                    <div class="form-group" style="max-width: 180px;">
+                        <label>Invoice No :</label>
+                        <input type="text" id="invoiceNumber" name="invoiceNumber" readonly style="background-color: #f0f0f0; font-weight: bold; color: #333;">
+                    </div>
                     <div class="form-group">
                         <label>Do you have a membership?</label>
                         <input type="checkbox" id="hasMembership" name="hasMembership" onchange="toggleMembershipIDField()">
@@ -472,6 +476,21 @@
             const time = today.getHours().toString().padStart(2, '0') + ':' + today.getMinutes().toString().padStart(2, '0');
             document.getElementById('date').value = date;
             document.getElementById('time').value = time;
+            
+            // Fetch next invoice number
+            fetchNextInvoiceNumber();
+        }
+        
+        async function fetchNextInvoiceNumber() {
+            try {
+                const response = await fetch('/api/next-invoice-number');
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('invoiceNumber').value = data.invoiceNumber;
+                }
+            } catch (error) {
+                console.error('Error fetching invoice number:', error);
+            }
         }
 
         function toggleMembershipIDField() {
@@ -811,6 +830,7 @@
             document.getElementById('previewTime').textContent = timeVal;
             document.getElementById('previewCustomerName').textContent = customerName;
             document.getElementById('previewCustomerPhone').textContent = customerNumber;
+            document.getElementById('previewBillNumber').textContent = document.getElementById('invoiceNumber').value;
             
             // Get packages
             const servicesBody = document.getElementById('previewServicesBody');

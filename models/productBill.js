@@ -49,6 +49,19 @@ const productBillSchema = new mongoose.Schema({
     showGstNumber: {
         type: Boolean,
         default: false
+    },
+    addGstToBill: {
+        type: Boolean,
+        default: false
+    },
+    gstPercentage: {
+        type: Number,
+        default: 0
+    },
+    invoiceNumber: {
+        type: String,
+        unique: true,
+        sparse: true
     }
 }, {
     timestamps: true

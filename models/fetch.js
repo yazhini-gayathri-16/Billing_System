@@ -73,6 +73,11 @@ const customer_id_schema = new mongoose.Schema({
     gstPercentage: {
         type: Number,
         default: 0
+    },
+    invoiceNumber: {
+        type: String,
+        unique: true,
+        sparse: true
     }
 });
 

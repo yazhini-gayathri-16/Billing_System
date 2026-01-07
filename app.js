@@ -233,6 +233,20 @@ app.post("/bill", async (req, res) => {
             index++;
         }
 
+        // Generate next invoice number
+        const lastBill = await Fetch.findOne({ invoiceNumber: { $exists: true, $ne: null } })
+            .sort({ invoiceNumber: -1 })
+            .select('invoiceNumber');
+        
+        let nextNumber = 1;
+        if (lastBill && lastBill.invoiceNumber) {
+            const match = lastBill.invoiceNumber.match(/NE WF(\d+)/);
+            if (match) {
+                nextNumber = parseInt(match[1], 10) + 1;
+            }
+        }
+        const invoiceNumber = `NE WF${nextNumber < 1000 ? String(nextNumber).padStart(3, '0') : nextNumber}`;
+
         const user = await Fetch.create({
             customer_name,
             customer_number,
@@ -250,7 +264,8 @@ app.post("/bill", async (req, res) => {
             birthdayDiscountApplied,
             anniversaryDiscountApplied,
             addGstToBill: addGstToBill === true || addGstToBill === 'true',
-            gstPercentage: parseFloat(gstPercentage) || 0
+            gstPercentage: parseFloat(gstPercentage) || 0,
+            invoiceNumber
         });
 
         const currentMonth = new Date().toLocaleString('default', { month: 'short' });
@@ -578,6 +593,20 @@ app.post("/packageBill", async (req, res) => {
             index++;
         }
 
+        // Generate next invoice number
+        const lastBill = await Fetch.findOne({ invoiceNumber: { $exists: true, $ne: null } })
+            .sort({ invoiceNumber: -1 })
+            .select('invoiceNumber');
+        
+        let nextNumber = 1;
+        if (lastBill && lastBill.invoiceNumber) {
+            const match = lastBill.invoiceNumber.match(/NE WF(\d+)/);
+            if (match) {
+                nextNumber = parseInt(match[1], 10) + 1;
+            }
+        }
+        const invoiceNumber = `NE WF${nextNumber < 1000 ? String(nextNumber).padStart(3, '0') : nextNumber}`;
+
         // Create bill record (already present in your code)
         const user = await Fetch.create({
             customer_name,
@@ -596,7 +625,8 @@ app.post("/packageBill", async (req, res) => {
             birthdayDiscountApplied,
             anniversaryDiscountApplied,
             addGstToBill: addGstToBill === true || addGstToBill === 'true',
-            gstPercentage: parseFloat(gstPercentage) || 0
+            gstPercentage: parseFloat(gstPercentage) || 0,
+            invoiceNumber
         });
 
         if (user) {
@@ -912,6 +942,38 @@ app.get("/api/packages", async (req, res) => {
     } catch (error) {
         console.error("Failed to fetch packages:", error);
         res.status(500).json({ error: "Failed to fetch packages" });
+    }
+});
+
+// API endpoint to get the next invoice number
+app.get("/api/next-invoice-number", async (req, res) => {
+    try {
+        // Find the last bill with an invoice number from both Fetch and ProductBill
+        const lastFetchBill = await Fetch.findOne({ invoiceNumber: { $exists: true, $ne: null } })
+            .sort({ invoiceNumber: -1 })
+            .select('invoiceNumber');
+        const lastProductBill = await ProductBill.findOne({ invoiceNumber: { $exists: true, $ne: null } })
+            .sort({ invoiceNumber: -1 })
+            .select('invoiceNumber');
+        
+        const getNumber = (inv) => {
+            if (!inv) return 0;
+            const match = inv.match(/NE WF(\d+)/);
+            return match ? parseInt(match[1], 10) : 0;
+        };
+        
+        const lastFetchNum = getNumber(lastFetchBill?.invoiceNumber);
+        const lastProductNum = getNumber(lastProductBill?.invoiceNumber);
+        const nextNumber = Math.max(lastFetchNum, lastProductNum) + 1;
+        
+        // Format the invoice number with leading zeros for numbers less than 1000
+        const formattedNumber = nextNumber < 1000 ? String(nextNumber).padStart(3, '0') : String(nextNumber);
+        const nextInvoiceNumber = `NE WF${formattedNumber}`;
+        
+        res.json({ success: true, invoiceNumber: nextInvoiceNumber });
+    } catch (error) {
+        console.error("Error getting next invoice number:", error);
+        res.status(500).json({ success: false, message: "Error getting next invoice number" });
     }
 });
 
@@ -3116,6 +3178,25 @@ app.post("/productbill", async (req, res) => {
             }
         }
 
+        // Generate next invoice number (check both Fetch and ProductBill)
+        const lastFetchBill = await Fetch.findOne({ invoiceNumber: { $exists: true, $ne: null } })
+            .sort({ invoiceNumber: -1 })
+            .select('invoiceNumber');
+        const lastProductBill = await ProductBill.findOne({ invoiceNumber: { $exists: true, $ne: null } })
+            .sort({ invoiceNumber: -1 })
+            .select('invoiceNumber');
+        
+        let nextNumber = 1;
+        const getNumber = (inv) => {
+            if (!inv) return 0;
+            const match = inv.match(/NE WF(\d+)/);
+            return match ? parseInt(match[1], 10) : 0;
+        };
+        const lastFetchNum = getNumber(lastFetchBill?.invoiceNumber);
+        const lastProductNum = getNumber(lastProductBill?.invoiceNumber);
+        nextNumber = Math.max(lastFetchNum, lastProductNum) + 1;
+        const invoiceNumber = `NE WF${nextNumber < 1000 ? String(nextNumber).padStart(3, '0') : nextNumber}`;
+
         // Save bill to DB as you already do...
         await ProductBill.create({
             customer_name,
@@ -3129,7 +3210,8 @@ app.post("/productbill", async (req, res) => {
             grandTotal,
             paymentMethod,
             addGstToBill: addGstToBill === true || addGstToBill === 'true',
-            gstPercentage: parseFloat(gstPercentage) || 0
+            gstPercentage: parseFloat(gstPercentage) || 0,
+            invoiceNumber
         });
 
         // --- PDF Generation ---
@@ -3384,7 +3466,7 @@ app.get("/bill-preview/:id", async (req, res) => {
         res.setHeader('Content-Disposition', `inline; filename="bill_${bill._id}.pdf"`);
         doc.pipe(res);
 
-        const invoiceNumber = 'NE' + bill._id.toString().slice(-8).toUpperCase();
+        const invoiceNumber = bill.invoiceNumber || ('NE' + bill._id.toString().slice(-8).toUpperCase());
         const billDate = new Date(bill.date);
         const formattedDate = String(billDate.getDate()).padStart(2, '0') + '-' + 
                               String(billDate.getMonth() + 1).padStart(2, '0') + '-' + 
