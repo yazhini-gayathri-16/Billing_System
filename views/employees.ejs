@@ -469,11 +469,8 @@
                 const cardColors = ['pink', 'orange', 'green', 'blue', 'purple', 'teal'];
                 staffMembers.forEach(function(staff, index) { 
                     const cardColor = cardColors[index % cardColors.length];
-                    const joinDate = staff.employmentStartDate.toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: '2-digit', 
-                        year: 'numeric' 
-                    });
+                    const jd = new Date(staff.employmentStartDate);
+                    const joinDate = String(jd.getDate()).padStart(2, '0') + '-' + String(jd.getMonth() + 1).padStart(2, '0') + '-' + jd.getFullYear();
             %>
                 <div class="stylist-card" data-name="<%= staff.name.toLowerCase() %>" data-role="<%= staff.jobTitle.toLowerCase() %>">
                     <div class="card-header <%= cardColor %>">

@@ -658,7 +658,9 @@
                         const initials = appointment.customerName.split(' ').map(n => n[0]).join('').substring(0, 2);
                         const avatarColor = colors[index % colors.length];
                         const appointmentDate = new Date(appointment.dateTime);
-                        const formattedDate = appointmentDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+                        const formattedDate = String(appointmentDate.getDate()).padStart(2, '0') + '-' + 
+                                              String(appointmentDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                                              appointmentDate.getFullYear();
                         const formattedTime = appointmentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
                     %>
                     <tr id="appointment-<%= appointment._id %>" data-appointment='<%- JSON.stringify({

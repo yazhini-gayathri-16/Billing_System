@@ -809,10 +809,16 @@ app.post('/search-customer', async (req, res) => {
 
             const visits = combinedData.length;
             const lastVisit = combinedData.length > 0 ? 
-                combinedData.reduce((latest, record) => {
-                    const recordDate = new Date(record.date);
-                    return recordDate > latest ? recordDate : latest;
-                }, new Date(0)).toISOString().split('T')[0] : 
+                (() => {
+                    const latestDate = combinedData.reduce((latest, record) => {
+                        const recordDate = new Date(record.date);
+                        return recordDate > latest ? recordDate : latest;
+                    }, new Date(0));
+                    const day = String(latestDate.getDate()).padStart(2, '0');
+                    const month = String(latestDate.getMonth() + 1).padStart(2, '0');
+                    const year = latestDate.getFullYear();
+                    return `${day}-${month}-${year}`;
+                })() : 
                 'First Visit';
 
             const services = fetchCustomerData.flatMap(record => record.services.map(service => service.name));
@@ -3380,7 +3386,9 @@ app.get("/bill-preview/:id", async (req, res) => {
 
         const invoiceNumber = 'NE' + bill._id.toString().slice(-8).toUpperCase();
         const billDate = new Date(bill.date);
-        const formattedDate = billDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' });
+        const formattedDate = String(billDate.getDate()).padStart(2, '0') + '-' + 
+                              String(billDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                              billDate.getFullYear();
         const formattedTime = bill.time || billDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
         const leftCol = 40;

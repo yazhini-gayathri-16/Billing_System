@@ -1109,7 +1109,8 @@
                         const initials = staff.name.split(' ').map(n => n[0]).join('').substring(0, 2);
                         const avatarColor = colors[index % colors.length];
                         const badgeColor = badgeColors[index % badgeColors.length];
-                        const startDate = new Date(staff.employmentStartDate).toISOString().slice(0,10);
+                        const sd = new Date(staff.employmentStartDate);
+                        const startDate = String(sd.getDate()).padStart(2, '0') + '-' + String(sd.getMonth() + 1).padStart(2, '0') + '-' + sd.getFullYear();
                     %>
                     <tr id="staff-<%= staff._id %>" data-staff-name="<%= staff.name.toLowerCase() %>">
                         <td class="sl-no"><%= index + 1 %></td>
@@ -1300,8 +1301,10 @@
 
             originalPreviewData = { ...staff };
 
-            const birthdate = new Date(staff.birthdate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
-            const employmentStartDate = new Date(staff.employmentStartDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+            const bd = new Date(staff.birthdate);
+            const birthdate = String(bd.getDate()).padStart(2, '0') + '-' + String(bd.getMonth() + 1).padStart(2, '0') + '-' + bd.getFullYear();
+            const esd = new Date(staff.employmentStartDate);
+            const employmentStartDate = String(esd.getDate()).padStart(2, '0') + '-' + String(esd.getMonth() + 1).padStart(2, '0') + '-' + esd.getFullYear();
 
             const previewHtml = `
                 <div class="preview-photo">
@@ -1318,7 +1321,7 @@
                     </div>
                     <div class="detail-row">
                         <label>Birthdate:</label>
-                        <span class="detail-value" data-field="birthdate" data-raw="${new Date(staff.birthdate).toISOString().slice(0,10)}">${birthdate}</span>
+                        <span class="detail-value" data-field="birthdate" data-raw="${staff.birthdate ? new Date(staff.birthdate).toISOString().slice(0,10) : ''}">${birthdate}</span>
                     </div>
                     <div class="detail-row">
                         <label>Contact Number:</label>
