@@ -3462,183 +3462,202 @@ app.get("/bill-preview/:id", async (req, res) => {
         const PDFDocument = require('pdfkit');
         const doc = new PDFDocument({ size: 'A4', margin: 40 });
         
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="bill_${bill._id}.pdf"`);
-        doc.pipe(res);
+        // Buffer the PDF instead of streaming directly to response
+        // This ensures errors can be caught before sending any response
+        const chunks = [];
+        doc.on('data', chunk => chunks.push(chunk));
 
-        const invoiceNumber = bill.invoiceNumber || ('NE' + bill._id.toString().slice(-8).toUpperCase());
-        const billDate = new Date(bill.date);
-        const formattedDate = String(billDate.getDate()).padStart(2, '0') + '-' + 
-                              String(billDate.getMonth() + 1).padStart(2, '0') + '-' + 
-                              billDate.getFullYear();
-        const formattedTime = bill.time || billDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+        // Wrap PDF generation in a Promise
+        const pdfBuffer = await new Promise((resolve, reject) => {
+            doc.on('end', () => resolve(Buffer.concat(chunks)));
+            doc.on('error', reject);
 
-        const leftCol = 40;
-        const pageWidth = doc.page.width - 80;
-        let yPos = 40;
+            const invoiceNumber = bill.invoiceNumber || ('NE' + bill._id.toString().slice(-8).toUpperCase());
+            const billDate = new Date(bill.date);
+            const formattedDate = String(billDate.getDate()).padStart(2, '0') + '-' + 
+                                  String(billDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                                  billDate.getFullYear();
+            const formattedTime = bill.time || billDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-        // ============ SECTION 1: Logo + INVOICE ============
-        // Add Logo (bigger size, maintain aspect ratio)
-        const logoPath = path.join(__dirname, 'public', 'images', 'logo1.png');
-        try {
-            doc.image(logoPath, (doc.page.width - 120) / 2, yPos, { fit: [120, 120], align: 'center', valign: 'center' });
-            yPos += 130;
-        } catch (err) {
-            console.log('Logo not found, skipping');
+            const leftCol = 40;
+            const pageWidth = doc.page.width - 80;
+            let yPos = 40;
+
+            // ============ SECTION 1: Logo + INVOICE ============
+            // Add Logo (bigger size, maintain aspect ratio)
+            const logoPath = path.join(__dirname, 'public', 'images', 'logo1.png');
+            // Check if logo file exists before trying to load it
+            if (fs.existsSync(logoPath)) {
+                try {
+                    doc.image(logoPath, (doc.page.width - 120) / 2, yPos, { fit: [120, 120], align: 'center', valign: 'center' });
+                    yPos += 130;
+                } catch (err) {
+                    console.log('Logo failed to load, skipping:', err.message);
+                    yPos += 10;
+                }
+            } else {
+                console.log('Logo file not found, skipping');
+                yPos += 10;
+            }
+
+            // INVOICE title
+            doc.fontSize(18)
+               .font('Helvetica-Bold')
+               .text('INVOICE', leftCol, yPos, { align: 'center', width: pageWidth });
+            yPos = doc.y + 10;
+
+            // Draw line below Section 1
+            doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#000');
+            yPos += 15;
+
+            // ============ SECTION 2: Address & Phone ============
+            doc.fontSize(12)
+               .font('Helvetica-Bold')
+               .text('NOBLE EVERGREEN UNISEX SALON', leftCol, yPos, { align: 'center', width: pageWidth });
+            yPos = doc.y + 5;
+
+            doc.fontSize(10)
+               .font('Helvetica')
+               .text('1st Floor, Leelavathi Achar Complex, Opp. Muthoot Finance,', leftCol, yPos, { align: 'center', width: pageWidth });
+            yPos = doc.y;
+            doc.text('Immadihalli Main Road, Hagadur, Whitefield, Bangalore - 560066', leftCol, yPos, { align: 'center', width: pageWidth });
+            yPos = doc.y + 5;
+
+            doc.text('Phone: 91104 33853 / 82969 39896', leftCol, yPos, { align: 'center', width: pageWidth });
+            yPos = doc.y;
+            doc.text('GST No: 29AALFN5861B1ZN', leftCol, yPos, { align: 'center', width: pageWidth });
+            yPos = doc.y + 10;
+
+            // Draw line below Section 2
+            doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#000');
+            yPos += 15;
+
+            // ============ SECTION 3: Date, Invoice No, Customer Details ============
+            doc.fontSize(10).font('Helvetica');
+            
+            const labelWidth = 100;
+            const valueX = leftCol + labelWidth;
+
+            doc.text('Date:', leftCol, yPos);
+            doc.text(formattedDate + ', ' + formattedTime, valueX, yPos);
+            yPos += 18;
+
+            doc.text('Invoice No:', leftCol, yPos);
+            doc.text(invoiceNumber, valueX, yPos);
+            yPos += 18;
+
+            doc.text('Customer Name:', leftCol, yPos);
+            doc.text(bill.customer_name, valueX, yPos);
+            yPos += 18;
+
+            doc.text('Phone Number:', leftCol, yPos);
+            doc.text(bill.customer_number, valueX, yPos);
+            yPos += 15;
+
+            // Draw line below Section 3
+            doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#000');
+            yPos += 15;
+
+            // ============ SECTION 4: Items Table ============
+            const colItem = leftCol;
+            const colGross = 280;
+            const colQty = 350;
+            const colDisc = 410;
+            const colAmount = 480;
+
+            // Table Header
+            doc.font('Helvetica-Bold').fontSize(10);
+            doc.text('Particular (Item)', colItem, yPos);
+            doc.text('Gross', colGross, yPos);
+            doc.text('Qty', colQty, yPos);
+            doc.text('Disc', colDisc, yPos);
+            doc.text('Amount', colAmount, yPos);
+
+            yPos += 15;
+            doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#ccc');
+            yPos += 8;
+
+            // Table Body - Services/Items
+            doc.font('Helvetica').fontSize(10);
+            let totalGross = 0;
+
+            enrichedServices.forEach(service => {
+                const servicePrice = service.price || 0;
+                totalGross += servicePrice;
+                
+                const itemWidth = 220;
+                const textHeight = doc.heightOfString(service.name, { width: itemWidth });
+                const rowHeight = Math.max(textHeight + 8, 20);
+                
+                doc.text(service.name, colItem, yPos, { width: itemWidth });
+                doc.text(servicePrice.toFixed(2), colGross, yPos);
+                doc.text('1', colQty, yPos);
+                doc.text('0.00', colDisc, yPos);
+                doc.text(servicePrice.toFixed(2), colAmount, yPos);
+                yPos += rowHeight;
+            });
+
+            // Draw line before totals
+            doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#ccc');
             yPos += 10;
-        }
 
-        // INVOICE title
-        doc.fontSize(18)
-           .font('Helvetica-Bold')
-           .text('INVOICE', leftCol, yPos, { align: 'center', width: pageWidth });
-        yPos = doc.y + 10;
-
-        // Draw line below Section 1
-        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#000');
-        yPos += 15;
-
-        // ============ SECTION 2: Address & Phone ============
-        doc.fontSize(12)
-           .font('Helvetica-Bold')
-           .text('NOBLE EVERGREEN UNISEX SALON', leftCol, yPos, { align: 'center', width: pageWidth });
-        yPos = doc.y + 5;
-
-        doc.fontSize(10)
-           .font('Helvetica')
-           .text('1st Floor, Leelavathi Achar Complex, Opp. Muthoot Finance,', leftCol, yPos, { align: 'center', width: pageWidth });
-        yPos = doc.y;
-        doc.text('Immadihalli Main Road, Hagadur, Whitefield, Bangalore - 560066', leftCol, yPos, { align: 'center', width: pageWidth });
-        yPos = doc.y + 5;
-
-        doc.text('Phone: 91104 33853 / 82969 39896', leftCol, yPos, { align: 'center', width: pageWidth });
-        yPos = doc.y;
-        doc.text('GST No: 29AALFN5861B1ZN', leftCol, yPos, { align: 'center', width: pageWidth });
-        yPos = doc.y + 10;
-
-        // Draw line below Section 2
-        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#000');
-        yPos += 15;
-
-        // ============ SECTION 3: Date, Invoice No, Customer Details ============
-        doc.fontSize(10).font('Helvetica');
-        
-        const labelWidth = 100;
-        const valueX = leftCol + labelWidth;
-
-        doc.text('Date:', leftCol, yPos);
-        doc.text(formattedDate + ', ' + formattedTime, valueX, yPos);
-        yPos += 18;
-
-        doc.text('Invoice No:', leftCol, yPos);
-        doc.text(invoiceNumber, valueX, yPos);
-        yPos += 18;
-
-        doc.text('Customer Name:', leftCol, yPos);
-        doc.text(bill.customer_name, valueX, yPos);
-        yPos += 18;
-
-        doc.text('Phone Number:', leftCol, yPos);
-        doc.text(bill.customer_number, valueX, yPos);
-        yPos += 15;
-
-        // Draw line below Section 3
-        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#000');
-        yPos += 15;
-
-        // ============ SECTION 4: Items Table ============
-        const colItem = leftCol;
-        const colGross = 280;
-        const colQty = 350;
-        const colDisc = 410;
-        const colAmount = 480;
-
-        // Table Header
-        doc.font('Helvetica-Bold').fontSize(10);
-        doc.text('Particular (Item)', colItem, yPos);
-        doc.text('Gross', colGross, yPos);
-        doc.text('Qty', colQty, yPos);
-        doc.text('Disc', colDisc, yPos);
-        doc.text('Amount', colAmount, yPos);
-
-        yPos += 15;
-        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#ccc');
-        yPos += 8;
-
-        // Table Body - Services/Items
-        doc.font('Helvetica').fontSize(10);
-        let totalGross = 0;
-
-        enrichedServices.forEach(service => {
-            const servicePrice = service.price || 0;
-            totalGross += servicePrice;
+            // Calculate values
+            const discountAmount = bill.discount || 0;
+            const subtotalAfterDiscount = totalGross - discountAmount;
             
-            const itemWidth = 220;
-            const textHeight = doc.heightOfString(service.name, { width: itemWidth });
-            const rowHeight = Math.max(textHeight + 8, 20);
+            // GST calculation - handle both boolean and string values
+            const gstApplied = bill.addGstToBill === true || bill.addGstToBill === 'true';
+            const gstPercentage = bill.gstPercentage || 0;
+            const gstAmount = gstApplied && gstPercentage > 0 ? (subtotalAfterDiscount * gstPercentage / 100) : 0;
+            const netAmount = subtotalAfterDiscount;
+            // Grand Total = Net Amount + GST
+            const grandTotal = netAmount + gstAmount;
+
+            // Summary Section (right aligned)
+            const summaryLabelX = 350;
+            const summaryValueX = 480;
+
+            doc.font('Helvetica').fontSize(10);
             
-            doc.text(service.name, colItem, yPos, { width: itemWidth });
-            doc.text(servicePrice.toFixed(2), colGross, yPos);
-            doc.text('1', colQty, yPos);
-            doc.text('0.00', colDisc, yPos);
-            doc.text(servicePrice.toFixed(2), colAmount, yPos);
-            yPos += rowHeight;
+            doc.text('Subtotal:', summaryLabelX, yPos);
+            doc.text(totalGross.toFixed(2), summaryValueX, yPos);
+            yPos += 18;
+
+            doc.text('Discount:', summaryLabelX, yPos);
+            doc.text('-' + discountAmount.toFixed(2), summaryValueX, yPos);
+            yPos += 18;
+
+            doc.text('Net Amount:', summaryLabelX, yPos);
+            doc.text(netAmount.toFixed(2), summaryValueX, yPos);
+            yPos += 18;
+
+            if (gstApplied && gstPercentage > 0) {
+                doc.text(`GST (${gstPercentage}%):`, summaryLabelX, yPos);
+                doc.text(gstAmount.toFixed(2), summaryValueX, yPos);
+                yPos += 18;
+            }
+
+            doc.font('Helvetica-Bold').fontSize(12);
+            doc.text('Grand Total:', summaryLabelX, yPos);
+            doc.text(grandTotal.toFixed(2), summaryValueX, yPos);
+            yPos += 20;
+
+            // Draw line below Section 4
+            doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#000');
+            yPos += 20;
+
+            // ============ SECTION 5: Thank You ============
+            doc.font('Helvetica').fontSize(11);
+            doc.text('Thank you. Please visit again.', leftCol, yPos, { align: 'center', width: pageWidth });
+
+            doc.end();
         });
 
-        // Draw line before totals
-        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#ccc');
-        yPos += 10;
+        // Send the buffered PDF only after successful generation
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="bill_${bill._id}.pdf"`);
+        res.send(pdfBuffer);
 
-        // Calculate values
-        const discountAmount = bill.discount || 0;
-        const subtotalAfterDiscount = totalGross - discountAmount;
-        
-        // GST calculation - handle both boolean and string values
-        const gstApplied = bill.addGstToBill === true || bill.addGstToBill === 'true';
-        const gstPercentage = bill.gstPercentage || 0;
-        const gstAmount = gstApplied && gstPercentage > 0 ? (subtotalAfterDiscount * gstPercentage / 100) : 0;
-        const netAmount = subtotalAfterDiscount;
-        // Grand Total = Net Amount + GST
-        const grandTotal = netAmount + gstAmount;
-
-        // Summary Section (right aligned)
-        const summaryLabelX = 350;
-        const summaryValueX = 480;
-
-        doc.font('Helvetica').fontSize(10);
-        
-        doc.text('Subtotal:', summaryLabelX, yPos);
-        doc.text(totalGross.toFixed(2), summaryValueX, yPos);
-        yPos += 18;
-
-        doc.text('Discount:', summaryLabelX, yPos);
-        doc.text('-' + discountAmount.toFixed(2), summaryValueX, yPos);
-        yPos += 18;
-
-        doc.text('Net Amount:', summaryLabelX, yPos);
-        doc.text(netAmount.toFixed(2), summaryValueX, yPos);
-        yPos += 18;
-
-        if (gstApplied && gstPercentage > 0) {
-            doc.text(`GST (${gstPercentage}%):`, summaryLabelX, yPos);
-            doc.text(gstAmount.toFixed(2), summaryValueX, yPos);
-            yPos += 18;
-        }
-
-        doc.font('Helvetica-Bold').fontSize(12);
-        doc.text('Grand Total:', summaryLabelX, yPos);
-        doc.text(grandTotal.toFixed(2), summaryValueX, yPos);
-        yPos += 20;
-
-        // Draw line below Section 4
-        doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#000');
-        yPos += 20;
-
-        // ============ SECTION 5: Thank You ============
-        doc.font('Helvetica').fontSize(11);
-        doc.text('Thank you. Please visit again.', leftCol, yPos, { align: 'center', width: pageWidth });
-
-        doc.end();
     } catch (error) {
         console.error("Error generating bill preview:", error);
         res.status(500).send("Error generating bill preview");
