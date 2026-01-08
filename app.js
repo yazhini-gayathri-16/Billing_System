@@ -3485,20 +3485,19 @@ app.get("/bill-preview/:id", async (req, res) => {
                 let yPos = 40;
 
                 // ============ SECTION 1: Logo + INVOICE ============
-                // Skip logo on production to avoid file system issues
-                // Add Logo only if file exists and is accessible
+                // Logo skipped on hosted environments to prevent PDF generation failures
+                // Uncomment below for local development with logo
+                /*
                 const logoPath = path.join(__dirname, 'public', 'images', 'logo1.png');
                 try {
                     if (fs.existsSync(logoPath)) {
                         doc.image(logoPath, (doc.page.width - 120) / 2, yPos, { fit: [120, 120], align: 'center', valign: 'center' });
                         yPos += 130;
-                    } else {
-                        yPos += 10;
                     }
                 } catch (logoErr) {
                     console.log('Logo skipped:', logoErr.message);
-                    yPos += 10;
                 }
+                */
 
                 // INVOICE title
                 doc.fontSize(18)
