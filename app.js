@@ -26,7 +26,7 @@ const axios = require('axios');
 const fs = require("fs");
 const path = require("path");
 const ejs = require('ejs');
-const puppeteer = require('puppeteer'); 
+// puppeteer removed - not needed and causes issues on Render.com
 const whatsAppClient = require('@green-api/whatsapp-api-client');
 const { Readable } = require('stream'); // Add this at the top with other requires
 const swaggerJSDoc = require('swagger-jsdoc');
@@ -3713,147 +3713,160 @@ app.post("/export", async (req, res) => {
 
         const PDFDocument = require('pdfkit');
         const doc = new PDFDocument({ size: 'A4', margin: 40 });
+        
+        // Buffer the PDF instead of streaming directly to response
+        const chunks = [];
+        doc.on('data', chunk => chunks.push(chunk));
+
+        // Wrap PDF generation in a Promise
+        const pdfBuffer = await new Promise((resolve, reject) => {
+            doc.on('end', () => resolve(Buffer.concat(chunks)));
+            doc.on('error', reject);
+
+            // Title Header
+            const address = '1st Floor, Leelavathi Achar Complex, Opp. Muthoot Finance, Immadihalli Main Road, Hagadur, Whitefield, Bangalore - 560066';
+            doc.rect(0, 0, doc.page.width, 70).fill('#8DBE50');
+            doc.fillColor('black')
+                .fontSize(18)
+                .font('Helvetica-Bold')
+                .text('NOBLE EVERGREEN UNISEX SALON', 0, 15, { align: 'center' })
+                .moveDown(0.1)
+                .fontSize(9)
+                .font('Helvetica')
+                .text(address, 40, 38, { align: 'center', width: doc.page.width - 80 });
+            
+            doc.moveDown(2);
+            doc.fillColor('black')
+                .fontSize(14)
+                .font('Helvetica-Bold')
+                .text('Billing Summary Report', { align: 'center' });
+            doc.moveDown(0.3);
+            doc.fontSize(10)
+                .font('Helvetica')
+                .text(`From: ${fromDate}   To: ${toDate}   Type: ${billType}`, { align: 'center' });
+            doc.moveDown(1);
+
+            // Table columns - Summary format with Services column (wider for long text)
+            const colWidths = [22, 70, 60, 180, 70, 50, 60];
+            const headerRowHeight = 25;
+            const tableWidth = colWidths.reduce((a, b) => a + b, 0);
+            const tableStartX = (doc.page.width - tableWidth) / 2;
+            
+            let colX = [tableStartX];
+            for (let i = 0; i < colWidths.length - 1; i++) {
+                colX.push(colX[i] + colWidths[i]);
+            }
+
+            let tableTop = doc.y + 10;
+
+            // Header
+            const drawHeader = (y) => {
+                doc.rect(colX[0], y, tableWidth, headerRowHeight).fill('#c7dfbf');
+                doc.fillColor('black').fontSize(7).font('Helvetica-Bold');
+                doc.text('Sl.', colX[0] + 2, y + 8, { width: colWidths[0] - 4 });
+                doc.text('Customer', colX[1] + 2, y + 8, { width: colWidths[1] - 4 });
+                doc.text('Invoice', colX[2] + 2, y + 8, { width: colWidths[2] - 4 });
+                doc.text('Services', colX[3] + 2, y + 8, { width: colWidths[3] - 4 });
+                doc.text('Phone', colX[4] + 2, y + 8, { width: colWidths[4] - 4 });
+                doc.text('Date', colX[5] + 2, y + 8, { width: colWidths[5] - 4 });
+                doc.text('Total', colX[6] + 2, y + 8, { width: colWidths[6] - 4 });
+
+                // Draw header borders
+                doc.moveTo(colX[0], y).lineTo(colX[0] + tableWidth, y).stroke('#aad381');
+                doc.moveTo(colX[0], y + headerRowHeight).lineTo(colX[0] + tableWidth, y + headerRowHeight).stroke('#aad381');
+                for (let i = 0; i <= colWidths.length; i++) {
+                    const x = i < colWidths.length ? colX[i] : colX[colWidths.length - 1] + colWidths[colWidths.length - 1];
+                    doc.moveTo(x, y).lineTo(x, y + headerRowHeight).stroke('#aad381');
+                }
+                return y + headerRowHeight;
+            };
+
+            let y = drawHeader(tableTop);
+
+            doc.font('Helvetica').fontSize(7);
+
+            // Process each bill as one row (combined services)
+            let grandTotalSum = 0;
+
+            for (let idx = 0; idx < data.length; idx++) {
+                const bill = data[idx];
+                const invoiceNumber = 'NE' + bill._id.toString().slice(-8).toUpperCase();
+                const billDate = bill.date ? new Date(bill.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) : '';
+                
+                // Get services list - show full text
+                let servicesText = '-';
+                if (bill.services && bill.services.length > 0) {
+                    servicesText = bill.services.map(s => s.name).join(', ');
+                }
+                
+                grandTotalSum += bill.grandTotal || 0;
+
+                // Calculate dynamic row height based on services text
+                const servicesTextHeight = doc.heightOfString(servicesText, { width: colWidths[3] - 4 });
+                const rowHeight = Math.max(servicesTextHeight + 10, 22);
+
+                // Check if we need a new page
+                const maxY = doc.page.height - doc.page.margins.bottom - rowHeight - 50;
+                if (y > maxY) {
+                    doc.addPage();
+                    y = drawHeader(40);
+                    doc.font('Helvetica').fontSize(7);
+                }
+
+                // Alternate row color
+                if (idx % 2 === 0) {
+                    doc.rect(colX[0], y, tableWidth, rowHeight).fill('#f4f4f9');
+                }
+                doc.fillColor('black');
+
+                const textY = y + 5;
+                doc.text(String(idx + 1), colX[0] + 2, textY, { width: colWidths[0] - 4 });
+                doc.text(bill.customer_name || '', colX[1] + 2, textY, { width: colWidths[1] - 4 });
+                doc.text(invoiceNumber, colX[2] + 2, textY, { width: colWidths[2] - 4 });
+                doc.text(servicesText, colX[3] + 2, textY, { width: colWidths[3] - 4 });
+                doc.text(String(bill.customer_number || ''), colX[4] + 2, textY, { width: colWidths[4] - 4 });
+                doc.text(billDate, colX[5] + 2, textY, { width: colWidths[5] - 4 });
+                doc.text(`Rs.${(bill.grandTotal || 0).toFixed(2)}`, colX[6] + 2, textY, { width: colWidths[6] - 4 });
+
+                // Draw row borders
+                doc.moveTo(colX[0], y).lineTo(colX[0] + tableWidth, y).stroke('#aad381');
+                doc.moveTo(colX[0], y + rowHeight).lineTo(colX[0] + tableWidth, y + rowHeight).stroke('#aad381');
+                for (let i = 0; i <= colWidths.length; i++) {
+                    const x = i < colWidths.length ? colX[i] : colX[colWidths.length - 1] + colWidths[colWidths.length - 1];
+                    doc.moveTo(x, y).lineTo(x, y + rowHeight).stroke('#aad381');
+                }
+
+                y += rowHeight;
+            }
+
+            // Grand Total Row
+            const totalRowHeight = 25;
+            doc.rect(colX[0], y, tableWidth, totalRowHeight).fill('#8DBE50');
+            doc.fillColor('black').font('Helvetica-Bold').fontSize(8);
+            doc.text('GRAND TOTAL', colX[0] + 2, y + 8, { width: colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4] + colWidths[5] - 4 });
+            doc.text(`Rs.${grandTotalSum.toFixed(2)}`, colX[6] + 2, y + 8, { width: colWidths[6] - 4 });
+            
+            // Draw total row borders
+            doc.moveTo(colX[0], y).lineTo(colX[0] + tableWidth, y).stroke('#aad381');
+            doc.moveTo(colX[0], y + totalRowHeight).lineTo(colX[0] + tableWidth, y + totalRowHeight).stroke('#aad381');
+            for (let i = 0; i <= colWidths.length; i++) {
+                const x = i < colWidths.length ? colX[i] : colX[colWidths.length - 1] + colWidths[colWidths.length - 1];
+                doc.moveTo(x, y).lineTo(x, y + totalRowHeight).stroke('#aad381');
+            }
+
+            // Footer with record count
+            doc.moveDown(2);
+            doc.font('Helvetica').fontSize(9);
+            doc.text(`Total Records: ${data.length}`, { align: 'center' });
+
+            doc.end();
+        });
+
+        // Send the buffered PDF only after successful generation
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', 'attachment; filename="billing_summary.pdf"');
-        doc.pipe(res);
+        res.send(pdfBuffer);
 
-        // Title Header
-        const address = '1st Floor, Leelavathi Achar Complex, Opp. Muthoot Finance, Immadihalli Main Road, Hagadur, Whitefield, Bangalore - 560066';
-        doc.rect(0, 0, doc.page.width, 70).fill('#8DBE50');
-        doc.fillColor('black')
-            .fontSize(18)
-            .font('Helvetica-Bold')
-            .text('NOBLE EVERGREEN UNISEX SALON', 0, 15, { align: 'center' })
-            .moveDown(0.1)
-            .fontSize(9)
-            .font('Helvetica')
-            .text(address, 40, 38, { align: 'center', width: doc.page.width - 80 });
-        
-        doc.moveDown(2);
-        doc.fillColor('black')
-            .fontSize(14)
-            .font('Helvetica-Bold')
-            .text('Billing Summary Report', { align: 'center' });
-        doc.moveDown(0.3);
-        doc.fontSize(10)
-            .font('Helvetica')
-            .text(`From: ${fromDate}   To: ${toDate}   Type: ${billType}`, { align: 'center' });
-        doc.moveDown(1);
-
-        // Table columns - Summary format with Services column (wider for long text)
-        const colWidths = [22, 70, 60, 180, 70, 50, 60];
-        const headerRowHeight = 25;
-        const tableWidth = colWidths.reduce((a, b) => a + b, 0);
-        const tableStartX = (doc.page.width - tableWidth) / 2;
-        
-        let colX = [tableStartX];
-        for (let i = 0; i < colWidths.length - 1; i++) {
-            colX.push(colX[i] + colWidths[i]);
-        }
-
-        let tableTop = doc.y + 10;
-
-        // Header
-        const drawHeader = (y) => {
-            doc.rect(colX[0], y, tableWidth, headerRowHeight).fill('#c7dfbf');
-            doc.fillColor('black').fontSize(7).font('Helvetica-Bold');
-            doc.text('Sl.', colX[0] + 2, y + 8, { width: colWidths[0] - 4 });
-            doc.text('Customer', colX[1] + 2, y + 8, { width: colWidths[1] - 4 });
-            doc.text('Invoice', colX[2] + 2, y + 8, { width: colWidths[2] - 4 });
-            doc.text('Services', colX[3] + 2, y + 8, { width: colWidths[3] - 4 });
-            doc.text('Phone', colX[4] + 2, y + 8, { width: colWidths[4] - 4 });
-            doc.text('Date', colX[5] + 2, y + 8, { width: colWidths[5] - 4 });
-            doc.text('Total', colX[6] + 2, y + 8, { width: colWidths[6] - 4 });
-
-            // Draw header borders
-            doc.moveTo(colX[0], y).lineTo(colX[0] + tableWidth, y).stroke('#aad381');
-            doc.moveTo(colX[0], y + headerRowHeight).lineTo(colX[0] + tableWidth, y + headerRowHeight).stroke('#aad381');
-            for (let i = 0; i <= colWidths.length; i++) {
-                const x = i < colWidths.length ? colX[i] : colX[colWidths.length - 1] + colWidths[colWidths.length - 1];
-                doc.moveTo(x, y).lineTo(x, y + headerRowHeight).stroke('#aad381');
-            }
-            return y + headerRowHeight;
-        };
-
-        let y = drawHeader(tableTop);
-
-        doc.font('Helvetica').fontSize(7);
-
-        // Process each bill as one row (combined services)
-        let grandTotalSum = 0;
-
-        for (let idx = 0; idx < data.length; idx++) {
-            const bill = data[idx];
-            const invoiceNumber = 'NE' + bill._id.toString().slice(-8).toUpperCase();
-            const billDate = bill.date ? new Date(bill.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) : '';
-            
-            // Get services list - show full text
-            let servicesText = '-';
-            if (bill.services && bill.services.length > 0) {
-                servicesText = bill.services.map(s => s.name).join(', ');
-            }
-            
-            grandTotalSum += bill.grandTotal || 0;
-
-            // Calculate dynamic row height based on services text
-            const servicesTextHeight = doc.heightOfString(servicesText, { width: colWidths[3] - 4 });
-            const rowHeight = Math.max(servicesTextHeight + 10, 22);
-
-            // Check if we need a new page
-            const maxY = doc.page.height - doc.page.margins.bottom - rowHeight - 50;
-            if (y > maxY) {
-                doc.addPage();
-                y = drawHeader(40);
-                doc.font('Helvetica').fontSize(7);
-            }
-
-            // Alternate row color
-            if (idx % 2 === 0) {
-                doc.rect(colX[0], y, tableWidth, rowHeight).fill('#f4f4f9');
-            }
-            doc.fillColor('black');
-
-            const textY = y + 5;
-            doc.text(String(idx + 1), colX[0] + 2, textY, { width: colWidths[0] - 4 });
-            doc.text(bill.customer_name || '', colX[1] + 2, textY, { width: colWidths[1] - 4 });
-            doc.text(invoiceNumber, colX[2] + 2, textY, { width: colWidths[2] - 4 });
-            doc.text(servicesText, colX[3] + 2, textY, { width: colWidths[3] - 4 });
-            doc.text(String(bill.customer_number || ''), colX[4] + 2, textY, { width: colWidths[4] - 4 });
-            doc.text(billDate, colX[5] + 2, textY, { width: colWidths[5] - 4 });
-            doc.text(`Rs.${(bill.grandTotal || 0).toFixed(2)}`, colX[6] + 2, textY, { width: colWidths[6] - 4 });
-
-            // Draw row borders
-            doc.moveTo(colX[0], y).lineTo(colX[0] + tableWidth, y).stroke('#aad381');
-            doc.moveTo(colX[0], y + rowHeight).lineTo(colX[0] + tableWidth, y + rowHeight).stroke('#aad381');
-            for (let i = 0; i <= colWidths.length; i++) {
-                const x = i < colWidths.length ? colX[i] : colX[colWidths.length - 1] + colWidths[colWidths.length - 1];
-                doc.moveTo(x, y).lineTo(x, y + rowHeight).stroke('#aad381');
-            }
-
-            y += rowHeight;
-        }
-
-        // Grand Total Row
-        const totalRowHeight = 25;
-        doc.rect(colX[0], y, tableWidth, totalRowHeight).fill('#8DBE50');
-        doc.fillColor('black').font('Helvetica-Bold').fontSize(8);
-        doc.text('GRAND TOTAL', colX[0] + 2, y + 8, { width: colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4] + colWidths[5] - 4 });
-        doc.text(`Rs.${grandTotalSum.toFixed(2)}`, colX[6] + 2, y + 8, { width: colWidths[6] - 4 });
-        
-        // Draw total row borders
-        doc.moveTo(colX[0], y).lineTo(colX[0] + tableWidth, y).stroke('#aad381');
-        doc.moveTo(colX[0], y + totalRowHeight).lineTo(colX[0] + tableWidth, y + totalRowHeight).stroke('#aad381');
-        for (let i = 0; i <= colWidths.length; i++) {
-            const x = i < colWidths.length ? colX[i] : colX[colWidths.length - 1] + colWidths[colWidths.length - 1];
-            doc.moveTo(x, y).lineTo(x, y + totalRowHeight).stroke('#aad381');
-        }
-
-        // Footer with record count
-        doc.moveDown(2);
-        doc.font('Helvetica').fontSize(9);
-        doc.text(`Total Records: ${data.length}`, { align: 'center' });
-
-        doc.end();
     } catch (error) {
         console.error("Error exporting data:", error);
         res.status(500).send("Internal server error");
