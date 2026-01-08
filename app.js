@@ -88,8 +88,8 @@ doc.pipe(writeStream);
 //   });
 
 // Green API credentials
-const GREEN_API_INSTANCE_ID = '7105239852';
-const GREEN_API_TOKEN = '21abe2abe5e541849654c53fb041f41bd11f81ef7ba3423182';  
+const GREEN_API_INSTANCE_ID = '7105459299';
+const GREEN_API_TOKEN = '7dd72da916ed4f5cba44a59373d935cb8c79f2e5b69245c89a';  
 
 // Middleware to check if user is authenticated
 const isAuthenticated = (req, res, next) => {
