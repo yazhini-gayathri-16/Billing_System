@@ -6,12 +6,14 @@
 
   const STYLE_ID = 'request-state-manager-styles';
   const OVERLAY_ID = 'request-state-manager-overlay';
-  const OVERLAY_DELAY_MS = 2000;
+  const OVERLAY_DELAY_MS = 300; // Show overlay quickly (300ms) for form submissions
+  const OVERLAY_MAX_DURATION_MS = 3000; // Maximum 3 seconds total
   const PENDING_TRIGGER_TIMEOUT = 1000;
 
   const state = {
     overlay: null,
     overlayTimer: null,
+    overlayMaxTimer: null, // Timer to force hide overlay after max duration
     activeRequests: new Map(),
     pendingTriggers: [],
     requestCounter: 0,
@@ -153,6 +155,16 @@
 
     state.overlayTimer = window.setTimeout(() => {
       showOverlay();
+      
+      // Set maximum duration timer - force hide after 3 seconds from when overlay is shown
+      if (state.overlayMaxTimer) {
+        clearTimeout(state.overlayMaxTimer);
+      }
+      state.overlayMaxTimer = window.setTimeout(() => {
+        // Force hide overlay after maximum duration, even if requests are still active
+        hideOverlay();
+        state.overlayMaxTimer = null;
+      }, OVERLAY_MAX_DURATION_MS);
     }, OVERLAY_DELAY_MS);
   }
 
@@ -160,6 +172,10 @@
     if (state.overlayTimer) {
       clearTimeout(state.overlayTimer);
       state.overlayTimer = null;
+    }
+    if (state.overlayMaxTimer) {
+      clearTimeout(state.overlayMaxTimer);
+      state.overlayMaxTimer = null;
     }
     if (state.activeRequests.size === 0) {
       hideOverlay();
@@ -291,40 +307,65 @@
 
   function wrapFetch() {
     window.fetch = function patchedFetch(resource, options) {
-      const trigger = consumeTrigger();
-      const requestId = beginRequest(trigger);
+      // Only show overlay for POST, PUT, DELETE, PATCH requests (form submissions)
+      // Skip GET requests (data fetching)
+      const method = (options && options.method) || 'GET';
+      const isFormSubmission = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method.toUpperCase());
+      
+      const trigger = isFormSubmission ? consumeTrigger() : null;
+      const requestId = isFormSubmission ? beginRequest(trigger) : null;
 
       let fetchPromise;
       try {
         fetchPromise = state.originalFetch(resource, options);
       } catch (error) {
-        endRequest(requestId);
+        if (requestId) {
+          endRequest(requestId);
+        }
         throw error;
+      }
+
+      if (!isFormSubmission) {
+        // For GET requests, just return the promise without tracking
+        return fetchPromise;
       }
 
       return Promise.resolve(fetchPromise)
         .finally(() => {
-          endRequest(requestId);
+          if (requestId) {
+            endRequest(requestId);
+          }
         });
     };
   }
 
   function wrapXmlHttpRequest() {
     XMLHttpRequest.prototype.send = function patchedSend(...args) {
-      const trigger = consumeTrigger();
-      const requestId = beginRequest(trigger);
+      // Only show overlay for POST, PUT, DELETE, PATCH requests (form submissions)
+      // Skip GET requests (data fetching)
+      const method = this.method || 'GET';
+      const isFormSubmission = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method.toUpperCase());
+      
+      const trigger = isFormSubmission ? consumeTrigger() : null;
+      const requestId = isFormSubmission ? beginRequest(trigger) : null;
 
       const finalize = () => {
         this.removeEventListener('loadend', finalize);
-        endRequest(requestId);
+        if (requestId) {
+          endRequest(requestId);
+        }
       };
 
-      this.addEventListener('loadend', finalize);
+      if (isFormSubmission) {
+        this.addEventListener('loadend', finalize);
+      }
 
       try {
         state.originalXhrSend.apply(this, args);
       } catch (error) {
-        finalize();
+        if (isFormSubmission) {
+          finalize();
+        }
         throw error;
       }
     };

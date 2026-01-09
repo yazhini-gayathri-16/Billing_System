@@ -829,9 +829,7 @@
 
         // Fetch sales data from server
         function fetchSalesData(filterType, fromDate = null, toDate = null) {
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            loadingOverlay.classList.add('active');
-            
+            // No loading overlay for data fetching (GET requests)
             let url = `/api/sales-data?filter=${filterType}`;
             if (filterType === 'custom' && fromDate && toDate) {
                 url += `&fromDate=${fromDate}&toDate=${toDate}`;
@@ -849,9 +847,6 @@
                 .catch(error => {
                     console.error('Error:', error);
                     alert('Error fetching sales data');
-                })
-                .finally(() => {
-                    loadingOverlay.classList.remove('active');
                 });
         }
 
