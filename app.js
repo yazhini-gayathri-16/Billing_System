@@ -89,7 +89,10 @@ doc.pipe(writeStream);
 
 // Green API credentials
 const GREEN_API_INSTANCE_ID = '7105459299';
-const GREEN_API_TOKEN = '7dd72da916ed4f5cba44a59373d935cb8c79f2e5b69245c89a';  
+const GREEN_API_TOKEN = '7dd72da916ed4f5cba44a59373d935cb8c79f2e5b69245c89a';
+
+// Base URL for bill preview links
+const BASE_URL = process.env.BASE_URL || 'https://noble-evergreen.onrender.com';  
 
 // Middleware to check if user is authenticated
 const isAuthenticated = (req, res, next) => {
@@ -327,173 +330,33 @@ app.post("/bill", async (req, res) => {
                 // bufferStream.push(null);
 
                 // Instead of Puppeteer, use PDFKit to generate PDF in memory
-        const { Readable } = require('stream');
-        const doc = new PDFDocument({ size: 'A4', margin: 50 });
-        const chunks = [];
-        doc.on('data', chunk => chunks.push(chunk));
-        doc.on('end', async () => {
-            const pdfBuffer = Buffer.concat(chunks);
+        // Send bill preview link via WhatsApp using Green API
+        const billPreviewLink = `${BASE_URL}/bill-preview/${user._id}`;
+        const chatId = `91${customer_number}@c.us`;
+        const message = `Dear ${customer_name}, thank you for visiting Noble Evergreen Salon. Please find your bill here: ${billPreviewLink}`;
 
+        try {
+            const response = await axios.post(
+                `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendMessage/${GREEN_API_TOKEN}`,
+                {
+                    chatId: chatId,
+                    message: message
+                }
+            );
 
-                // Send PDF via WhatsApp using Green API
-            const chatId = `91${customer_number}@c.us`;
-            const bufferStream = new Readable();
-            bufferStream.push(pdfBuffer);
-            bufferStream.push(null);
-
-            const form = new FormData();
-            form.append('chatId', chatId);
-            form.append('file', bufferStream, {
-                filename: `Noble_Evergreen_Unisex_Salon.pdf`,
-                contentType: 'application/pdf'
+            res.json({
+                success: true,
+                message: 'Bill generated and link sent via WhatsApp',
+                billData: user
             });
-            form.append('caption', `Dear ${customer_name}, thank you for visiting Noble Evergreen Salon. Please find your bill attached.`);
-
-            try {
-                const response = await axios.post(
-                    `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendFileByUpload/${GREEN_API_TOKEN}`,
-                    form,
-                    { headers: form.getHeaders() }
-                );
-
-                res.json({
-                    success: true,
-                    message: 'Bill generated and PDF sent via WhatsApp',
-                    billData: user
-                });
-            } catch (error) {
-                console.error('PDF or WhatsApp send error:', error?.response?.data || error.message);
-                res.json({
-                    success: true,
-                    message: 'Bill generated but PDF failed to send via WhatsApp',
-                    billData: user
-                });
-            }
-        });
-
-        // --- PDF Content ---
-        // Header and Title Block
-
-        const address = '1st Floor, Leelavathi Achar Complex, Opp. Muthoot Finance, Immadihalli Main Road, Hagadur, Whitefield, Bangalore - 560066';
-        const addressWidth = 400; // Adjust width for your desired margin
-        const addressX = (doc.page.width - addressWidth) / 2; // Center horizontally
-
-        doc
-            .rect(0, 0, doc.page.width, 80) // Draw background rectangle
-            .fill('#8DBE50') // Set background color
-            .image(path.join(__dirname, 'public/images/logo 3-square.png'), doc.page.width / 2 - 40, 10, { width: 80, height: 80 }) // Add logo image
-            .moveDown(0.5)
-            .fontSize(10)
-            .font('Helvetica')
-            .text(address, addressX, doc.y, {
-                width: addressWidth,
-                align: 'center'
-            })
-            .moveDown(0.5)
-            .text('Email: nobleevergreen01@gmail.com', doc.page.margins.left, doc.y, { align: 'left' }) // Add email
-            .text('Phone: 91104 33853 / 82969 39896', doc.page.margins.left, doc.y, { align: 'left' }); // Add phone numbers
-        
-        // GST Number is always displayed
-        doc.text('GST No: 29AALFN5861B1ZN', doc.page.margins.left, doc.y, { align: 'left' });
-        
-        doc.moveDown(1);
-
-        // Invoice Info
-        doc
-            .moveDown(0.5)
-            .fontSize(14)
-            .font('Helvetica-Bold')
-            .text('INVOICE', { align: 'right' })
-            .fontSize(10)
-            .font('Helvetica')
-            .text(`Date: ${date}`, { align: 'right' })
-            .text(`Time: ${time}`, { align: 'right' })
-            .moveDown(1);
-
-        const leftX = doc.page.margins.left;    
-        // Customer Details
-        doc
-            .fontSize(14)
-            .font('Helvetica-Bold')
-            .text('Billing Receipt', leftX, doc.y)
-            .moveDown(0.5)
-            .fontSize(12)
-            .font('Helvetica-Bold')
-            .text('Customer Details', leftX, doc.y, { underline: true })
-            .font('Helvetica')
-            .moveDown(0.2)
-            .fontSize(11)
-            .text(`Name: ${customer_name}`, leftX, doc.y)
-            .text(`Phone Number: ${customer_number}`, leftX, doc.y)
-            .text(`Gender: ${gender}`, leftX, doc.y)
-            .moveDown(0.5);
-
-        // Services Table Header
-        doc
-            .fontSize(12)
-            .font('Helvetica-Bold')
-            .text('Services', leftX, doc.y, { underline: true })
-            .moveDown(0.2);
-
-        // Table column headers
-        const tableTop = doc.y + 5;
-        const colX = [doc.page.margins.left, 270, 440];
-        doc
-            .fontSize(11)
-            .font('Helvetica-Bold')
-            .text('Service Name', colX[0], tableTop)
-            .text('Price', colX[1], tableTop)
-            .text('Stylist', colX[2], tableTop)
-
-        // Draw header line
-        doc
-            .moveTo(colX[0], tableTop + 15)
-            .lineTo(doc.page.width - doc.page.margins.right, tableTop + 15)
-            .strokeColor('#ddd')
-            .lineWidth(1)
-            .stroke();
-
-        // Table rows
-        let rowY = tableTop + 20;
-        doc.font('Helvetica');
-        services.forEach(service => {
-            doc
-                .fontSize(10)
-                .text(service.name, colX[0], rowY)
-                .text(`Rs.${service.price.toFixed(2)}`, colX[1], rowY)
-                .text(service.stylist + (service.stylist2 ? `, ${service.stylist2}` : ''), colX[2], rowY)
-            rowY += 18;
-        });
-
-        // Totals Section
-const labelX = doc.page.width - doc.page.margins.right - 200; // 200px from right, adjust as needed
-const valueX = doc.page.width - doc.page.margins.right - 150;       // right margin
-
-doc.moveDown(2)
-   .fontSize(12)
-   .font('Helvetica-Bold');
-
-let y = doc.y;
-doc.text('Subtotal:', labelX, y);
-doc.text(`Rs.${parseFloat(subtotal).toFixed(2)}`, valueX, y, { align: 'right' });
-doc.moveDown(0.5);
-
-y = doc.y + 5;
-doc.text('Discount:', labelX, y);
-doc.text(`Rs.${finalDiscount.toFixed(2)} (${discountType})`, valueX, y, { align: 'right' });
-doc.moveDown(0.5);
-
-y = doc.y + 5;
-doc.text('Grand Total:', labelX, y);
-doc.text(`Rs.${parseFloat(grandTotal).toFixed(2)}`, valueX, y, { align: 'right' });
-
-
-doc.moveDown(0.5)
-   .font('Helvetica')
-   .fontSize(11);
-
-        doc.end();
-        // --- End PDF Content ---
+        } catch (error) {
+            console.error('WhatsApp send error:', error?.response?.data || error.message);
+            res.json({
+                success: true,
+                message: 'Bill generated but link failed to send via WhatsApp',
+                billData: user
+            });
+        }
 
     } catch (err) {
         console.error("Error creating bill:", err);
@@ -630,141 +493,33 @@ app.post("/packageBill", async (req, res) => {
         });
 
         if (user) {
-            // --- PDF Generation ---
-            const PDFDocument = require('pdfkit');
-            const { Readable } = require('stream');
-            const doc = new PDFDocument({ size: 'A3', margin: 50 });
-            const chunks = [];
-            doc.on('data', chunk => chunks.push(chunk));
-            doc.on('end', async () => {
-                const pdfBuffer = Buffer.concat(chunks);
+            // Send bill preview link via WhatsApp using Green API
+            const billPreviewLink = `${BASE_URL}/bill-preview/${user._id}`;
+            const chatId = `91${customer_number}@c.us`;
+            const message = `Dear ${customer_name}, thank you for your package purchase at Noble Evergreen Salon. Please find your bill here: ${billPreviewLink}`;
 
-                // --- WhatsApp Notification ---
-                const chatId = `91${customer_number}@c.us`;
-                const bufferStream = new Readable();
-                bufferStream.push(pdfBuffer);
-                bufferStream.push(null);
-
-                const form = new FormData();
-                form.append('chatId', chatId);
-                form.append('file', bufferStream, {
-                    filename: `Noble_Evergreen_Package_Bill.pdf`,
-                    contentType: 'application/pdf'
-                });
-                form.append('caption', `Dear ${customer_name}, thank you for your package purchase at Noble Evergreen Salon. Please find your bill attached.`);
-
-                try {
-                    await axios.post(
-                        `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendFileByUpload/${GREEN_API_TOKEN}`,
-                        form,
-                        { headers: form.getHeaders() }
-                    );
-                } catch (err) {
-                    console.error('WhatsApp send error:', err?.response?.data || err.message);
-                }
+            try {
+                await axios.post(
+                    `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendMessage/${GREEN_API_TOKEN}`,
+                    {
+                        chatId: chatId,
+                        message: message
+                    }
+                );
 
                 res.json({
                     success: true,
-                    message: 'Package bill generated and PDF sent via WhatsApp',
+                    message: 'Package bill generated and link sent via WhatsApp',
                     billData: user
                 });
-            });
-
-            // --- PDF Content ---
-            doc
-                .rect(0, 0, doc.page.width, 80)
-                .fill('#8DBE50')
-                .fillColor('black')
-                .fontSize(24)
-                .font('Helvetica-Bold')
-                .text('NOBLE EVERGREEN UNISEX SALON', { align: 'center' })
-                .moveDown(0.5)
-                .fontSize(10)
-                .font('Helvetica')
-                .text('Leelavathi Achaer Complex Opp. Muthoot Finance Immadihalli Main Road, Hagadur, Whitefiled, Bangalore - 560066', { align: 'center' });
-            
-            // GST Number is always displayed
-            doc.text('GST No: 29AALFN5861B1ZN', { align: 'center' });
-            
-            doc.moveDown(1);
-
-            doc
-                .moveDown(0.5)
-                .fontSize(14)
-                .font('Helvetica-Bold')
-                .text('PACKAGE BILL', { align: 'right' })
-                .fontSize(10)
-                .font('Helvetica')
-                .text(`Date: ${date}`, { align: 'right' })
-                .text(`Time: ${time}`, { align: 'right' })
-                .moveDown(1);
-
-            doc
-                .fontSize(12)
-                .font('Helvetica-Bold')
-                .text('Customer Details')
-                .font('Helvetica')
-                .fontSize(11)
-                .text(`Name: ${customer_name}`)
-                .text(`Phone Number: ${customer_number}`)
-                .text(`Gender: ${gender}`)
-                .moveDown(0.5);
-
-            // Packages Table
-            doc
-                .fontSize(12)
-                .font('Helvetica-Bold')
-                .text('Packages')
-                .moveDown(0.2);
-
-            const tableTop = doc.y + 5;
-            const colX = [doc.page.margins.left, 270, 370, 470, 570];
-            doc
-                .fontSize(11)
-                .font('Helvetica-Bold')
-                .text('Package Name', colX[0], tableTop)
-                .text('Price', colX[1], tableTop)
-                .text('Stylist 1', colX[2], tableTop)
-                .text('Stylist 2', colX[3], tableTop)
-                .text('Total', colX[4], tableTop);
-
-            doc
-                .moveTo(colX[0], tableTop + 15)
-                .lineTo(doc.page.width - doc.page.margins.right, tableTop + 15)
-                .strokeColor('#ddd')
-                .lineWidth(1)
-                .stroke();
-
-            let rowY = tableTop + 20;
-            doc.font('Helvetica');
-            (services || []).forEach(pkg => {
-                doc.text(pkg.name, colX[0], rowY)
-                    .text(`Rs.${parseFloat(pkg.price).toFixed(2)}`, colX[1], rowY)
-                    .text(pkg.stylist || '-', colX[2], rowY)
-                    .text(pkg.stylist2 || '-', colX[3], rowY)
-                    .text(`Rs.${parseFloat(pkg.price).toFixed(2)}`, colX[4], rowY);
-                rowY += 18;
-            });
-
-            // Totals Section
-            doc.moveDown(2)
-                .fontSize(12)
-                .font('Helvetica-Bold');
-            let y = doc.y;
-            doc.text('Subtotal:', colX[3], y);
-            doc.text(`Rs.${parseFloat(subtotal).toFixed(2)}`, colX[4], y, { align: 'right' });
-            doc.moveDown(0.5);
-
-            y = doc.y + 5;
-            doc.text('Discount:', colX[3], y);
-            doc.text(`Rs.${parseFloat(finalDiscount).toFixed(2)} (${discountType})`, colX[4], y, { align: 'right' });
-            doc.moveDown(0.5);
-
-            y = doc.y + 5;
-            doc.text('Grand Total:', colX[3], y);
-            doc.text(`Rs.${parseFloat(finalGrandTotal).toFixed(2)}`, colX[4], y, { align: 'right' });
-
-            doc.end();
+            } catch (err) {
+                console.error('WhatsApp send error:', err?.response?.data || err.message);
+                res.json({
+                    success: true,
+                    message: 'Package bill generated but link failed to send via WhatsApp',
+                    billData: user
+                });
+            }
         } else {
             res.json({
                 success: false,
@@ -3197,8 +2952,8 @@ app.post("/productbill", async (req, res) => {
         nextNumber = Math.max(lastFetchNum, lastProductNum) + 1;
         const invoiceNumber = `NE WF${nextNumber < 1000 ? String(nextNumber).padStart(3, '0') : nextNumber}`;
 
-        // Save bill to DB as you already do...
-        await ProductBill.create({
+        // Save bill to DB
+        const productBill = await ProductBill.create({
             customer_name,
             customer_number,
             date,
@@ -3214,138 +2969,33 @@ app.post("/productbill", async (req, res) => {
             invoiceNumber
         });
 
-        // --- PDF Generation ---
-        const PDFDocument = require('pdfkit');
-        const { Readable } = require('stream');
-        const doc = new PDFDocument({ size: 'A4', margin: 50 });
-        const chunks = [];
-        doc.on('data', chunk => chunks.push(chunk));
-        doc.on('end', async () => {
-            const pdfBuffer = Buffer.concat(chunks);
+        // Send bill preview link via WhatsApp using Green API
+        // Note: Product bills need a separate preview route since they use ProductBill model
+        // For now, we'll use the same route but it will need to be updated to handle ProductBill
+        const billPreviewLink = `${BASE_URL}/bill-preview/${productBill._id}`;
+        const chatId = `91${customer_number}@c.us`;
+        const message = `Dear ${customer_name}, thank you for your purchase at Noble Evergreen Salon. Please find your product bill here: ${billPreviewLink}`;
 
-            // --- WhatsApp Notification ---
-            const chatId = `91${customer_number}@c.us`;
-            const bufferStream = new Readable();
-            bufferStream.push(pdfBuffer);
-            bufferStream.push(null);
-
-            const form = new FormData();
-            form.append('chatId', chatId);
-            form.append('file', bufferStream, {
-                filename: `Noble_Evergreen_Unisex_Salon.pdf`,
-                contentType: 'application/pdf'
-            });
-            form.append('caption', `Dear ${customer_name}, thank you for your purchase at Noble Evergreen Salon. Please find your product bill attached.`);
-
-            try {
-                await axios.post(
-                    `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendFileByUpload/${GREEN_API_TOKEN}`,
-                    form,
-                    { headers: form.getHeaders() }
-                );
-            } catch (err) {
-                console.error('WhatsApp send error:', err?.response?.data || err.message);
-            }
+        try {
+            await axios.post(
+                `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendMessage/${GREEN_API_TOKEN}`,
+                {
+                    chatId: chatId,
+                    message: message
+                }
+            );
 
             res.json({
                 success: true,
-                message: 'Product bill generated and PDF sent via WhatsApp'
+                message: 'Product bill generated and link sent via WhatsApp'
             });
-        });
-
-        // --- PDF Content ---
-        const address = 'Leelavathi Achaer Complex Opp. Muthoot Finance Immadihalli Main Road, Hagadur, Whitefiled, Bangalore - 560066';
-        doc
-            .rect(0, 0, doc.page.width, 80)
-            .fill('#8DBE50')
-            .fillColor('black')
-            .fontSize(24)
-            .font('Helvetica-Bold')
-            .text('NOBLE EVERGREEN UNISEX SALON', { align: 'center' })
-            .moveDown(0.5)
-            .fontSize(10)
-            .font('Helvetica')
-            .text(address, { align: 'center' });
-        
-        // GST Number is always displayed
-        doc.text('GST No: 29AALFN5861B1ZN', { align: 'center' });
-        
-        doc.moveDown(1);
-
-        doc
-            .moveDown(0.5)
-            .fontSize(14)
-            .font('Helvetica-Bold')
-            .text('PRODUCT BILL', { align: 'right' })
-            .fontSize(10)
-            .font('Helvetica')
-            .text(`Date: ${date}`, { align: 'right' })
-            .moveDown(1);
-
-        doc
-            .fontSize(12)
-            .font('Helvetica-Bold')
-            .text('Customer Details')
-            .font('Helvetica')
-            .fontSize(11)
-            .text(`Name: ${customer_name}`)
-            .text(`Phone Number: ${customer_number}`)
-            .text(`Gender: ${gender}`)
-            .moveDown(0.5);
-
-        // Products Table
-        doc
-            .fontSize(12)
-            .font('Helvetica-Bold')
-            .text('Products')
-            .moveDown(0.2);
-
-        const tableTop = doc.y + 5;
-        const colX = [doc.page.margins.left, 270, 370, 470];
-        doc
-            .fontSize(11)
-            .font('Helvetica-Bold')
-            .text('Product Name', colX[0], tableTop)
-            .text('Price', colX[1], tableTop)
-            .text('Quantity', colX[2], tableTop)
-            .text('Total', colX[3], tableTop);
-
-        doc
-            .moveTo(colX[0], tableTop + 15)
-            .lineTo(doc.page.width - doc.page.margins.right, tableTop + 15)
-            .strokeColor('#ddd')
-            .lineWidth(1)
-            .stroke();
-
-        let rowY = tableTop + 20;
-        doc.font('Helvetica');
-        (products || []).forEach(product => {
-            doc.text(product.name, colX[0], rowY)
-                .text(`Rs.${parseFloat(product.price).toFixed(2)}`, colX[1], rowY)
-                .text(product.quantity, colX[2], rowY)
-                .text(`Rs.${parseFloat(product.total).toFixed(2)}`, colX[3], rowY);
-            rowY += 18;
-        });
-
-        // Totals Section
-        doc.moveDown(2)
-            .fontSize(12)
-            .font('Helvetica-Bold');
-        let y = doc.y;
-        doc.text('Subtotal:', colX[2], y);
-        doc.text(`Rs.${parseFloat(subtotal).toFixed(2)}`, colX[3], y, { align: 'right' });
-        doc.moveDown(0.5);
-
-        y = doc.y + 5;
-        doc.text('Discount:', colX[2], y);
-        doc.text(`Rs.${parseFloat(discount).toFixed(2)} (${discountType})`, colX[3], y, { align: 'right' });
-        doc.moveDown(0.5);
-
-        y = doc.y + 5;
-        doc.text('Grand Total:', colX[2], y);
-        doc.text(`Rs.${parseFloat(grandTotal).toFixed(2)}`, colX[3], y, { align: 'right' });
-
-        doc.end();
+        } catch (err) {
+            console.error('WhatsApp send error:', err?.response?.data || err.message);
+            res.json({
+                success: true,
+                message: 'Product bill generated but link failed to send via WhatsApp'
+            });
+        }
     } catch (error) {
         console.error("Error creating product bill:", error);
         res.status(500).json({
@@ -3438,15 +3088,23 @@ app.post("/fetch-bills", async (req, res) => {
 // Individual bill preview PDF
 app.get("/bill-preview/:id", async (req, res) => {
     try {
-        const bill = await Fetch.findById(req.params.id);
+        // Try to find bill in Fetch model first (service/package bills)
+        let bill = await Fetch.findById(req.params.id);
+        let isProductBill = false;
+        
+        // If not found, try ProductBill model (product bills)
+        if (!bill) {
+            bill = await ProductBill.findById(req.params.id);
+            isProductBill = true;
+        }
         
         if (!bill) {
             return res.status(404).send("Bill not found");
         }
-
+        
         // For package bills, enrich service names with included services
         let enrichedServices = bill.services || [];
-        if (bill.billType === 'package') {
+        if (!isProductBill && bill.billType === 'package') {
             enrichedServices = await Promise.all(enrichedServices.map(async (service) => {
                 const serviceObj = service.toObject ? service.toObject() : { ...service };
                 if (!serviceObj.name.includes('(')) {
@@ -3576,27 +3234,51 @@ app.get("/bill-preview/:id", async (req, res) => {
                 doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#ccc');
                 yPos += 8;
 
-                // Table Body - Services/Items
+                // Table Body - Services/Items or Products
                 doc.font('Helvetica').fontSize(10);
                 let totalGross = 0;
 
-                const services = enrichedServices || [];
-                services.forEach(service => {
-                    const servicePrice = service.price || 0;
-                    totalGross += servicePrice;
-                    
-                    const itemWidth = 220;
-                    const serviceName = service.name || 'Unknown Service';
-                    const textHeight = doc.heightOfString(serviceName, { width: itemWidth });
-                    const rowHeight = Math.max(textHeight + 8, 20);
-                    
-                    doc.text(serviceName, colItem, yPos, { width: itemWidth });
-                    doc.text(servicePrice.toFixed(2), colGross, yPos);
-                    doc.text('1', colQty, yPos);
-                    doc.text('0.00', colDisc, yPos);
-                    doc.text(servicePrice.toFixed(2), colAmount, yPos);
-                    yPos += rowHeight;
-                });
+                if (isProductBill) {
+                    // Handle product bills
+                    const products = bill.products || [];
+                    products.forEach(product => {
+                        const productPrice = product.price || 0;
+                        const quantity = product.quantity || 1;
+                        const productTotal = product.total || (productPrice * quantity);
+                        totalGross += productTotal;
+                        
+                        const itemWidth = 220;
+                        const productName = product.name || 'Unknown Product';
+                        const textHeight = doc.heightOfString(productName, { width: itemWidth });
+                        const rowHeight = Math.max(textHeight + 8, 20);
+                        
+                        doc.text(productName, colItem, yPos, { width: itemWidth });
+                        doc.text(productPrice.toFixed(2), colGross, yPos);
+                        doc.text(String(quantity), colQty, yPos);
+                        doc.text('0.00', colDisc, yPos);
+                        doc.text(productTotal.toFixed(2), colAmount, yPos);
+                        yPos += rowHeight;
+                    });
+                } else {
+                    // Handle service/package bills
+                    const services = enrichedServices || [];
+                    services.forEach(service => {
+                        const servicePrice = service.price || 0;
+                        totalGross += servicePrice;
+                        
+                        const itemWidth = 220;
+                        const serviceName = service.name || 'Unknown Service';
+                        const textHeight = doc.heightOfString(serviceName, { width: itemWidth });
+                        const rowHeight = Math.max(textHeight + 8, 20);
+                        
+                        doc.text(serviceName, colItem, yPos, { width: itemWidth });
+                        doc.text(servicePrice.toFixed(2), colGross, yPos);
+                        doc.text('1', colQty, yPos);
+                        doc.text('0.00', colDisc, yPos);
+                        doc.text(servicePrice.toFixed(2), colAmount, yPos);
+                        yPos += rowHeight;
+                    });
+                }
 
                 // Draw line before totals
                 doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#ccc');
