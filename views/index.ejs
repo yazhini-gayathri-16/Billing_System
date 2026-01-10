@@ -884,6 +884,36 @@
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
 
+    // Calculate discount amount explicitly
+    const subtotal = parseFloat(data.subtotal) || 0;
+    let discount = 0;
+    const discountType = document.querySelector('input[name="discountType"]:checked').value;
+    
+    if (discountType === 'percentage') {
+        const discountPercent = parseFloat(document.getElementById('discountPercentageInput').value) || 0;
+        discount = subtotal * (discountPercent / 100);
+    } else {
+        discount = parseFloat(document.getElementById('discountRupeesInput').value) || 0;
+    }
+    
+    // Add membership offers if applicable
+    if (document.getElementById('hasMembership').checked) {
+        const birthdayOfferChecked = document.getElementById('birthdayOffer').checked;
+        const anniversaryOfferChecked = document.getElementById('anniversaryOffer').checked;
+        
+        // Apply 20% discount for each offer on remaining amount after discount
+        if (birthdayOfferChecked) {
+            discount += (subtotal - discount) * 0.2;
+        }
+        if (anniversaryOfferChecked) {
+            discount += (subtotal - discount) * 0.2;
+        }
+    }
+    
+    // Ensure discount doesn't exceed subtotal
+    discount = Math.min(discount, subtotal);
+    data.discount = discount;
+
     // Add birthday and anniversary flags
     if (document.getElementById('hasMembership').checked) {
         data.birthdayDiscountApplied = document.getElementById('birthdayOffer').checked;

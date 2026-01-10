@@ -177,6 +177,7 @@ app.post("/bill", async (req, res) => {
             membershipID,
             subtotal,
             discountType,
+            discount: discountFromBody,
             grandTotal,
             paymentMethod,
             billType,
@@ -186,7 +187,41 @@ app.post("/bill", async (req, res) => {
             gstPercentage
         } = req.body;
 
-        let finalDiscount = parseFloat(subtotal) - parseFloat(grandTotal);
+        // Use discount from frontend, or calculate if not provided
+        let discountAmount = 0;
+        if (discountFromBody !== undefined && discountFromBody !== null && discountFromBody !== '') {
+            discountAmount = parseFloat(discountFromBody) || 0;
+        } else {
+            // Fallback: calculate discount if not sent from frontend
+            const subtotalNum = parseFloat(subtotal) || 0;
+            if (discountType === 'percentage') {
+                const discountPercent = parseFloat(req.body.discountPercentage) || 0;
+                discountAmount = subtotalNum * (discountPercent / 100);
+            } else {
+                discountAmount = parseFloat(req.body.discountRupees) || 0;
+            }
+        }
+        
+        // Ensure discount doesn't exceed subtotal
+        discountAmount = Math.min(discountAmount, parseFloat(subtotal) || 0);
+        
+        // Calculate net amount after discount
+        const netAmount = Math.max((parseFloat(subtotal) || 0) - discountAmount, 0);
+        
+        // Calculate GST amount and final grand total
+        let gstAmount = 0;
+        let finalGrandTotal = netAmount;
+        
+        if (addGstToBill === true || addGstToBill === 'true') {
+            const gstPercent = parseFloat(gstPercentage) || 0;
+            if (gstPercent > 0) {
+                gstAmount = netAmount * (gstPercent / 100);
+                finalGrandTotal = netAmount + gstAmount;
+            }
+        }
+        
+        // Use calculated grand total or the one from frontend (if they match)
+        const finalGrandTotalValue = parseFloat(finalGrandTotal.toFixed(2));
 
         if (membershipID && (birthdayDiscountApplied || anniversaryDiscountApplied)) {
             const membership = await Membership.findOne({ membershipID });
@@ -258,9 +293,9 @@ app.post("/bill", async (req, res) => {
             gender,
             membershipID,
             subtotal: parseFloat(subtotal),
-            discount: finalDiscount,
+            discount: parseFloat(discountAmount.toFixed(2)), // Store discount amount separately (not including GST)
             discountType,
-            grandTotal: parseFloat(grandTotal),
+            grandTotal: finalGrandTotalValue, // Final grand total = netAmount + GST (if applicable)
             paymentMethod,
             services,
             billType,
@@ -294,9 +329,9 @@ app.post("/bill", async (req, res) => {
                             gender,
                             membershipID,
                             subtotal: parseFloat(subtotal),
-                            discount: finalDiscount,
+                            discount: parseFloat(discountAmount.toFixed(2)) || 0, // Use discountAmount, default to 0 if empty
                             discountType,
-                            grandTotal: parseFloat(grandTotal),
+                            grandTotal: finalGrandTotalValue, // Use calculated grand total
                             paymentMethod,
                             services,
                             billType
@@ -411,14 +446,32 @@ app.post("/packageBill", async (req, res) => {
             gstPercentage
         } = req.body;
 
-        let finalDiscount = 0;
+        // Calculate discount amount
+        let discountAmount = 0;
         if (discountType === "percentage") {
-            finalDiscount = parseFloat(subtotal) * (parseFloat(discountPercentage) || 0) / 100;
+            discountAmount = parseFloat(subtotal) * (parseFloat(discountPercentage) || 0) / 100;
         } else if (discountType === "rupees") {
-            finalDiscount = parseFloat(discountRupees) || 0;
+            discountAmount = parseFloat(discountRupees) || 0;
         }
-        finalDiscount = parseFloat(finalDiscount.toFixed(2));
-        const finalGrandTotal = parseFloat(subtotal) - finalDiscount;
+        discountAmount = parseFloat(discountAmount.toFixed(2));
+        discountAmount = Math.min(discountAmount, parseFloat(subtotal) || 0);
+        
+        // Calculate net amount after discount
+        const netAmount = Math.max((parseFloat(subtotal) || 0) - discountAmount, 0);
+        
+        // Calculate GST amount and final grand total
+        let gstAmount = 0;
+        let finalGrandTotal = netAmount;
+        
+        if (addGstToBill === true || addGstToBill === 'true') {
+            const gstPercent = parseFloat(gstPercentage) || 0;
+            if (gstPercent > 0) {
+                gstAmount = netAmount * (gstPercent / 100);
+                finalGrandTotal = netAmount + gstAmount;
+            }
+        }
+        
+        finalGrandTotal = parseFloat(finalGrandTotal.toFixed(2));
 
         // Build services array from request (similar to /bill)
         let services = [];
@@ -479,9 +532,9 @@ app.post("/packageBill", async (req, res) => {
             gender,
             membershipID,
             subtotal: parseFloat(subtotal),
-            discount: finalDiscount,
+            discount: discountAmount, // Store discount amount separately (not including GST)
             discountType,
-            grandTotal: finalGrandTotal,
+            grandTotal: finalGrandTotal, // Final grand total = netAmount + GST (if applicable)
             paymentMethod,
             services,
             billType,
