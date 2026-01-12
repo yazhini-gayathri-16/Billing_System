@@ -220,8 +220,7 @@
                 </div>
 
                 <div class="button-row">
-                    <button type="button" class="button-generate" onclick="showBillPreview()">Preview Bill</button>
-                    <button type="submit" class="button-generate">Generate Bill</button>
+                    <button type="button" class="button-generate" onclick="showBillPreview()">Generate Bill</button>
                 </div>
             </form>
             <div id="staffList" style="display: none;">
@@ -912,6 +911,16 @@
             document.getElementById('billPreviewModal').style.display = 'none';
         }
         
+        function confirmAndGenerateBill() {
+            // Close the preview modal
+            closeBillPreview();
+            
+            // Submit the form
+            const form = document.getElementById('billForm');
+            const event = new Event('submit', { bubbles: true, cancelable: true });
+            form.dispatchEvent(event);
+        }
+        
         // Close modal when clicking outside
         window.onclick = function(event) {
             const modal = document.getElementById('billPreviewModal');
@@ -1017,6 +1026,12 @@
                 <div class="preview-footer">
                     <p class="thank-you">Thank you.</p>
                     <p class="visit-again">Please visit again.</p>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="preview-actions">
+                    <button type="button" class="preview-btn-cancel" onclick="closeBillPreview()">Cancel</button>
+                    <button type="button" class="preview-btn-ok" onclick="confirmAndGenerateBill()">OK</button>
                 </div>
             </div>
         </div>
@@ -1272,6 +1287,37 @@
             font-size: 11px;
             opacity: 0.9;
             margin: 3px 0 0 0;
+        }
+        .preview-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            padding: 15px;
+            background: #fff;
+        }
+        .preview-btn-cancel,
+        .preview-btn-ok {
+            padding: 10px 30px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .preview-btn-cancel {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+        .preview-btn-cancel:hover {
+            background-color: #e0e0e0;
+        }
+        .preview-btn-ok {
+            background-color: #8dbe50;
+            color: white;
+        }
+        .preview-btn-ok:hover {
+            background-color: #7aa843;
         }
         /* GST Toggle Switch Styles */
         .gst-toggle-switch {
