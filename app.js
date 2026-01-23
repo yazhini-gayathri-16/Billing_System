@@ -88,8 +88,8 @@ doc.pipe(writeStream);
 //   });
 
 // Green API credentials
-const GREEN_API_INSTANCE_ID = '7105459299';
-const GREEN_API_TOKEN = '7dd72da916ed4f5cba44a59373d935cb8c79f2e5b69245c89a';
+const GREEN_API_INSTANCE_ID = '7105217263';
+const GREEN_API_TOKEN = 'e9897cac52f64553bb62434c7ab4f304de7a915f81994be383';
 // const GREEN_API_INSTANCE_ID = '7105459299';
 // const GREEN_API_TOKEN = '7dd72da916ed4f5cba44a59373d935cb8c79f2e5b69245c89a';
 
