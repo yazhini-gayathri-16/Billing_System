@@ -90,6 +90,8 @@ doc.pipe(writeStream);
 // Green API credentials
 const GREEN_API_INSTANCE_ID = '7105459299';
 const GREEN_API_TOKEN = '7dd72da916ed4f5cba44a59373d935cb8c79f2e5b69245c89a';
+// const GREEN_API_INSTANCE_ID = '7105459299';
+// const GREEN_API_TOKEN = '7dd72da916ed4f5cba44a59373d935cb8c79f2e5b69245c89a';
 
 // Base URL for bill preview links
 const BASE_URL = process.env.BASE_URL || 'https://noble-evergreen.onrender.com';  
