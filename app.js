@@ -64,7 +64,7 @@ const options={
         },
         servers:[
             {
-                url:'http://localhost:3000/'
+                url:'http://localhost:2000/'
             }
         ]
     },
@@ -146,7 +146,7 @@ function isWithinRadius(location, center) {
 
 
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 2000;
 app.set('view engine', 'ejs');
 app.use(express.static("public"));
 
@@ -186,7 +186,8 @@ app.post("/bill", async (req, res) => {
             birthdayDiscountApplied,
             anniversaryDiscountApplied,
             addGstToBill,
-            gstPercentage
+            gstPercentage,
+            sendBillToCustomer
         } = req.body;
 
         // Use discount from frontend, or calculate if not provided
@@ -267,10 +268,29 @@ app.post("/bill", async (req, res) => {
                 if (stylist2) {
                     serviceObj.stylist2 = stylist2.name;
                 }
+                // Save split amounts if provided
+                const s1Split = parseFloat(req.body[`stylist1Split${index}`]);
+                const s2Split = parseFloat(req.body[`stylist2Split${index}`]);
+                if (!isNaN(s1Split)) serviceObj.stylist1Split = s1Split;
+                if (!isNaN(s2Split)) serviceObj.stylist2Split = s2Split;
             }
 
             services.push(serviceObj);
             index++;
+        }
+
+        // Resolve payment method and breakdown
+        const paymentBreakdownRaw = req.body.paymentBreakdown;
+        let resolvedPaymentMethod = req.body.paymentMethod || 'UPI';
+        let paymentBreakdown = [];
+        if (paymentBreakdownRaw && Array.isArray(paymentBreakdownRaw) && paymentBreakdownRaw.length > 0) {
+            paymentBreakdown = paymentBreakdownRaw.map(p => ({
+                method: p.method,
+                amount: parseFloat(p.amount) || 0
+            }));
+            resolvedPaymentMethod = paymentBreakdown.map(p => p.method).join('+');
+        } else if (paymentBreakdownRaw && typeof paymentBreakdownRaw === 'object' && !Array.isArray(paymentBreakdownRaw)) {
+            paymentBreakdown = [{ method: paymentBreakdownRaw.method, amount: parseFloat(paymentBreakdownRaw.amount) || 0 }];
         }
 
         // Generate next invoice number
@@ -298,7 +318,8 @@ app.post("/bill", async (req, res) => {
             discount: parseFloat(discountAmount.toFixed(2)), // Store discount amount separately (not including GST)
             discountType,
             grandTotal: finalGrandTotalValue, // Final grand total = netAmount + GST (if applicable)
-            paymentMethod,
+            paymentMethod: resolvedPaymentMethod,
+            paymentBreakdown,
             services,
             billType,
             birthdayDiscountApplied,
@@ -367,30 +388,38 @@ app.post("/bill", async (req, res) => {
                 // bufferStream.push(null);
 
                 // Instead of Puppeteer, use PDFKit to generate PDF in memory
-        // Send bill preview link via WhatsApp using Green API
-        const billPreviewLink = `${BASE_URL}/bill-preview/${user._id}`;
-        const chatId = `91${customer_number}@c.us`;
-        const message = `Dear ${customer_name}, thank you for visiting Noble Evergreen Salon. Please find your bill here: ${billPreviewLink}`;
+        // Conditionally send bill preview link via WhatsApp
+        if (sendBillToCustomer === true || sendBillToCustomer === 'true') {
+            const billPreviewLink = `${BASE_URL}/bill-preview/${user._id}`;
+            const chatId = `91${customer_number}@c.us`;
+            const message = `Dear ${customer_name}, thank you for visiting Noble Evergreen Salon. Please find your bill here: ${billPreviewLink}`;
 
-        try {
-            const response = await axios.post(
-                `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendMessage/${GREEN_API_TOKEN}`,
-                {
-                    chatId: chatId,
-                    message: message
-                }
-            );
+            try {
+                const response = await axios.post(
+                    `https://api.green-api.com/waInstance${GREEN_API_INSTANCE_ID}/sendMessage/${GREEN_API_TOKEN}`,
+                    {
+                        chatId: chatId,
+                        message: message
+                    }
+                );
 
+                res.json({
+                    success: true,
+                    message: 'Bill generated and link sent via WhatsApp',
+                    billData: user
+                });
+            } catch (error) {
+                console.error('WhatsApp send error:', error?.response?.data || error.message);
+                res.json({
+                    success: true,
+                    message: 'Bill generated but link failed to send via WhatsApp',
+                    billData: user
+                });
+            }
+        } else {
             res.json({
                 success: true,
-                message: 'Bill generated and link sent via WhatsApp',
-                billData: user
-            });
-        } catch (error) {
-            console.error('WhatsApp send error:', error?.response?.data || error.message);
-            res.json({
-                success: true,
-                message: 'Bill generated but link failed to send via WhatsApp',
+                message: 'Bill generated successfully',
                 billData: user
             });
         }
@@ -594,50 +623,42 @@ app.post('/search-customer', async (req, res) => {
     try {
         const { customerNumber } = req.body;
 
-        // First check membership status since it should be independent of purchase history 
+        // Check membership status by phone number
+        const membership = await Membership.findOne({ phoneNumber: String(customerNumber) });
+        let membershipStatus = null;
+        let membershipID = null;
+        let canUseBirthdayOffer = false;
+        let canUseAnniversaryOffer = false;
 
-        //- commented by yazhini - beg
-        // const membership = await Membership.findOne({ phoneNumber: customerNumber }); - for adding new membership field
-        
-        // Initialize membership variables  
-        // let membershipStatus = '----';
-        // let membershipID = null;
-        // let canUseBirthdayOffer = false;
-        // let canUseAnniversaryOffer = false;
-        
-        // if (membership) {
-        //     membershipID = membership.membershipID;
-        //     membershipStatus = 'Active';
+        if (membership) {
+            membershipID = membership.membershipID;
+            const today = new Date();
+            
+            if (membership.validTillDate < today) {
+                membershipStatus = 'Expired';
+            } else {
+                membershipStatus = 'Active';
+                const currentMonth = today.getMonth() + 1; // 1-12
+                const currentYear = today.getFullYear();
+                const yearlyUsage = membership.yearlyUsage.find(u => u.year === currentYear);
 
-        //     // Check if membership is expired
-        //     const today = new Date();
-        //     if (membership.validTillDate < today) {
-        //         membershipStatus = 'Expired';
-        //     } else {
-        //         // Check for birthday and anniversary offers
-        //         const currentMonth = today.getMonth();
-        //         const birthMonth = new Date(membership.birthDate).getMonth();
-        //         const anniversaryMonth = membership.anniversaryDate ? new Date(membership.anniversaryDate).getMonth() : -1;
-        //         const currentYear = today.getFullYear();
-        //         const yearlyUsage = membership.yearlyUsage.find(usage => usage.year === currentYear);
-
-        //         if (currentMonth === birthMonth && (!yearlyUsage || !yearlyUsage.usedBirthdayOffer)) {
-        //             canUseBirthdayOffer = true;
-        //         }
-
-        //         if (currentMonth === anniversaryMonth && (!yearlyUsage || !yearlyUsage.usedAnniversaryOffer)) {
-        //             canUseAnniversaryOffer = true;
-        //         }
-        //     }
-        // }
-        //- commented by yazhini - end
+                if (membership.birthMonth && currentMonth === membership.birthMonth &&
+                    (!yearlyUsage || !yearlyUsage.usedBirthdayOffer)) {
+                    canUseBirthdayOffer = true;
+                }
+                if (membership.anniversaryMonth && currentMonth === membership.anniversaryMonth &&
+                    (!yearlyUsage || !yearlyUsage.usedAnniversaryOffer)) {
+                    canUseAnniversaryOffer = true;
+                }
+            }
+        }
 
         // Fetch customer purchase history
         const fetchCustomerData = await Fetch.find({ customer_number: customerNumber });
         const productBillCustomerData = await ProductBill.find({ customer_number: customerNumber });
         const combinedData = [...fetchCustomerData, ...productBillCustomerData];
 
-        if (combinedData.length > 0) {  // Return data if either purchase history exists OR customer has membership
+        if (combinedData.length > 0 || membership) {
             const totalSpent = combinedData.reduce((sum, record) => {
                 if (record.services) {
                     return sum + record.services.reduce((serviceSum, service) => serviceSum + service.price, 0);
@@ -670,7 +691,6 @@ app.post('/search-customer', async (req, res) => {
             if (visits > 0) {
                 const lastVisitDate = new Date(lastVisit);
                 const daysSinceLastVisit = (new Date() - lastVisitDate) / (1000 * 60 * 60 * 24);
-
                 if (visits > 2) {
                     customerType = 'Active';
                 } else if (daysSinceLastVisit > 180) {
@@ -678,10 +698,7 @@ app.post('/search-customer', async (req, res) => {
                 }
             }
 
-            // Get customer info or use membership info for first-time visitors
-            const customerInfo = combinedData[0] || { 
-                customer_name: '----'
-            };
+            const customerInfo = combinedData[0] || { customer_name: membership?.customername || '----' };
             
             res.json({
                 success: true,
@@ -691,17 +708,59 @@ app.post('/search-customer', async (req, res) => {
                 visits,
                 totalSpent,
                 services: uniqueServices,
-                products: uniqueProducts
-                // membership: membershipStatus,
-                // membershipID,
-                // canUseBirthdayOffer,
-                // canUseAnniversaryOffer
+                products: uniqueProducts,
+                membership: membershipStatus,
+                membershipID,
+                canUseBirthdayOffer,
+                canUseAnniversaryOffer
             });
         } else {
             res.json({ success: false, message: 'Customer not found' });
         }
     } catch (error) {
         console.error('Error retrieving customer data:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+// Search customers by partial name or partial number for autocomplete
+app.get('/search-customers', async (req, res) => {
+    try {
+        const { name, number } = req.query;
+        let results = [];
+
+        if (name && name.trim().length >= 1) {
+            results = await Fetch.find(
+                { customer_name: { $regex: name.trim(), $options: 'i' } },
+                { customer_name: 1, customer_number: 1 }
+            ).sort({ _id: -1 }).limit(20);
+        } else if (number && number.trim().length >= 1) {
+            // Since customer_number is stored as Number, use aggregation with $toString
+            results = await Fetch.aggregate([
+                { $addFields: { num_str: { $toString: '$customer_number' } } },
+                { $match: { num_str: { $regex: `^${number.trim()}` } } },
+                { $project: { customer_name: 1, customer_number: 1 } },
+                { $sort: { _id: -1 } },
+                { $limit: 20 }
+            ]);
+        } else {
+            return res.json({ success: true, customers: [] });
+        }
+
+        // Deduplicate by phone number, keep the most recent name
+        const seen = new Set();
+        const unique = [];
+        for (const r of results) {
+            const key = String(r.customer_number);
+            if (!seen.has(key)) {
+                seen.add(key);
+                unique.push({ name: r.customer_name, number: r.customer_number });
+            }
+        }
+
+        res.json({ success: true, customers: unique });
+    } catch (error) {
+        console.error('Error searching customers:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 });
@@ -1916,16 +1975,31 @@ app.get('/api/analytics/staff-performance', async (req, res) => {
         bills.forEach(bill => {
             if (bill.services && bill.services.length > 0) {
                 bill.services.forEach(service => {
-                    const stylists = [service.stylist, service.stylist2].filter(s => s && s !== 'null' && s !== '');
-                    const revenuePerStylist = (service.price || 0) / (stylists.length || 1);
-                    
-                    stylists.forEach(stylist => {
-                        if (!staffStats[stylist]) {
-                            staffStats[stylist] = { services: 0, revenue: 0 };
+                    const price = service.price || 0;
+                    const hasStylist2 = service.stylist2 && service.stylist2 !== 'null' && service.stylist2 !== '';
+                    const hasSplits = hasStylist2 && (service.stylist1Split != null || service.stylist2Split != null);
+
+                    // Calculate revenue for stylist 1
+                    if (service.stylist) {
+                        if (!staffStats[service.stylist]) staffStats[service.stylist] = { services: 0, revenue: 0 };
+                        staffStats[service.stylist].services += 1;
+                        if (hasSplits) {
+                            staffStats[service.stylist].revenue += (service.stylist1Split || 0);
+                        } else {
+                            staffStats[service.stylist].revenue += hasStylist2 ? price / 2 : price;
                         }
-                        staffStats[stylist].services += 1;
-                        staffStats[stylist].revenue += revenuePerStylist;
-                    });
+                    }
+
+                    // Calculate revenue for stylist 2
+                    if (hasStylist2) {
+                        if (!staffStats[service.stylist2]) staffStats[service.stylist2] = { services: 0, revenue: 0 };
+                        staffStats[service.stylist2].services += 1;
+                        if (hasSplits) {
+                            staffStats[service.stylist2].revenue += (service.stylist2Split || 0);
+                        } else {
+                            staffStats[service.stylist2].revenue += price / 2;
+                        }
+                    }
                 });
             }
         });
@@ -2390,82 +2464,49 @@ app.get('/employee-targets', async (req, res) => {
         const startDate = new Date(currentYear, new Date().getMonth(), 1);
         const endDate = new Date(currentYear, new Date().getMonth() + 1, 0);
 
-        // Aggregate achievements for primary stylist
-        const achievements = await Fetch.aggregate([
-            {
-                $match: {
-                    date: {
-                        $gte: startDate,
-                        $lte: endDate
-                    }
-                }
-            },
-            { $unwind: "$services" },
-            {
-                $group: {
-                    _id: "$services.stylist",
-                    totalAchieved: { $sum: { 
-                        $cond: [
-                            { $eq: ["$services.stylist2", null] },
-                            "$services.price",
-                            { $multiply: ["$services.price", 0.7] } // 70% for primary stylist
-                        ]
-                    }}
-                }
-            }
-        ]);
+        // Recalculate achievements per staff using actual split amounts
+        for (const staff of staffMembers) {
+            // Primary stylist: use stylist1Split if set, else full price (solo) or half (unsplit shared)
+            const primaryAgg = await Fetch.aggregate([
+                { $match: { date: { $gte: startDate, $lte: endDate }, "services.stylist": staff.name } },
+                { $unwind: "$services" },
+                { $match: { "services.stylist": staff.name } },
+                { $group: { _id: null, total: { $sum: {
+                    $cond: [
+                        { $in: ["$services.stylist2", [null, "", "null"]] },
+                        "$services.price",
+                        { $cond: [
+                            { $gt: [{ $ifNull: ["$services.stylist1Split", 0] }, 0] },
+                            "$services.stylist1Split",
+                            { $divide: ["$services.price", 2] }
+                        ]}
+                    ]
+                }}}}
+            ]);
 
-        // Aggregate achievements for secondary stylist
-        const secondaryAchievements = await Fetch.aggregate([
-            {
-                $match: {
-                    date: {
-                        $gte: startDate,
-                        $lte: endDate
-                    }
-                }
-            },
-            { $unwind: "$services" },
-            {
-                $match: {
-                    "services.stylist2": { $ne: null }
-                }
-            },
-            {
-                $group: {
-                    _id: "$services.stylist2",
-                    totalAchieved: { $sum: { $multiply: ["$services.price", 0.3] } } // 30% for secondary stylist
-                }
-            }
-        ]);
+            // Secondary stylist: use stylist2Split if set, else half price
+            const secondaryAgg = await Fetch.aggregate([
+                { $match: { date: { $gte: startDate, $lte: endDate }, "services.stylist2": staff.name } },
+                { $unwind: "$services" },
+                { $match: { "services.stylist2": staff.name } },
+                { $group: { _id: null, total: { $sum: {
+                    $cond: [
+                        { $gt: [{ $ifNull: ["$services.stylist2Split", 0] }, 0] },
+                        "$services.stylist2Split",
+                        { $divide: ["$services.price", 2] }
+                    ]
+                }}}}
+            ]);
 
-        // Combine achievements
-        const combinedAchievements = new Map();
-        achievements.forEach(ach => {
-            combinedAchievements.set(ach._id, ach.totalAchieved);
-        });
+            const totalAchieved = Math.round(
+                (primaryAgg[0]?.total || 0) + (secondaryAgg[0]?.total || 0)
+            );
 
-        secondaryAchievements.forEach(ach => {
-            const currentTotal = combinedAchievements.get(ach._id) || 0;
-            combinedAchievements.set(ach._id, currentTotal + ach.totalAchieved);
-        });
-
-        // Update achievements in EmployeeTarget collection
-        for (const [stylistName, totalAchieved] of combinedAchievements) {
-            const staff = await Staff.findOne({ name: stylistName });
-            if (staff) {
-                await EmployeeTarget.findOneAndUpdate(
-                    {
-                        employeeId: staff._id,
-                        month: currentMonth,
-                        year: currentYear
-                    },
-                    {
-                        $set: { achieved: Math.round(totalAchieved) }
-                    },
-                    { upsert: true }
-                );
-            }
+            await EmployeeTarget.findOneAndUpdate(
+                { employeeId: staff._id, month: currentMonth, year: currentYear },
+                { $set: { achieved: totalAchieved } },
+                { upsert: true }
+            );
         }
 
         // Fetch the updated employee targets
@@ -2507,54 +2548,36 @@ app.post('/set-employee-target', async (req, res) => {
                 throw new Error('Staff member not found');
             }
 
-            // Calculate primary stylist achievements
+            // Calculate primary stylist achievements using actual split amounts
             const primaryAchievement = await Fetch.aggregate([
-                {
-                    $match: {
-                        date: { $gte: startDate, $lte: endDate },
-                        "services.stylist": staff.name
-                    }
-                },
+                { $match: { date: { $gte: startDate, $lte: endDate }, "services.stylist": staff.name } },
                 { $unwind: "$services" },
-                {
-                    $match: {
-                        "services.stylist": staff.name
-                    }
-                },
-                {
-                    $group: {
-                        _id: null,
-                        totalAchieved: { $sum: { 
-                            $cond: [
-                                { $eq: ["$services.stylist2", null] },
-                                "$services.price",
-                                { $multiply: ["$services.price", 0.7] }
-                            ]
-                        }}
-                    }
-                }
+                { $match: { "services.stylist": staff.name } },
+                { $group: { _id: null, totalAchieved: { $sum: {
+                    $cond: [
+                        { $in: ["$services.stylist2", [null, "", "null"]] },
+                        "$services.price",
+                        { $cond: [
+                            { $gt: [{ $ifNull: ["$services.stylist1Split", 0] }, 0] },
+                            "$services.stylist1Split",
+                            { $divide: ["$services.price", 2] }
+                        ]}
+                    ]
+                }}}}
             ]);
 
-            // Calculate secondary stylist achievements
+            // Calculate secondary stylist achievements using actual split amounts
             const secondaryAchievement = await Fetch.aggregate([
-                {
-                    $match: {
-                        date: { $gte: startDate, $lte: endDate },
-                        "services.stylist2": staff.name
-                    }
-                },
+                { $match: { date: { $gte: startDate, $lte: endDate }, "services.stylist2": staff.name } },
                 { $unwind: "$services" },
-                {
-                    $match: {
-                        "services.stylist2": staff.name
-                    }
-                },
-                {
-                    $group: {
-                        _id: null,
-                        totalAchieved: { $sum: { $multiply: ["$services.price", 0.3] } }
-                    }
-                }
+                { $match: { "services.stylist2": staff.name } },
+                { $group: { _id: null, totalAchieved: { $sum: {
+                    $cond: [
+                        { $gt: [{ $ifNull: ["$services.stylist2Split", 0] }, 0] },
+                        "$services.stylist2Split",
+                        { $divide: ["$services.price", 2] }
+                    ]
+                }}}}
             ]);
 
             const totalAchieved = Math.round(
@@ -2592,6 +2615,7 @@ app.post('/update-employee-achievements', async (req, res) => {
         
         for (const staff of staffMembers) {
             // Calculate primary stylist achievements
+            // Uses actual stylist1Split if set, otherwise falls back to 50% of price (matching dashboard logic)
             const primaryAchievement = await Fetch.aggregate([
                 {
                     $match: {
@@ -2610,9 +2634,15 @@ app.post('/update-employee-achievements', async (req, res) => {
                         _id: null,
                         totalAchieved: { $sum: { 
                             $cond: [
-                                { $eq: ["$services.stylist2", null] },
+                                { $in: ["$services.stylist2", [null, "", "null"]] },
                                 "$services.price",
-                                { $multiply: ["$services.price", 0.7] }
+                                {
+                                    $cond: [
+                                        { $gt: [{ $ifNull: ["$services.stylist1Split", 0] }, 0] },
+                                        "$services.stylist1Split",
+                                        { $divide: ["$services.price", 2] }
+                                    ]
+                                }
                             ]
                         }}
                     }
@@ -2620,6 +2650,7 @@ app.post('/update-employee-achievements', async (req, res) => {
             ]);
 
             // Calculate secondary stylist achievements
+            // Uses actual stylist2Split if set, otherwise falls back to 50% of price (matching dashboard logic)
             const secondaryAchievement = await Fetch.aggregate([
                 {
                     $match: {
@@ -2636,7 +2667,13 @@ app.post('/update-employee-achievements', async (req, res) => {
                 {
                     $group: {
                         _id: null,
-                        totalAchieved: { $sum: { $multiply: ["$services.price", 0.3] } }
+                        totalAchieved: { $sum: {
+                            $cond: [
+                                { $gt: [{ $ifNull: ["$services.stylist2Split", 0] }, 0] },
+                                "$services.stylist2Split",
+                                { $divide: ["$services.price", 2] }
+                            ]
+                        }}
                     }
                 }
             ]);
@@ -2914,13 +2951,30 @@ app.get('/top-stylists', async (req, res) => {
     }
 
     try {
-        const topStylists = await Fetch.aggregate([
-            { $match: { date: { $gte: start, $lt: end } } },
-            { $unwind: "$services" },
-            { $group: { _id: "$services.stylist", count: { $sum: 1 } } },
-            { $sort: { count: -1 } },
-            { $limit: 3 }
-        ]);
+        // Aggregate using application logic to support split amounts
+        const rawBills = await Fetch.find({ date: { $gte: start, $lt: end } });
+        const styleStats = {};
+        rawBills.forEach(bill => {
+            (bill.services || []).forEach(service => {
+                const price = service.price || 0;
+                const hasStylist2 = service.stylist2 && service.stylist2 !== 'null' && service.stylist2 !== '';
+                const hasSplits = hasStylist2 && (service.stylist1Split != null || service.stylist2Split != null);
+
+                if (service.stylist) {
+                    if (!styleStats[service.stylist]) styleStats[service.stylist] = { count: 0 };
+                    styleStats[service.stylist].count += 1;
+                }
+                if (hasStylist2) {
+                    if (!styleStats[service.stylist2]) styleStats[service.stylist2] = { count: 0 };
+                    styleStats[service.stylist2].count += 1;
+                }
+            });
+        });
+
+        const topStylists = Object.entries(styleStats)
+            .map(([_id, v]) => ({ _id, count: v.count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 3);
 
         res.json(topStylists);
     } catch (error) {
@@ -3140,6 +3194,44 @@ app.post("/fetch-bills", async (req, res) => {
     }
 });
 
+// Delete a bill
+app.delete("/api/bills/:id", async (req, res) => {
+    try {
+        const deleted = await Fetch.findByIdAndDelete(req.params.id);
+        if (!deleted) return res.status(404).json({ message: "Bill not found" });
+        res.json({ success: true, message: "Bill deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting bill:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+// Update a bill
+app.put("/api/bills/:id", async (req, res) => {
+    try {
+        const { customer_name, customer_number, gender, date, time, paymentMethod, paymentBreakdown, grandTotal, subtotal, discount, discountType, services } = req.body;
+        const update = { customer_name, customer_number, gender, date, time, paymentMethod, paymentBreakdown, grandTotal, subtotal, discount, discountType };
+        if (services) update.services = services;
+        const updated = await Fetch.findByIdAndUpdate(req.params.id, { $set: update }, { new: true });
+        if (!updated) return res.status(404).json({ message: "Bill not found" });
+        res.json({ success: true, bill: updated });
+    } catch (error) {
+        console.error("Error updating bill:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+// Get single bill data (for edit modal)
+app.get("/api/bills/:id", async (req, res) => {
+    try {
+        const bill = await Fetch.findById(req.params.id);
+        if (!bill) return res.status(404).json({ message: "Bill not found" });
+        res.json(bill);
+    } catch (error) {
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
 // Individual bill preview PDF
 app.get("/bill-preview/:id", async (req, res) => {
     try {
@@ -3323,10 +3415,21 @@ app.get("/bill-preview/:id", async (req, res) => {
                         
                         const itemWidth = 220;
                         const serviceName = service.name || 'Unknown Service';
-                        const textHeight = doc.heightOfString(serviceName, { width: itemWidth });
-                        const rowHeight = Math.max(textHeight + 8, 20);
+                        const stylistParts = [service.stylist, service.stylist2].filter(s => s && s !== '' && s !== 'null' && s !== null);
+                        const stylistLine = stylistParts.length > 0 ? ('Stylist: ' + stylistParts.join(' & ')) : null;
                         
-                        doc.text(serviceName, colItem, yPos, { width: itemWidth });
+                        const nameHeight = doc.fontSize(10).heightOfString(serviceName, { width: itemWidth });
+                        const stylistHeight = stylistLine ? (doc.fontSize(8).heightOfString(stylistLine, { width: itemWidth - 5 }) + 2) : 0;
+                        doc.fontSize(10);
+                        const rowHeight = Math.max(nameHeight + stylistHeight + 8, 20);
+                        
+                        doc.fontSize(10).fillColor('#000').text(serviceName, colItem, yPos, { width: itemWidth });
+                        if (stylistLine) {
+                            const afterNameY = doc.y;
+                            doc.fontSize(8).fillColor('#666').text(stylistLine, colItem + 5, afterNameY, { width: itemWidth - 5 });
+                            doc.fontSize(10).fillColor('#000');
+                        }
+                        
                         doc.text(servicePrice.toFixed(2), colGross, yPos);
                         doc.text('1', colQty, yPos);
                         doc.text('0.00', colDisc, yPos);
@@ -3379,6 +3482,27 @@ app.get("/bill-preview/:id", async (req, res) => {
                 doc.text('Grand Total:', summaryLabelX, yPos);
                 doc.text(grandTotal.toFixed(2), summaryValueX, yPos);
                 yPos += 20;
+
+                // Payment Breakdown
+                doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#ccc');
+                yPos += 10;
+                doc.font('Helvetica-Bold').fontSize(10).fillColor('#000');
+                doc.text('Payment Details:', leftCol, yPos);
+                yPos += 16;
+                doc.font('Helvetica').fontSize(10);
+                if (bill.paymentBreakdown && bill.paymentBreakdown.length > 1) {
+                    bill.paymentBreakdown.forEach(p => {
+                        doc.text(`${p.method}: \u20b9${(p.amount || 0).toFixed(2)}`, leftCol + 10, yPos);
+                        yPos += 16;
+                    });
+                } else {
+                    const methodLabel = (bill.paymentBreakdown && bill.paymentBreakdown.length === 1)
+                        ? bill.paymentBreakdown[0].method
+                        : (bill.paymentMethod || 'Cash');
+                    doc.text(`${methodLabel}: \u20b9${grandTotal.toFixed(2)}`, leftCol + 10, yPos);
+                    yPos += 16;
+                }
+                yPos += 5;
 
                 // Draw line below Section 4
                 doc.moveTo(leftCol, yPos).lineTo(doc.page.width - 40, yPos).stroke('#000');
@@ -3488,8 +3612,8 @@ app.post("/export", async (req, res) => {
                 .text(`From: ${fromDate}   To: ${toDate}   Type: ${billType}`, { align: 'center' });
             doc.moveDown(1);
 
-            // Table columns - Summary format with Services column (wider for long text)
-            const colWidths = [22, 70, 60, 180, 70, 50, 60];
+            // Table columns: Sl | Customer | Invoice | Services | Stylist(s) | Phone | Date | Total
+            const colWidths = [20, 65, 55, 130, 80, 65, 47, 55];
             const headerRowHeight = 25;
             const tableWidth = colWidths.reduce((a, b) => a + b, 0);
             const tableStartX = (doc.page.width - tableWidth) / 2;
@@ -3501,6 +3625,16 @@ app.post("/export", async (req, res) => {
 
             let tableTop = doc.y + 10;
 
+            // Helper: draw vertical borders for a row
+            const drawRowBorders = (y, height) => {
+                doc.moveTo(colX[0], y).lineTo(colX[0] + tableWidth, y).stroke('#aad381');
+                doc.moveTo(colX[0], y + height).lineTo(colX[0] + tableWidth, y + height).stroke('#aad381');
+                for (let i = 0; i <= colWidths.length; i++) {
+                    const x = i < colWidths.length ? colX[i] : colX[colWidths.length - 1] + colWidths[colWidths.length - 1];
+                    doc.moveTo(x, y).lineTo(x, y + height).stroke('#aad381');
+                }
+            };
+
             // Header
             const drawHeader = (y) => {
                 doc.rect(colX[0], y, tableWidth, headerRowHeight).fill('#c7dfbf');
@@ -3509,17 +3643,11 @@ app.post("/export", async (req, res) => {
                 doc.text('Customer', colX[1] + 2, y + 8, { width: colWidths[1] - 4 });
                 doc.text('Invoice', colX[2] + 2, y + 8, { width: colWidths[2] - 4 });
                 doc.text('Services', colX[3] + 2, y + 8, { width: colWidths[3] - 4 });
-                doc.text('Phone', colX[4] + 2, y + 8, { width: colWidths[4] - 4 });
-                doc.text('Date', colX[5] + 2, y + 8, { width: colWidths[5] - 4 });
-                doc.text('Total', colX[6] + 2, y + 8, { width: colWidths[6] - 4 });
-
-                // Draw header borders
-                doc.moveTo(colX[0], y).lineTo(colX[0] + tableWidth, y).stroke('#aad381');
-                doc.moveTo(colX[0], y + headerRowHeight).lineTo(colX[0] + tableWidth, y + headerRowHeight).stroke('#aad381');
-                for (let i = 0; i <= colWidths.length; i++) {
-                    const x = i < colWidths.length ? colX[i] : colX[colWidths.length - 1] + colWidths[colWidths.length - 1];
-                    doc.moveTo(x, y).lineTo(x, y + headerRowHeight).stroke('#aad381');
-                }
+                doc.text('Stylist(s)', colX[4] + 2, y + 8, { width: colWidths[4] - 4 });
+                doc.text('Phone', colX[5] + 2, y + 8, { width: colWidths[5] - 4 });
+                doc.text('Date', colX[6] + 2, y + 8, { width: colWidths[6] - 4 });
+                doc.text('Total', colX[7] + 2, y + 8, { width: colWidths[7] - 4 });
+                drawRowBorders(y, headerRowHeight);
                 return y + headerRowHeight;
             };
 
@@ -3535,19 +3663,31 @@ app.post("/export", async (req, res) => {
                 const invoiceNumber = 'NE' + bill._id.toString().slice(-8).toUpperCase();
                 const billDate = bill.date ? new Date(bill.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) : '';
                 
-                // Get services list - show full text
+                // Services text
                 let servicesText = '-';
                 if (bill.services && bill.services.length > 0) {
                     servicesText = bill.services.map(s => s.name).join(', ');
                 }
+
+                // Stylists text – unique stylists across all services
+                let stylistsText = '-';
+                if (bill.services && bill.services.length > 0) {
+                    const stylistSet = new Set();
+                    bill.services.forEach(s => {
+                        if (s.stylist)  stylistSet.add(s.stylist);
+                        if (s.stylist2) stylistSet.add(s.stylist2);
+                    });
+                    if (stylistSet.size > 0) stylistsText = [...stylistSet].join(', ');
+                }
                 
                 grandTotalSum += bill.grandTotal || 0;
 
-                // Calculate dynamic row height based on services text
-                const servicesTextHeight = doc.heightOfString(servicesText, { width: colWidths[3] - 4 });
-                const rowHeight = Math.max(servicesTextHeight + 10, 22);
+                // Row height: driven by whichever of services/stylists wraps more
+                const servicesLineH  = doc.heightOfString(servicesText,  { width: colWidths[3] - 4 });
+                const stylistsLineH  = doc.heightOfString(stylistsText,  { width: colWidths[4] - 4 });
+                const rowHeight = Math.max(servicesLineH, stylistsLineH, 22) + 10;
 
-                // Check if we need a new page
+                // Page break check
                 const maxY = doc.page.height - doc.page.margins.bottom - rowHeight - 50;
                 if (y > maxY) {
                     doc.addPage();
@@ -3566,18 +3706,12 @@ app.post("/export", async (req, res) => {
                 doc.text(bill.customer_name || '', colX[1] + 2, textY, { width: colWidths[1] - 4 });
                 doc.text(invoiceNumber, colX[2] + 2, textY, { width: colWidths[2] - 4 });
                 doc.text(servicesText, colX[3] + 2, textY, { width: colWidths[3] - 4 });
-                doc.text(String(bill.customer_number || ''), colX[4] + 2, textY, { width: colWidths[4] - 4 });
-                doc.text(billDate, colX[5] + 2, textY, { width: colWidths[5] - 4 });
-                doc.text(`Rs.${(bill.grandTotal || 0).toFixed(2)}`, colX[6] + 2, textY, { width: colWidths[6] - 4 });
+                doc.text(stylistsText, colX[4] + 2, textY, { width: colWidths[4] - 4 });
+                doc.text(String(bill.customer_number || ''), colX[5] + 2, textY, { width: colWidths[5] - 4 });
+                doc.text(billDate, colX[6] + 2, textY, { width: colWidths[6] - 4 });
+                doc.text(`Rs.${(bill.grandTotal || 0).toFixed(2)}`, colX[7] + 2, textY, { width: colWidths[7] - 4 });
 
-                // Draw row borders
-                doc.moveTo(colX[0], y).lineTo(colX[0] + tableWidth, y).stroke('#aad381');
-                doc.moveTo(colX[0], y + rowHeight).lineTo(colX[0] + tableWidth, y + rowHeight).stroke('#aad381');
-                for (let i = 0; i <= colWidths.length; i++) {
-                    const x = i < colWidths.length ? colX[i] : colX[colWidths.length - 1] + colWidths[colWidths.length - 1];
-                    doc.moveTo(x, y).lineTo(x, y + rowHeight).stroke('#aad381');
-                }
-
+                drawRowBorders(y, rowHeight);
                 y += rowHeight;
             }
 
@@ -3585,16 +3719,13 @@ app.post("/export", async (req, res) => {
             const totalRowHeight = 25;
             doc.rect(colX[0], y, tableWidth, totalRowHeight).fill('#8DBE50');
             doc.fillColor('black').font('Helvetica-Bold').fontSize(8);
-            doc.text('GRAND TOTAL', colX[0] + 2, y + 8, { width: colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4] + colWidths[5] - 4 });
-            doc.text(`Rs.${grandTotalSum.toFixed(2)}`, colX[6] + 2, y + 8, { width: colWidths[6] - 4 });
+            doc.text('GRAND TOTAL', colX[0] + 2, y + 8, {
+                width: colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3] + colWidths[4] + colWidths[5] + colWidths[6] - 4
+            });
+            doc.text(`Rs.${grandTotalSum.toFixed(2)}`, colX[7] + 2, y + 8, { width: colWidths[7] - 4 });
             
             // Draw total row borders
-            doc.moveTo(colX[0], y).lineTo(colX[0] + tableWidth, y).stroke('#aad381');
-            doc.moveTo(colX[0], y + totalRowHeight).lineTo(colX[0] + tableWidth, y + totalRowHeight).stroke('#aad381');
-            for (let i = 0; i <= colWidths.length; i++) {
-                const x = i < colWidths.length ? colX[i] : colX[colWidths.length - 1] + colWidths[colWidths.length - 1];
-                doc.moveTo(x, y).lineTo(x, y + totalRowHeight).stroke('#aad381');
-            }
+            drawRowBorders(y, totalRowHeight);
 
             // Footer with record count
             doc.moveDown(2);

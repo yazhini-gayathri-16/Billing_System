@@ -11,37 +11,31 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/styles/exportstyle.css">
     <style>
-        /* Bills Modal */
+        /* ── Modal wrapper ──────────────────────────────── */
         .bills-modal {
             display: none;
             position: fixed;
             z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
             overflow: auto;
         }
-
-        .bills-modal.active {
-            display: block;
-        }
+        .bills-modal.active { display: block; }
 
         .modal-content-large {
             background-color: #F5F5DC;
-            margin: 3% auto;
-            width: 95%;
-            max-width: 1100px;
+            margin: 2% auto;
+            width: 98%;
+            max-width: 1350px;
             border-radius: 10px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            max-height: 85vh;
+            max-height: 90vh;
             display: flex;
             flex-direction: column;
         }
-
         .modal-header {
-            padding: 20px 24px;
+            padding: 16px 24px;
             border-bottom: 1px solid #e2e8f0;
             display: flex;
             justify-content: space-between;
@@ -49,124 +43,152 @@
             background: #4CAF50;
             border-radius: 10px 10px 0 0;
         }
+        .modal-header h2 { font-size: 18px; font-weight: 600; color: white; margin: 0; }
+        .modal-header .record-count { font-size: 13px; color: rgba(255,255,255,0.9); margin-left: 10px; }
+        .close-modal { font-size: 26px; font-weight: 300; color: white; cursor: pointer; transition: opacity .2s; }
+        .close-modal:hover { opacity: 0.8; }
+        .modal-body { padding: 18px 24px; overflow-y: auto; flex: 1; }
 
-        .modal-header h2 {
-            font-size: 20px;
-            font-weight: 600;
-            color: white;
-            margin: 0;
-        }
-
-        .modal-header .record-count {
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.9);
-            margin-left: 12px;
-        }
-
-        .close-modal {
-            font-size: 28px;
-            font-weight: 300;
-            color: white;
-            cursor: pointer;
-            line-height: 1;
-            transition: opacity 0.2s;
-        }
-
-        .close-modal:hover {
-            opacity: 0.8;
-        }
-
-        .modal-body {
-            padding: 24px;
-            overflow-y: auto;
-            flex: 1;
-        }
-
-        .bills-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .bills-table thead {
-            background: #f7fafc;
-            position: sticky;
-            top: 0;
-        }
-
+        /* ── Main bills table ──────────────────────────── */
+        .bills-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
+        .bills-table thead { background: #f7fafc; position: sticky; top: 0; z-index: 2; }
         .bills-table th {
-            padding: 14px 16px;
+            padding: 11px 10px;
             text-align: left;
-            font-size: 12px;
-            font-weight: 600;
+            font-size: 11px; font-weight: 700;
             color: #4a5568;
             border-bottom: 2px solid #e2e8f0;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .bills-table tbody tr {
-            border-bottom: 1px solid #f0f0f0;
-            transition: background-color 0.2s;
-        }
-
-        .bills-table tbody tr:hover {
-            background-color: #f7fafc;
-        }
-
-        .bills-table td {
-            padding: 14px 16px;
-            font-size: 14px;
-            color: #1a202c;
-        }
-
-        .bills-table td.price {
-            font-weight: 600;
-            color: #4CAF50;
-        }
-
-        .bills-table .services-cell {
-            max-width: 200px;
+            letter-spacing: 0.4px;
             white-space: nowrap;
+        }
+        .bills-table tbody tr { border-bottom: 1px solid #f0f0f0; transition: background .2s; }
+        .bills-table tbody tr:hover { background-color: #f7fafc; }
+        .bills-table td { padding: 11px 10px; font-size: 13px; color: #1a202c; vertical-align: top; }
+        .bills-table td.price { font-weight: 600; color: #4CAF50; }
+        .bills-table .services-cell { max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .bills-table .stylist-cell { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* ── Action buttons ────────────────────────────── */
+        .action-btns { display: flex; gap: 5px; flex-wrap: wrap; }
+        .btn-preview { background-color: #D97C17; color: white; border: none; padding: 5px 10px; font-size: 12px; cursor: pointer; border-radius: 4px; }
+        .btn-preview:hover { background-color: #c26a0f; }
+        .btn-edit   { background-color: #3b82f6; color: white; border: none; padding: 5px 10px; font-size: 12px; cursor: pointer; border-radius: 4px; }
+        .btn-edit:hover   { background-color: #2563eb; }
+        .btn-delete { background-color: #e53e3e; color: white; border: none; padding: 5px 10px; font-size: 12px; cursor: pointer; border-radius: 4px; }
+        .btn-delete:hover { background-color: #c53030; }
+
+        .no-records { text-align: center; padding: 40px 20px; color: #718096; }
+        .no-records i { font-size: 48px; margin-bottom: 16px; color: #cbd5e0; }
+        .no-records p { font-size: 16px; }
+
+        /* ── Bill Preview Modal ────────────────────────── */
+        .preview-overlay {
+            display: none; position: fixed; z-index: 2000;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); overflow: auto;
+        }
+        .preview-overlay.active { display: block; }
+        .preview-card {
+            background: white;
+            margin: 3% auto;
+            width: 95%; max-width: 620px;
+            border-radius: 10px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
             overflow: hidden;
-            text-overflow: ellipsis;
         }
+        .preview-card-header {
+            background: #4CAF50; color: white;
+            padding: 14px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .preview-card-header h3 { margin: 0; font-size: 16px; }
+        .preview-card-close { font-size: 24px; cursor: pointer; }
+        .preview-card-body { padding: 20px; }
 
-        .bills-table .preview-btn {
-            background-color: #D97C17;
-            color: white;
-            border: none;
-            padding: 6px 14px;
+        .preview-section-title {
+            font-size: 12px; font-weight: 700; text-transform: uppercase;
+            color: #718096; letter-spacing: 0.5px;
+            margin: 14px 0 6px 0;
+        }
+        .preview-info-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 6px 16px;
+            background: #f9fafb;
+            border-radius: 6px;
+            padding: 10px 14px;
             font-size: 13px;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: background-color 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
+        }
+        .preview-info-grid .label { color: #718096; font-weight: 500; }
+        .preview-info-grid .value { color: #1a202c; font-weight: 600; }
+
+        .preview-services-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .preview-services-table th {
+            background: #8DBE50; color: white;
+            padding: 7px 10px; text-align: left; font-weight: 600;
+        }
+        .preview-services-table td {
+            padding: 8px 10px; border-bottom: 1px solid #eee; color: #374151;
+        }
+        .preview-services-table tr:last-child td { border-bottom: none; }
+
+        .preview-payment-grid { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+        .payment-chip {
+            background: #f0fdf4; border: 1px solid #86efac;
+            border-radius: 20px; padding: 4px 12px;
+            font-size: 12px; font-weight: 600; color: #166534;
         }
 
-        .bills-table .preview-btn:hover {
-            background-color: #c26a0f;
+        /* ── Edit Modal ────────────────────────────────── */
+        .edit-overlay {
+            display: none; position: fixed; z-index: 2000;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); overflow: auto;
         }
-
-        .no-records {
-            text-align: center;
-            padding: 40px 20px;
-            color: #718096;
+        .edit-overlay.active { display: block; }
+        .edit-card {
+            background: white;
+            margin: 2% auto;
+            width: 95%; max-width: 740px;
+            border-radius: 10px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+            max-height: 92vh;
+            display: flex; flex-direction: column;
         }
-
-        .no-records i {
-            font-size: 48px;
-            margin-bottom: 16px;
-            color: #cbd5e0;
+        .edit-card-header {
+            background: #3b82f6; color: white;
+            padding: 14px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-shrink: 0;
         }
-
-        .no-records p {
-            font-size: 16px;
+        .edit-card-header h3 { margin: 0; font-size: 16px; }
+        .edit-card-close { font-size: 24px; cursor: pointer; }
+        .edit-card-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .edit-form-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+        .edit-form-group { flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 4px; }
+        .edit-form-group label { font-size: 12px; font-weight: 600; color: #4a5568; text-transform: uppercase; letter-spacing: 0.3px; }
+        .edit-form-group input, .edit-form-group select {
+            padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 5px;
+            font-size: 13px; font-family: inherit;
         }
+        .edit-form-group input:focus, .edit-form-group select:focus {
+            outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.15);
+        }
+        .edit-service-item {
+            background: #f9fafb; border: 1px solid #e5e7eb;
+            border-radius: 6px; padding: 10px 12px; margin-bottom: 8px;
+        }
+        .edit-service-item .edit-form-row { margin-bottom: 0; }
+        .edit-card-footer {
+            padding: 14px 20px; border-top: 1px solid #e5e7eb;
+            display: flex; justify-content: flex-end; gap: 10px;
+            background: white; flex-shrink: 0;
+        }
+        .btn-save { background: #3b82f6; color: white; border: none; padding: 9px 22px; border-radius: 5px; font-size: 14px; cursor: pointer; }
+        .btn-save:hover { background: #2563eb; }
+        .btn-cancel-edit { background: #e5e7eb; color: #374151; border: none; padding: 9px 22px; border-radius: 5px; font-size: 14px; cursor: pointer; }
+        .btn-cancel-edit:hover { background: #d1d5db; }
     </style>
 </head>
 <body>
@@ -206,11 +228,11 @@
         </div>
     </div>
 
-    <!-- Bills Modal -->
+    <!-- ═══════════════ BILLS MODAL ═══════════════ -->
     <div id="billsModal" class="bills-modal">
         <div class="modal-content-large">
             <div class="modal-header">
-                <div style="display: flex; align-items: center;">
+                <div style="display:flex;align-items:center;">
                     <h2>Billing Records</h2>
                     <span class="record-count" id="recordCount"></span>
                 </div>
@@ -220,35 +242,60 @@
                 <table class="bills-table">
                     <thead>
                         <tr>
-                            <th>Sl.No</th>
-                            <th>Customer Name</th>
-                            <th>Invoice Number</th>
+                            <th>Sl.</th>
+                            <th>Customer</th>
+                            <th>Invoice</th>
                             <th>Services</th>
-                            <th>Customer Number</th>
+                            <th>Stylist(s)</th>
+                            <th>Phone</th>
                             <th>Date</th>
+                            <th>Payment</th>
                             <th>Total</th>
-                            <th>Action</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="billsTableBody">
-                    </tbody>
+                    <tbody id="billsTableBody"></tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════ BILL PREVIEW MODAL ═══════════════ -->
+    <div id="previewOverlay" class="preview-overlay">
+        <div class="preview-card">
+            <div class="preview-card-header">
+                <h3><i class="fas fa-eye" style="margin-right:8px;"></i>Bill Preview</h3>
+                <span class="preview-card-close" onclick="closePreview()">&times;</span>
+            </div>
+            <div class="preview-card-body" id="previewCardBody"></div>
+        </div>
+    </div>
+
+    <!-- ═══════════════ EDIT MODAL ═══════════════ -->
+    <div id="editOverlay" class="edit-overlay">
+        <div class="edit-card">
+            <div class="edit-card-header">
+                <h3><i class="fas fa-edit" style="margin-right:8px;"></i>Edit Bill</h3>
+                <span class="edit-card-close" onclick="closeEdit()">&times;</span>
+            </div>
+            <div class="edit-card-body" id="editCardBody"></div>
+            <div class="edit-card-footer">
+                <button class="btn-cancel-edit" onclick="closeEdit()">Cancel</button>
+                <button class="btn-save" onclick="saveBillEdits()">Save Changes</button>
             </div>
         </div>
     </div>
 
     <script>
         let fetchedBills = [];
+        let currentEditId = null;
 
+        // ──────────────────────── FETCH BILLS ────────────────────────
         async function fetchBills() {
             const fromDate = document.getElementById('fromDate').value;
-            const toDate = document.getElementById('toDate').value;
+            const toDate   = document.getElementById('toDate').value;
             const billType = document.getElementById('billType').value;
-
-            if (!fromDate || !toDate) {
-                alert('Please select both From and To dates');
-                return;
-            }
+            if (!fromDate || !toDate) { alert('Please select both From and To dates'); return; }
 
             try {
                 const response = await fetch('/fetch-bills', {
@@ -256,9 +303,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fromDate, toDate, billType })
                 });
-
                 const data = await response.json();
-
                 if (response.ok) {
                     fetchedBills = data.bills;
                     displayBills(data.bills);
@@ -274,38 +319,17 @@
             }
         }
 
-        function openBillsModal() {
-            document.getElementById('billsModal').classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
+        function openBillsModal()  { document.getElementById('billsModal').classList.add('active'); document.body.style.overflow = 'hidden'; }
+        function closeBillsModal() { document.getElementById('billsModal').classList.remove('active'); document.body.style.overflow = 'auto'; }
+        document.getElementById('billsModal').addEventListener('click', function(e) { if (e.target === this) closeBillsModal(); });
 
-        function closeBillsModal() {
-            document.getElementById('billsModal').classList.remove('active');
-            document.body.style.overflow = 'auto';
-        }
-
-        // Close modal on outside click
-        document.getElementById('billsModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeBillsModal();
-            }
-        });
-
+        // ──────────────────────── DISPLAY BILLS ────────────────────────
         function displayBills(bills) {
-            const tbody = document.getElementById('billsTableBody');
+            const tbody   = document.getElementById('billsTableBody');
             const countEl = document.getElementById('recordCount');
 
             if (bills.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="8">
-                            <div class="no-records">
-                                <i class="fas fa-file-invoice"></i>
-                                <p>No records found for the selected date range</p>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+                tbody.innerHTML = `<tr><td colspan="10"><div class="no-records"><i class="fas fa-file-invoice"></i><p>No records found for the selected date range</p></div></td></tr>`;
                 countEl.textContent = '(0 records)';
                 return;
             }
@@ -315,48 +339,248 @@
             tbody.innerHTML = bills.map((bill, index) => {
                 const invoiceNumber = bill.invoiceNumber || ('NE' + bill._id.slice(-8).toUpperCase());
                 const billDate = new Date(bill.date);
-                const date = String(billDate.getDate()).padStart(2, '0') + '-' + 
-                             String(billDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                const date = String(billDate.getDate()).padStart(2,'0') + '-' +
+                             String(billDate.getMonth()+1).padStart(2,'0') + '-' +
                              billDate.getFullYear();
-                
-                // Get services - for packages show package name + included services
+
                 let servicesDisplay = '-';
                 if (bill.services && bill.services.length > 0) {
                     servicesDisplay = bill.services.map(s => s.name).join(', ');
                 }
-                
+
+                let stylistsDisplay = '-';
+                if (bill.services && bill.services.length > 0) {
+                    const stylistSet = new Set();
+                    bill.services.forEach(s => {
+                        if (s.stylist)  stylistSet.add(s.stylist);
+                        if (s.stylist2) stylistSet.add(s.stylist2);
+                    });
+                    if (stylistSet.size > 0) stylistsDisplay = [...stylistSet].join(', ');
+                }
+
+                let paymentDisplay = bill.paymentMethod || '-';
+                if (bill.paymentBreakdown && bill.paymentBreakdown.length > 1) {
+                    paymentDisplay = bill.paymentBreakdown.map(p => `${p.method}:₹${p.amount}`).join(' + ');
+                }
+
                 return `
-                    <tr>
+                    <tr id="row-${bill._id}">
                         <td>${index + 1}</td>
                         <td>${bill.customer_name}</td>
                         <td>${invoiceNumber}</td>
                         <td class="services-cell" title="${servicesDisplay}">${servicesDisplay}</td>
+                        <td class="stylist-cell" title="${stylistsDisplay}">${stylistsDisplay}</td>
                         <td>${bill.customer_number}</td>
                         <td>${date}</td>
-                        <td class="price">₹${bill.grandTotal.toFixed(2)}</td>
+                        <td style="font-size:11px;">${paymentDisplay}</td>
+                        <td class="price">₹${(bill.grandTotal||0).toFixed(2)}</td>
                         <td>
-                            <button class="preview-btn" onclick="previewBill('${bill._id}')">
-                                <i class="fas fa-eye"></i> Preview
-                            </button>
+                            <div class="action-btns">
+                                <button class="btn-preview" onclick="previewBill('${bill._id}')" title="Preview"><i class="fas fa-eye"></i></button>
+                                <button class="btn-edit"    onclick="openEdit('${bill._id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                                <button class="btn-delete"  onclick="deleteBill('${bill._id}', ${index+1})" title="Delete"><i class="fas fa-trash"></i></button>
+                            </div>
                         </td>
                     </tr>
                 `;
             }).join('');
         }
 
+        // ──────────────────────── PREVIEW BILL ────────────────────────
         function previewBill(billId) {
-            window.open(`/bill-preview/${billId}`, '_blank');
+            window.open('/bill-preview/' + billId, '_blank');
         }
 
+        function closePreview() { document.getElementById('previewOverlay').classList.remove('active'); }
+        document.getElementById('previewOverlay').addEventListener('click', function(e) { if (e.target === this) closePreview(); });
+
+        // ──────────────────────── DELETE BILL ────────────────────────
+        async function deleteBill(billId, rowNum) {
+            const billName = (fetchedBills.find(b => b._id === billId) || {}).customer_name || '';
+            if (!confirm(`Are you sure you want to permanently delete bill #${rowNum} (${billName})?\n\nThis action cannot be undone.`)) return;
+
+            try {
+                const res = await fetch(`/api/bills/${billId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.success) {
+                    fetchedBills = fetchedBills.filter(b => b._id !== billId);
+                    displayBills(fetchedBills);
+                } else {
+                    alert(data.message || 'Failed to delete bill');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error deleting bill');
+            }
+        }
+
+        // ──────────────────────── EDIT BILL ────────────────────────
+        async function openEdit(billId) {
+            try {
+                const res = await fetch(`/api/bills/${billId}`);
+                const bill = await res.json();
+                if (!bill._id) { alert('Failed to load bill'); return; }
+
+                currentEditId = billId;
+
+                const servicesHtml = (bill.services || []).map((s, i) => `
+                    <div class="edit-service-item">
+                        <div class="edit-form-row">
+                            <div class="edit-form-group" style="flex:2;">
+                                <label>Service Name</label>
+                                <input type="text" id="es_name_${i}" value="${s.name||''}">
+                            </div>
+                            <div class="edit-form-group">
+                                <label>Price (₹)</label>
+                                <input type="number" id="es_price_${i}" value="${s.price||0}">
+                            </div>
+                        </div>
+                        <div class="edit-form-row">
+                            <div class="edit-form-group">
+                                <label>Stylist 1</label>
+                                <input type="text" id="es_st1_${i}" value="${s.stylist||''}">
+                            </div>
+                            <div class="edit-form-group">
+                                <label>Split 1 (₹)</label>
+                                <input type="number" id="es_s1split_${i}" value="${s.stylist1Split!=null?s.stylist1Split:''}" placeholder="—">
+                            </div>
+                            <div class="edit-form-group">
+                                <label>Stylist 2</label>
+                                <input type="text" id="es_st2_${i}" value="${s.stylist2||''}">
+                            </div>
+                            <div class="edit-form-group">
+                                <label>Split 2 (₹)</label>
+                                <input type="number" id="es_s2split_${i}" value="${s.stylist2Split!=null?s.stylist2Split:''}" placeholder="—">
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                const paymentMethods = ['UPI','Card','Cash','Other'];
+                const currentMethod = bill.paymentMethod || 'UPI';
+                const methodOptions = paymentMethods.map(m => `<option value="${m}" ${currentMethod===m?'selected':''}>${m}</option>`).join('');
+                const dateStr = bill.date ? new Date(bill.date).toISOString().split('T')[0] : '';
+
+                document.getElementById('editCardBody').innerHTML = `
+                    <div class="edit-form-row">
+                        <div class="edit-form-group">
+                            <label>Customer Name</label>
+                            <input type="text" id="e_cust_name" value="${bill.customer_name||''}">
+                        </div>
+                        <div class="edit-form-group">
+                            <label>Contact Number</label>
+                            <input type="number" id="e_cust_number" value="${bill.customer_number||''}">
+                        </div>
+                        <div class="edit-form-group">
+                            <label>Gender</label>
+                            <select id="e_gender">
+                                <option value="Male" ${bill.gender==='Male'?'selected':''}>Male</option>
+                                <option value="Female" ${bill.gender==='Female'?'selected':''}>Female</option>
+                                <option value="Other" ${bill.gender==='Other'?'selected':''}>Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="edit-form-row">
+                        <div class="edit-form-group">
+                            <label>Date</label>
+                            <input type="date" id="e_date" value="${dateStr}">
+                        </div>
+                        <div class="edit-form-group">
+                            <label>Time</label>
+                            <input type="time" id="e_time" value="${bill.time||''}">
+                        </div>
+                        <div class="edit-form-group">
+                            <label>Payment Method</label>
+                            <select id="e_payment">${methodOptions}</select>
+                        </div>
+                    </div>
+                    <div class="edit-form-row">
+                        <div class="edit-form-group">
+                            <label>Subtotal (₹)</label>
+                            <input type="number" id="e_subtotal" value="${bill.subtotal||0}">
+                        </div>
+                        <div class="edit-form-group">
+                            <label>Discount (₹)</label>
+                            <input type="number" id="e_discount" value="${bill.discount||0}">
+                        </div>
+                        <div class="edit-form-group">
+                            <label>Grand Total (₹)</label>
+                            <input type="number" id="e_grandtotal" value="${bill.grandTotal||0}">
+                        </div>
+                    </div>
+                    <p class="preview-section-title" style="margin-top:14px;"><i class="fas fa-cut" style="margin-right:5px;"></i>Services (${(bill.services||[]).length})</p>
+                    <div id="editServicesContainer" data-count="${(bill.services||[]).length}">
+                        ${servicesHtml}
+                    </div>
+                `;
+
+                document.getElementById('editOverlay').classList.add('active');
+            } catch (err) {
+                console.error(err);
+                alert('Error loading bill for editing');
+            }
+        }
+
+        function closeEdit() { document.getElementById('editOverlay').classList.remove('active'); currentEditId = null; }
+        document.getElementById('editOverlay').addEventListener('click', function(e) { if (e.target === this) closeEdit(); });
+
+        async function saveBillEdits() {
+            if (!currentEditId) return;
+            const container = document.getElementById('editServicesContainer');
+            const count = parseInt(container.dataset.count);
+            const services = [];
+            for (let i = 0; i < count; i++) {
+                const s1split = document.getElementById(`es_s1split_${i}`)?.value;
+                const s2split = document.getElementById(`es_s2split_${i}`)?.value;
+                services.push({
+                    name: document.getElementById(`es_name_${i}`)?.value || '',
+                    price: parseFloat(document.getElementById(`es_price_${i}`)?.value) || 0,
+                    stylist: document.getElementById(`es_st1_${i}`)?.value || '',
+                    stylist2: document.getElementById(`es_st2_${i}`)?.value || null,
+                    stylist1Split: s1split !== '' ? parseFloat(s1split) : null,
+                    stylist2Split: s2split !== '' ? parseFloat(s2split) : null,
+                });
+            }
+            const payload = {
+                customer_name:   document.getElementById('e_cust_name').value,
+                customer_number: document.getElementById('e_cust_number').value,
+                gender:          document.getElementById('e_gender').value,
+                date:            document.getElementById('e_date').value,
+                time:            document.getElementById('e_time').value,
+                paymentMethod:   document.getElementById('e_payment').value,
+                subtotal:        parseFloat(document.getElementById('e_subtotal').value) || 0,
+                discount:        parseFloat(document.getElementById('e_discount').value) || 0,
+                grandTotal:      parseFloat(document.getElementById('e_grandtotal').value) || 0,
+                services
+            };
+            try {
+                const res = await fetch(`/api/bills/${currentEditId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const idx = fetchedBills.findIndex(b => b._id === currentEditId);
+                    if (idx !== -1) fetchedBills[idx] = { ...fetchedBills[idx], ...payload, _id: currentEditId };
+                    displayBills(fetchedBills);
+                    closeEdit();
+                    alert('Bill updated successfully');
+                } else {
+                    alert(data.message || 'Failed to save');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error saving bill');
+            }
+        }
+
+        // ──────────────────────── DOWNLOAD PDF ────────────────────────
         async function downloadPDF() {
             const fromDate = document.getElementById('fromDate').value;
-            const toDate = document.getElementById('toDate').value;
+            const toDate   = document.getElementById('toDate').value;
             const billType = document.getElementById('billType').value;
-
-            if (!fromDate || !toDate) {
-                alert('Please select both From and To dates');
-                return;
-            }
+            if (!fromDate || !toDate) { alert('Please select both From and To dates'); return; }
 
             try {
                 const response = await fetch('/export', {
@@ -364,7 +588,6 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fromDate, toDate, billType })
                 });
-
                 if (response.ok) {
                     const blob = await response.blob();
                     const downloadUrl = window.URL.createObjectURL(blob);
@@ -374,7 +597,6 @@
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
-                    alert('Downloaded report successfully');
                 } else {
                     const errorText = await response.text();
                     alert(errorText || 'Failed to download report');
@@ -385,11 +607,9 @@
             }
         }
 
-        // Close modal with Escape key
+        // Keyboard
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeBillsModal();
-            }
+            if (e.key === 'Escape') { closeBillsModal(); closePreview(); closeEdit(); }
         });
     </script>
     <%- include('partials/globalScripts') %>

@@ -4,8 +4,9 @@ const serviceSchema = new mongoose.Schema({
     name: { type: String, required: true },
     price: { type: Number, required: true },
     stylist: { type: String, required: true },
-    stylist2: { type: String, default: null }
-    
+    stylist2: { type: String, default: null },
+    stylist1Split: { type: Number, default: null },
+    stylist2Split: { type: Number, default: null }
 });
 
 const customer_id_schema = new mongoose.Schema({
@@ -15,7 +16,7 @@ const customer_id_schema = new mongoose.Schema({
     },
     customer_number: {
         type: Number,
-        required: true
+        required: false
     },
     date: {
         type: Date,
@@ -36,9 +37,12 @@ const customer_id_schema = new mongoose.Schema({
     },
     paymentMethod: {
         type: String,
-        required: true,
-        enum: ['UPI', 'Card', 'Cash']
+        required: true
     },
+    paymentBreakdown: [{
+        method: { type: String },
+        amount: { type: Number }
+    }],
     subtotal: {
         type: Number,
         required: true
