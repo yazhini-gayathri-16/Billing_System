@@ -3322,7 +3322,7 @@ app.get("/bill-preview/:id", async (req, res) => {
 
                 doc.fontSize(10)
                    .font('Helvetica')
-                   .text('1st Floor, Leelavathi Achar Complex, Opp. Muthoot Finance,', leftCol, yPos, { align: 'center', width: pageWidth });
+                   .text('1st Floor, Above Tiranga Hyderabbadi Irani chai shop, Next to UCO bank,', leftCol, yPos, { align: 'center', width: pageWidth });
                 yPos = doc.y;
                 doc.text('Immadihalli Main Road, Hagadur, Whitefield, Bangalore - 560066', leftCol, yPos, { align: 'center', width: pageWidth });
                 yPos = doc.y + 5;
@@ -3590,7 +3590,7 @@ app.post("/export", async (req, res) => {
             doc.on('error', reject);
 
             // Title Header
-            const address = '1st Floor, Leelavathi Achar Complex, Opp. Muthoot Finance, Immadihalli Main Road, Hagadur, Whitefield, Bangalore - 560066';
+            const address = '1st Floor, Above Tiranga Hyderabbadi Irani chai shop, Next to UCO bank, Immadihalli Main Road, Hagadur, Whitefield, Bangalore - 560066';
             doc.rect(0, 0, doc.page.width, 70).fill('#8DBE50');
             doc.fillColor('black')
                 .fontSize(18)
