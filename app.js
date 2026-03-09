@@ -1819,7 +1819,7 @@ app.get('/analytics', isAuthenticated, isAdmin, (req, res) => {
 // ============== ANALYTICS API ENDPOINTS ==============
 
 // Helper function to get date range based on period
-function getDateRange(period) {
+function getDateRange(period, customStart = null, customEnd = null) {
     const now = new Date();
     let startDate, endDate;
     
@@ -1840,6 +1840,18 @@ function getDateRange(period) {
             startDate = new Date(now.getFullYear(), 0, 1);
             endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
             break;
+        case 'custom':
+            if (customStart && customEnd) {
+                startDate = new Date(customStart);
+                startDate.setHours(0, 0, 0, 0);
+                endDate = new Date(customEnd);
+                endDate.setHours(23, 59, 59, 999);
+            } else {
+                // Fallback to current month if custom dates not provided
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+            }
+            break;
         case 'month':
         default:
             startDate = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -1854,7 +1866,8 @@ function getDateRange(period) {
 app.get('/api/analytics/metrics', async (req, res) => {
     try {
         const period = req.query.period || 'month';
-        const { startDate, endDate } = getDateRange(period);
+        const { fromDate, toDate } = req.query;
+        const { startDate, endDate } = getDateRange(period, fromDate, toDate);
         
         // Current period data
         const bills = await Fetch.find({ date: { $gte: startDate, $lte: endDate } });
@@ -1891,7 +1904,8 @@ app.get('/api/analytics/metrics', async (req, res) => {
 app.get('/api/analytics/revenue-trend', async (req, res) => {
     try {
         const period = req.query.period || 'month';
-        const { startDate, endDate } = getDateRange(period);
+        const { fromDate, toDate } = req.query;
+        const { startDate, endDate } = getDateRange(period, fromDate, toDate);
         
         const bills = await Fetch.find({ date: { $gte: startDate, $lte: endDate } });
         const productBills = await ProductBill.find({ date: { $gte: startDate, $lte: endDate } });
@@ -1929,7 +1943,8 @@ app.get('/api/analytics/revenue-trend', async (req, res) => {
 app.get('/api/analytics/payment-methods', async (req, res) => {
     try {
         const period = req.query.period || 'month';
-        const { startDate, endDate } = getDateRange(period);
+        const { fromDate, toDate } = req.query;
+        const { startDate, endDate } = getDateRange(period, fromDate, toDate);
         
         const bills = await Fetch.find({ date: { $gte: startDate, $lte: endDate } });
         const productBills = await ProductBill.find({ date: { $gte: startDate, $lte: endDate } });
@@ -1956,7 +1971,8 @@ app.get('/api/analytics/payment-methods', async (req, res) => {
 app.get('/api/analytics/staff-performance', async (req, res) => {
     try {
         const period = req.query.period || 'month';
-        const { startDate, endDate } = getDateRange(period);
+        const { fromDate, toDate } = req.query;
+        const { startDate, endDate } = getDateRange(period, fromDate, toDate);
         
         const bills = await Fetch.find({ date: { $gte: startDate, $lte: endDate } });
         const staffMembers = await Staff.find({});
@@ -2033,7 +2049,8 @@ app.get('/api/analytics/staff-performance', async (req, res) => {
 app.get('/api/analytics/expense-breakdown', async (req, res) => {
     try {
         const period = req.query.period || 'month';
-        const { startDate, endDate } = getDateRange(period);
+        const { fromDate, toDate } = req.query;
+        const { startDate, endDate } = getDateRange(period, fromDate, toDate);
         
         const expenses = await Expense.find({ date: { $gte: startDate, $lte: endDate } });
         
