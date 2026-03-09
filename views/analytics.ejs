@@ -88,6 +88,50 @@
             color: white;
         }
 
+        .custom-date-section {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            background: #F5F5DC;
+            padding: 10px 16px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .custom-date-section.active {
+            display: flex;
+        }
+
+        .custom-date-section input[type="date"] {
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 14px;
+            background: white;
+        }
+
+        .custom-date-section input[type="date"]:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .btn-apply {
+            padding: 8px 16px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-apply:hover {
+            background: #45a049;
+        }
+
         .target-btn {
             display: flex;
             align-items: center;
@@ -610,6 +654,13 @@
                     <button class="period-btn" data-period="week">This Week</button>
                     <button class="period-btn active" data-period="month">This Month</button>
                     <button class="period-btn" data-period="year">This Year</button>
+                    <button class="period-btn" data-period="custom">Custom Range</button>
+                </div>
+                <div class="custom-date-section" id="customDateSection">
+                    <input type="date" id="fromDate">
+                    <span>to</span>
+                    <input type="date" id="toDate">
+                    <button type="button" class="btn-apply" onclick="applyCustomDateRange()">Apply</button>
                 </div>
                 <button class="target-btn" onclick="openTargetModal()">
                     <i class="fas fa-bullseye"></i> Set Monthly Target
@@ -819,6 +870,8 @@
     <script>
         // Global variables
         let currentPeriod = 'month';
+        let customFromDate = null;
+        let customToDate = null;
         let revenueChart, paymentChart, clientDonutChart, genderPieChart, monthlyChart, expenseChart;
 
         // Initialize Dashboard
@@ -837,9 +890,52 @@
                     document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     currentPeriod = btn.dataset.period;
-                    loadAllData();
+                    
+                    const customDateSection = document.getElementById('customDateSection');
+                    if (currentPeriod === 'custom') {
+                        customDateSection.classList.add('active');
+                        // Set default dates for custom range
+                        const today = new Date();
+                        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                        document.getElementById('fromDate').value = firstDayOfMonth.toISOString().split('T')[0];
+                        document.getElementById('toDate').value = today.toISOString().split('T')[0];
+                    } else {
+                        customDateSection.classList.remove('active');
+                        customFromDate = null;
+                        customToDate = null;
+                        loadAllData();
+                    }
                 });
             });
+        }
+
+        // Apply Custom Date Range
+        function applyCustomDateRange() {
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            
+            if (!fromDate || !toDate) {
+                alert('Please select both From and To dates');
+                return;
+            }
+            
+            if (new Date(fromDate) > new Date(toDate)) {
+                alert('From date cannot be greater than To date');
+                return;
+            }
+            
+            customFromDate = fromDate;
+            customToDate = toDate;
+            loadAllData();
+        }
+
+        // Build Query String with period and custom dates
+        function buildQueryString() {
+            let query = `period=${currentPeriod}`;
+            if (currentPeriod === 'custom' && customFromDate && customToDate) {
+                query += `&fromDate=${customFromDate}&toDate=${customToDate}`;
+            }
+            return query;
         }
 
         // Load All Dashboard Data
@@ -867,7 +963,7 @@
         // Fetch Key Metrics
         async function fetchKeyMetrics() {
             try {
-                const response = await fetch(`/api/analytics/metrics?period=${currentPeriod}`);
+                const response = await fetch(`/api/analytics/metrics?${buildQueryString()}`);
                 const data = await response.json();
                 
                 document.getElementById('totalRevenue').textContent = formatCurrency(data.revenue || 0);
@@ -884,7 +980,7 @@
         // Fetch Revenue Data
         async function fetchRevenueData() {
             try {
-                const response = await fetch(`/api/analytics/revenue-trend?period=${currentPeriod}`);
+                const response = await fetch(`/api/analytics/revenue-trend?${buildQueryString()}`);
                 const data = await response.json();
                 
                 const ctx = document.getElementById('revenueChart').getContext('2d');
@@ -937,7 +1033,7 @@
         // Fetch Payment Methods
         async function fetchPaymentMethods() {
             try {
-                const response = await fetch(`/api/analytics/payment-methods?period=${currentPeriod}`);
+                const response = await fetch(`/api/analytics/payment-methods?${buildQueryString()}`);
                 const data = await response.json();
                 
                 const ctx = document.getElementById('paymentChart').getContext('2d');
@@ -991,7 +1087,7 @@
         // Fetch Staff Performance
         async function fetchStaffPerformance() {
             try {
-                const response = await fetch(`/api/analytics/staff-performance?period=${currentPeriod}`);
+                const response = await fetch(`/api/analytics/staff-performance?${buildQueryString()}`);
                 const data = await response.json();
                 
                 const tbody = document.getElementById('staffTableBody');
@@ -1217,7 +1313,7 @@
         // Fetch Expense Breakdown
         async function fetchExpenseBreakdown() {
             try {
-                const response = await fetch(`/api/analytics/expense-breakdown?period=${currentPeriod}`);
+                const response = await fetch(`/api/analytics/expense-breakdown?${buildQueryString()}`);
                 const data = await response.json();
                 
                 const ctx = document.getElementById('expenseChart').getContext('2d');
